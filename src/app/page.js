@@ -430,15 +430,6 @@ export default function Home() {
                     ? "w-full max-w-[720px] max-h-[54vh] overflow-hidden px-5 py-5 sm:max-h-[520px] sm:px-6"
                     : "w-full max-w-[420px] px-4 py-3 sm:px-5"
                 }`}
-                onPointerDown={(event) => {
-                  event.stopPropagation();
-                }}
-                onMouseDown={(event) => {
-                  event.stopPropagation();
-                }}
-                onTouchStart={(event) => {
-                  event.stopPropagation();
-                }}
                 onClick={(event) => event.stopPropagation()}
               >
                 <div className="flex items-start justify-between gap-4">
@@ -499,14 +490,15 @@ export default function Home() {
                     style={{
                       WebkitOverflowScrolling: "touch",
                       touchAction: "pan-y",
+                      overscrollBehavior: "contain",
                     }}
-                    onPointerDown={(event) => {
+                    onPointerDownCapture={(event) => {
                       event.stopPropagation();
                     }}
-                    onTouchStart={(event) => {
+                    onTouchStartCapture={(event) => {
                       event.stopPropagation();
                     }}
-                    onTouchMove={(event) => {
+                    onTouchMoveCapture={(event) => {
                       event.stopPropagation();
                     }}
                   >
