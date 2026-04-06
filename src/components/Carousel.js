@@ -74,7 +74,7 @@ export default function Carousel({
 
   const setup = (p5, canvasParentRef) => {
     p5.createCanvas(p5.windowWidth, p5.windowHeight).parent(canvasParentRef);
-    p5.pixelDensity(2);
+    p5.pixelDensity(p5.windowWidth < 980 ? 1.25 : 2);
 
     buffersRef.current.pgText = p5.createGraphics(p5.width, p5.height);
     buffersRef.current.pgWarp = p5.createGraphics(p5.width, p5.height);
@@ -263,9 +263,9 @@ export default function Carousel({
             );
             const desktopBoost =
               p5.width > 1000
-                ? p5.map(p5.width, 1000, 1800, 1.04, 1.18, true)
+                ? p5.map(p5.width, 1000, 1800, 0.96, 1.08, true)
                 : 1;
-            const mobileScale = isMobile ? 0.62 : SIDE_SCALE;
+            const mobileScale = isMobile ? 0.62 : 0.7;
             let finalScale = mobileScale * desktopBoost;
             let finalW = imgW * finalScale;
             let finalH = imgH * finalScale;
@@ -329,9 +329,9 @@ export default function Carousel({
           // ---- TRANSITION IMAGE STATE ----
           const transitionSideBoost =
             p5.width > 1000
-              ? p5.map(p5.width, 1000, 1800, 1.04, 1.18, true)
+              ? p5.map(p5.width, 1000, 1800, 0.96, 1.08, true)
               : 1;
-          const baseSideScale = isMobile ? 0.62 : SIDE_SCALE;
+          const baseSideScale = isMobile ? 0.62 : 0.7;
           const sideScale = baseSideScale * transitionSideBoost;
           const sideW = imgW * sideScale;
           const sideH = imgH * sideScale;
@@ -600,6 +600,7 @@ export default function Carousel({
       }}
       windowResized={(p5) => {
         p5.resizeCanvas(p5.windowWidth, p5.windowHeight);
+        p5.pixelDensity(p5.windowWidth < 980 ? 1.25 : 2);
         buffersRef.current.pgText = p5.createGraphics(p5.width, p5.height);
         buffersRef.current.pgWarp = p5.createGraphics(p5.width, p5.height);
         updateSideTargets(p5);

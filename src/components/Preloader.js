@@ -35,6 +35,12 @@ export default function Preloader({ onComplete, canExit = false }) {
     return easeInOutCubic(tri);
   };
 
+  const getCanvasDensity = (p5) => {
+    const deviceDensity =
+      typeof p5.displayDensity === "function" ? p5.displayDensity() : 1;
+    return Math.min(deviceDensity, p5.windowWidth < 980 ? 1.6 : 2);
+  };
+
   const drawTopBottomErase = (p5, progress) => {
     const ctx = p5.drawingContext;
     const mid = p5.height / 2;
@@ -80,7 +86,7 @@ export default function Preloader({ onComplete, canExit = false }) {
 
   const setup = (p5, canvasParentRef) => {
     p5.createCanvas(p5.windowWidth, p5.windowHeight).parent(canvasParentRef);
-    p5.pixelDensity(2);
+    p5.pixelDensity(getCanvasDensity(p5));
     buffersRef.current.pgFront = p5.createGraphics(p5.width, p5.height);
     buffersRef.current.pgBack = p5.createGraphics(p5.width, p5.height);
     buffersRef.current.pgWarp = p5.createGraphics(p5.width, p5.height);
@@ -113,8 +119,10 @@ export default function Preloader({ onComplete, canExit = false }) {
 
     if (!pgFront || !pgBack || !pgWarp) return;
 
+    const phaseSpeed = animation.phase === "exit" ? 0.3 : 0.25;
+
     if (animation.phase !== "done") {
-      animation.t += (0.25 * p5.deltaTime) / 1000;
+      animation.t += (phaseSpeed * p5.deltaTime) / 1000;
       if (animation.t >= 1) {
         if (animation.phase === "exit") {
           animation.phase = "done";
@@ -212,6 +220,7 @@ export default function Preloader({ onComplete, canExit = false }) {
       draw={draw}
       windowResized={(p5) => {
         p5.resizeCanvas(p5.windowWidth, p5.windowHeight);
+        p5.pixelDensity(getCanvasDensity(p5));
         buffersRef.current.pgFront = p5.createGraphics(p5.width, p5.height);
         buffersRef.current.pgBack = p5.createGraphics(p5.width, p5.height);
         buffersRef.current.pgWarp = p5.createGraphics(p5.width, p5.height);
