@@ -423,13 +423,28 @@ export default function Home() {
           </div>
 
           {!showAboutCard && activeProject && (
-            <div className="pointer-events-none absolute inset-x-0 bottom-5 z-[14] flex justify-center px-5 sm:bottom-6">
+            <div
+              className={`pointer-events-none inset-x-0 z-[14] flex justify-center px-5 ${
+                isProjectExpanded
+                  ? "fixed inset-y-0 items-center"
+                  : "absolute bottom-5 sm:bottom-6"
+              }`}
+            >
               <div
                 className={`pointer-events-auto rounded-[24px] border border-[rgba(207,207,207,0.22)] bg-[linear-gradient(135deg,rgba(207,207,207,0.2)_0%,rgba(255,255,255,0.1)_50%,rgba(112,82,8,0.14)_100%)] text-[#f1ece0] shadow-[0_18px_40px_rgba(0,0,0,0.18)] backdrop-blur-[18px] transition-all duration-300 ${
                   isProjectExpanded
-                    ? "w-full max-w-[720px] max-h-[54vh] overflow-hidden px-5 py-5 sm:max-h-[520px] sm:px-6"
+                    ? "w-full max-w-[720px] max-h-[80vh] overflow-y-auto px-5 py-5 sm:max-h-[640px] sm:px-6"
                     : "w-full max-w-[420px] px-4 py-3 sm:px-5"
                 }`}
+                style={
+                  isProjectExpanded
+                    ? {
+                        WebkitOverflowScrolling: "touch",
+                        touchAction: "pan-y",
+                        overscrollBehavior: "contain",
+                      }
+                    : undefined
+                }
                 onClick={(event) => event.stopPropagation()}
               >
                 <div className="flex items-start justify-between gap-4">
@@ -485,23 +500,7 @@ export default function Home() {
                   </div>
                 </div>
                 {isProjectExpanded && activeProject.blurb && !activeProject.href && (
-                  <div
-                    className="mt-4 max-h-[32vh] overflow-y-auto pr-2 sm:max-h-[380px]"
-                    style={{
-                      WebkitOverflowScrolling: "touch",
-                      touchAction: "pan-y",
-                      overscrollBehavior: "contain",
-                    }}
-                    onPointerDownCapture={(event) => {
-                      event.stopPropagation();
-                    }}
-                    onTouchStartCapture={(event) => {
-                      event.stopPropagation();
-                    }}
-                    onTouchMoveCapture={(event) => {
-                      event.stopPropagation();
-                    }}
-                  >
+                  <div className="mt-4 pr-2">
                     <p className={`whitespace-pre-line text-sm leading-6 text-[rgba(241,236,224,0.92)] sm:text-[15px] sm:leading-7 ${bricolage.className}`}>
                       {activeProject.blurb}
                     </p>
