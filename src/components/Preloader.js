@@ -35,6 +35,31 @@ export default function Preloader({ onComplete, canExit = false }) {
     return easeInOutCubic(tri);
   };
 
+  const getCanvasDensity = (p5) => {
+    const deviceDensity =
+      typeof p5.displayDensity === "function" ? p5.displayDensity() : 1;
+    return Math.min(deviceDensity, p5.windowWidth < 980 ? 1.25 : 2);
+  };
+
+  const configureGraphics = (p5) => {
+    const density = getCanvasDensity(p5);
+    p5.pixelDensity(density);
+    p5.drawingContext.imageSmoothingEnabled = true;
+
+    const pgFront = p5.createGraphics(p5.width, p5.height);
+    const pgBack = p5.createGraphics(p5.width, p5.height);
+    const pgWarp = p5.createGraphics(p5.width, p5.height);
+
+    [pgFront, pgBack, pgWarp].forEach((g) => {
+      g.pixelDensity(density);
+      g.drawingContext.imageSmoothingEnabled = true;
+    });
+
+    buffersRef.current.pgFront = pgFront;
+    buffersRef.current.pgBack = pgBack;
+    buffersRef.current.pgWarp = pgWarp;
+  };
+
   const drawTopBottomErase = (p5, progress) => {
     const ctx = p5.drawingContext;
     const mid = p5.height / 2;
@@ -80,12 +105,7 @@ export default function Preloader({ onComplete, canExit = false }) {
 
   const setup = (p5, canvasParentRef) => {
     p5.createCanvas(p5.windowWidth, p5.windowHeight).parent(canvasParentRef);
-    p5.pixelDensity(
-      typeof p5.displayDensity === "function" ? p5.displayDensity() : 1,
-    );
-    buffersRef.current.pgFront = p5.createGraphics(p5.width, p5.height);
-    buffersRef.current.pgBack = p5.createGraphics(p5.width, p5.height);
-    buffersRef.current.pgWarp = p5.createGraphics(p5.width, p5.height);
+    configureGraphics(p5);
   };
 
   const prepBuffer = (p5, g, col) => {
@@ -214,9 +234,7 @@ export default function Preloader({ onComplete, canExit = false }) {
       draw={draw}
       windowResized={(p5) => {
         p5.resizeCanvas(p5.windowWidth, p5.windowHeight);
-        buffersRef.current.pgFront = p5.createGraphics(p5.width, p5.height);
-        buffersRef.current.pgBack = p5.createGraphics(p5.width, p5.height);
-        buffersRef.current.pgWarp = p5.createGraphics(p5.width, p5.height);
+        configureGraphics(p5);
       }}
     />
   );
