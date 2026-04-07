@@ -177,24 +177,6 @@ export default function Carousel({
       if (y >= topBound && y <= bottomBound) {
         if (!state.isTransitioning) {
           // ---- IDLE IMAGE STATE ----
-          const centerImg = media[state.currentIdx];
-          const centerAsset = getRenderableAsset(centerImg, true);
-          const centerHeight =
-            getRenderableAssetHeight(centerImg, centerAsset) || imgH;
-          const cx = p5.width / 2 - imgW / 2;
-          const cImgSy = p5.map(y, topBound, bottomBound, 0, centerHeight);
-          pgWarp.image(
-            centerAsset,
-            cx,
-            y,
-            imgW,
-            1,
-            0,
-            cImgSy,
-            getRenderableAssetWidth(centerImg, centerAsset) || imgW,
-            1,
-          );
-
           let displayIndices = [leftIdx, rightIdx];
           for (let i = 0; i < 2; i++) {
             state.sideX[i] = p5.lerp(
@@ -239,6 +221,24 @@ export default function Carousel({
               1,
             );
           }
+
+          const centerImg = media[state.currentIdx];
+          const centerAsset = getRenderableAsset(centerImg, true);
+          const centerHeight =
+            getRenderableAssetHeight(centerImg, centerAsset) || imgH;
+          const cx = p5.width / 2 - imgW / 2;
+          const cImgSy = p5.map(y, topBound, bottomBound, 0, centerHeight);
+          pgWarp.image(
+            centerAsset,
+            cx,
+            y,
+            imgW,
+            1,
+            0,
+            cImgSy,
+            getRenderableAssetWidth(centerImg, centerAsset) || imgW,
+            1,
+          );
         } else {
           // ---- TRANSITION IMAGE STATE ----
           const isMobile = p5.width < 980;
