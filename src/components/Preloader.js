@@ -12,7 +12,7 @@ export default function Preloader({ onComplete, canExit = false }) {
     t: 0,
     mode: 0,
     completedBreaths: 0,
-    isFinished: false,
+    phase: "breathing",
     hasCompleted: false,
   });
 
@@ -33,6 +33,49 @@ export default function Preloader({ onComplete, canExit = false }) {
     const progress = p % 1;
     const tri = 1 - Math.abs(2 * progress - 1);
     return easeInOutCubic(tri);
+  };
+
+  const drawTopBottomErase = (p5, progress) => {
+    const ctx = p5.drawingContext;
+    const mid = p5.height / 2;
+    const eraseSpread = progress * (p5.height * 0.7);
+    const feather = 2;
+    const topEdge = mid - eraseSpread;
+    const bottomEdge = mid + eraseSpread;
+
+    ctx.save();
+    ctx.fillStyle = `rgb(${BG_COLOR[0]}, ${BG_COLOR[1]}, ${BG_COLOR[2]})`;
+    ctx.fillRect(0, topEdge, p5.width, bottomEdge - topEdge);
+
+    const topGrad = ctx.createLinearGradient(0, topEdge - feather, 0, topEdge);
+    topGrad.addColorStop(
+      0,
+      `rgba(${BG_COLOR[0]}, ${BG_COLOR[1]}, ${BG_COLOR[2]}, 0)`,
+    );
+    topGrad.addColorStop(
+      1,
+      `rgba(${BG_COLOR[0]}, ${BG_COLOR[1]}, ${BG_COLOR[2]}, 1)`,
+    );
+    ctx.fillStyle = topGrad;
+    ctx.fillRect(0, topEdge - feather, p5.width, feather);
+
+    const bottomGrad = ctx.createLinearGradient(
+      0,
+      bottomEdge,
+      0,
+      bottomEdge + feather,
+    );
+    bottomGrad.addColorStop(
+      0,
+      `rgba(${BG_COLOR[0]}, ${BG_COLOR[1]}, ${BG_COLOR[2]}, 1)`,
+    );
+    bottomGrad.addColorStop(
+      1,
+      `rgba(${BG_COLOR[0]}, ${BG_COLOR[1]}, ${BG_COLOR[2]}, 0)`,
+    );
+    ctx.fillStyle = bottomGrad;
+    ctx.fillRect(0, bottomEdge, p5.width, feather);
+    ctx.restore();
   };
 
   const setup = (p5, canvasParentRef) => {
@@ -70,28 +113,46 @@ export default function Preloader({ onComplete, canExit = false }) {
 
     if (!pgFront || !pgBack || !pgWarp) return;
 
-    if (!animation.isFinished) {
+    if (animation.phase !== "done") {
       animation.t += (0.25 * p5.deltaTime) / 1000;
       if (animation.t >= 1) {
-        animation.t = 0;
-        animation.mode = (animation.mode + 1) % 3;
-        animation.completedBreaths++;
-        if (animation.completedBreaths >= 1) {
-          animation.isFinished = true;
+        if (animation.phase === "exit") {
+          animation.phase = "done";
+          animation.t = 1;
+        } else {
           animation.t = 0;
+          animation.mode = (animation.mode + 1) % 3;
+          animation.completedBreaths++;
+          if (canExit && animation.completedBreaths >= 1) {
+            animation.phase = "exit";
+          }
         }
       }
     }
 
-    const growth = animation.isFinished ? 0 : symmetricGrowth(animation.t);
+    const eraseStart = 0.5;
+    const inExit = animation.phase === "exit" || animation.phase === "done";
+    let growth;
+    let eraseProgress = 0;
+
+    if (inExit && animation.t >= eraseStart) {
+      growth = 1;
+      eraseProgress = easeInOutCubic(
+        p5.map(animation.t, eraseStart, 1, 0, 1, true),
+      );
+    } else {
+      growth = symmetricGrowth(animation.t);
+    }
+
     const bulgeVal = 1.12;
     const noiseAmt = 92;
     const twistVals = [2.9, 0.5, 1.1];
     const twistStart = twistVals[animation.mode];
     const twistEnd = twistVals[(animation.mode + 1) % 3];
-    const currentTwistBase = animation.isFinished
-      ? twistStart
-      : p5.lerp(twistStart, twistEnd, animation.t);
+    const currentTwistBase =
+      inExit && animation.t >= eraseStart
+        ? p5.lerp(twistStart, twistEnd, 0.5)
+        : p5.lerp(twistStart, twistEnd, animation.t);
     const twist = currentTwistBase * growth;
     const wobble = animation.t * p5.TWO_PI * 2;
 
@@ -125,7 +186,11 @@ export default function Preloader({ onComplete, canExit = false }) {
     p5.background(...BG_COLOR);
     p5.image(pgWarp, 0, 0);
 
-    if (animation.isFinished && canExit && !animation.hasCompleted) {
+    if (eraseProgress > 0) {
+      drawTopBottomErase(p5, eraseProgress);
+    }
+
+    if (animation.phase === "done" && canExit && !animation.hasCompleted) {
       animation.hasCompleted = true;
       onComplete?.();
     }
