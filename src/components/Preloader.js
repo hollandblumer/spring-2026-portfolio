@@ -38,7 +38,26 @@ export default function Preloader({ onComplete, canExit = false }) {
   const getCanvasDensity = (p5) => {
     const deviceDensity =
       typeof p5.displayDensity === "function" ? p5.displayDensity() : 1;
-    return Math.min(deviceDensity, p5.windowWidth < 980 ? 1.6 : 2);
+    return Math.min(deviceDensity, p5.windowWidth < 980 ? 1.75 : 2);
+  };
+
+  const configureGraphics = (p5) => {
+    const density = getCanvasDensity(p5);
+    p5.pixelDensity(density);
+    p5.drawingContext.imageSmoothingEnabled = true;
+
+    const pgFront = p5.createGraphics(p5.width, p5.height);
+    const pgBack = p5.createGraphics(p5.width, p5.height);
+    const pgWarp = p5.createGraphics(p5.width, p5.height);
+
+    [pgFront, pgBack, pgWarp].forEach((g) => {
+      g.pixelDensity(density);
+      g.drawingContext.imageSmoothingEnabled = true;
+    });
+
+    buffersRef.current.pgFront = pgFront;
+    buffersRef.current.pgBack = pgBack;
+    buffersRef.current.pgWarp = pgWarp;
   };
 
   const drawTopBottomErase = (p5, progress) => {
@@ -86,10 +105,7 @@ export default function Preloader({ onComplete, canExit = false }) {
 
   const setup = (p5, canvasParentRef) => {
     p5.createCanvas(p5.windowWidth, p5.windowHeight).parent(canvasParentRef);
-    p5.pixelDensity(getCanvasDensity(p5));
-    buffersRef.current.pgFront = p5.createGraphics(p5.width, p5.height);
-    buffersRef.current.pgBack = p5.createGraphics(p5.width, p5.height);
-    buffersRef.current.pgWarp = p5.createGraphics(p5.width, p5.height);
+    configureGraphics(p5);
   };
 
   const prepBuffer = (p5, g, col) => {
@@ -155,6 +171,9 @@ export default function Preloader({ onComplete, canExit = false }) {
     const bulgeVal = 1.12;
     const noiseAmt = 92;
     const twistVals = [2.9, 0.5, 1.1];
+    const isMobile = p5.width < 980;
+    const sliceStep = isMobile ? 2 : 1;
+    const sliceHeight = isMobile ? 2.2 : 1.5;
     const twistStart = twistVals[animation.mode];
     const twistEnd = twistVals[(animation.mode + 1) % 3];
     const currentTwistBase =
@@ -171,7 +190,7 @@ export default function Preloader({ onComplete, canExit = false }) {
     const mid = p5.height / 2;
     const spread = growth * p5.height * 0.4;
 
-    for (let y = 0; y < p5.height; y++) {
+    for (let y = 0; y < p5.height; y += sliceStep) {
       const angle = p5.map(y, 0, p5.height, -p5.PI, p5.PI) * twist;
       const front = Math.cos(angle) >= 0;
       const perspective = p5.lerp(1, Math.abs(p5.cos(angle)), growth);
@@ -193,11 +212,11 @@ export default function Preloader({ onComplete, canExit = false }) {
         dx,
         y,
         dw,
-        1.5,
+        sliceHeight,
         0,
         sy,
         p5.width,
-        1,
+        sliceStep,
       );
     }
 
@@ -220,10 +239,7 @@ export default function Preloader({ onComplete, canExit = false }) {
       draw={draw}
       windowResized={(p5) => {
         p5.resizeCanvas(p5.windowWidth, p5.windowHeight);
-        p5.pixelDensity(getCanvasDensity(p5));
-        buffersRef.current.pgFront = p5.createGraphics(p5.width, p5.height);
-        buffersRef.current.pgBack = p5.createGraphics(p5.width, p5.height);
-        buffersRef.current.pgWarp = p5.createGraphics(p5.width, p5.height);
+        configureGraphics(p5);
       }}
     />
   );

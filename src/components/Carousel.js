@@ -72,12 +72,26 @@ export default function Carousel({
     stateRef.current.pendingIntro = true;
   }, [canPlayActiveMedia]);
 
+  const configureGraphics = (p5) => {
+    const density = p5.windowWidth < 980 ? 1.5 : 2;
+    p5.pixelDensity(density);
+    p5.drawingContext.imageSmoothingEnabled = true;
+
+    const pgText = p5.createGraphics(p5.width, p5.height);
+    const pgWarp = p5.createGraphics(p5.width, p5.height);
+
+    [pgText, pgWarp].forEach((g) => {
+      g.pixelDensity(density);
+      g.drawingContext.imageSmoothingEnabled = true;
+    });
+
+    buffersRef.current.pgText = pgText;
+    buffersRef.current.pgWarp = pgWarp;
+  };
+
   const setup = (p5, canvasParentRef) => {
     p5.createCanvas(p5.windowWidth, p5.windowHeight).parent(canvasParentRef);
-    p5.pixelDensity(p5.windowWidth < 980 ? 1.25 : 2);
-
-    buffersRef.current.pgText = p5.createGraphics(p5.width, p5.height);
-    buffersRef.current.pgWarp = p5.createGraphics(p5.width, p5.height);
+    configureGraphics(p5);
 
     mediaRef.current = mediaItems.map((item) => {
       if (item.type === "video") {
@@ -600,9 +614,7 @@ export default function Carousel({
       }}
       windowResized={(p5) => {
         p5.resizeCanvas(p5.windowWidth, p5.windowHeight);
-        p5.pixelDensity(p5.windowWidth < 980 ? 1.25 : 2);
-        buffersRef.current.pgText = p5.createGraphics(p5.width, p5.height);
-        buffersRef.current.pgWarp = p5.createGraphics(p5.width, p5.height);
+        configureGraphics(p5);
         updateSideTargets(p5);
         stateRef.current.sideX = [...stateRef.current.targetSideX];
       }}
