@@ -12,7 +12,7 @@ export default function Preloader({ onComplete, canExit = false }) {
     t: 0,
     mode: 0,
     completedBreaths: 0,
-    phase: "breathing",
+    finished: false,
     hasCompleted: false,
   });
 
@@ -33,31 +33,6 @@ export default function Preloader({ onComplete, canExit = false }) {
     const progress = p % 1;
     const tri = 1 - Math.abs(2 * progress - 1);
     return easeInOutCubic(tri);
-  };
-
-  const getCanvasDensity = (p5) => {
-    const deviceDensity =
-      typeof p5.displayDensity === "function" ? p5.displayDensity() : 1;
-    return Math.min(deviceDensity, p5.windowWidth < 980 ? 1.75 : 2);
-  };
-
-  const configureGraphics = (p5) => {
-    const density = getCanvasDensity(p5);
-    p5.pixelDensity(density);
-    p5.drawingContext.imageSmoothingEnabled = true;
-
-    const pgFront = p5.createGraphics(p5.width, p5.height);
-    const pgBack = p5.createGraphics(p5.width, p5.height);
-    const pgWarp = p5.createGraphics(p5.width, p5.height);
-
-    [pgFront, pgBack, pgWarp].forEach((g) => {
-      g.pixelDensity(density);
-      g.drawingContext.imageSmoothingEnabled = true;
-    });
-
-    buffersRef.current.pgFront = pgFront;
-    buffersRef.current.pgBack = pgBack;
-    buffersRef.current.pgWarp = pgWarp;
   };
 
   const drawTopBottomErase = (p5, progress) => {
@@ -105,7 +80,12 @@ export default function Preloader({ onComplete, canExit = false }) {
 
   const setup = (p5, canvasParentRef) => {
     p5.createCanvas(p5.windowWidth, p5.windowHeight).parent(canvasParentRef);
-    configureGraphics(p5);
+    p5.pixelDensity(
+      typeof p5.displayDensity === "function" ? p5.displayDensity() : 1,
+    );
+    buffersRef.current.pgFront = p5.createGraphics(p5.width, p5.height);
+    buffersRef.current.pgBack = p5.createGraphics(p5.width, p5.height);
+    buffersRef.current.pgWarp = p5.createGraphics(p5.width, p5.height);
   };
 
   const prepBuffer = (p5, g, col) => {
@@ -135,31 +115,27 @@ export default function Preloader({ onComplete, canExit = false }) {
 
     if (!pgFront || !pgBack || !pgWarp) return;
 
-    const phaseSpeed = animation.phase === "exit" ? 0.3 : 0.25;
+    const speed = 0.25;
 
-    if (animation.phase !== "done") {
-      animation.t += (phaseSpeed * p5.deltaTime) / 1000;
+    if (!animation.finished) {
+      animation.t += (speed * p5.deltaTime) / 1000;
       if (animation.t >= 1) {
-        if (animation.phase === "exit") {
-          animation.phase = "done";
+        animation.t = 0;
+        animation.mode = (animation.mode + 1) % 3;
+        animation.completedBreaths++;
+        if (animation.completedBreaths >= 2) {
+          animation.finished = true;
           animation.t = 1;
-        } else {
-          animation.t = 0;
-          animation.mode = (animation.mode + 1) % 3;
-          animation.completedBreaths++;
-          if (canExit && animation.completedBreaths >= 1) {
-            animation.phase = "exit";
-          }
         }
       }
     }
 
+    const inSecondBreath = animation.completedBreaths === 1 || animation.finished;
     const eraseStart = 0.5;
-    const inExitBreath = animation.phase === "exit" || animation.phase === "done";
     let growth;
     let eraseProgress = 0;
 
-    if (inExitBreath && animation.t >= eraseStart) {
+    if (inSecondBreath && animation.t >= eraseStart) {
       growth = 1;
       eraseProgress = easeInOutCubic(
         p5.map(animation.t, eraseStart, 1, 0, 1, true),
@@ -171,13 +147,12 @@ export default function Preloader({ onComplete, canExit = false }) {
     const bulgeVal = 1.12;
     const noiseAmt = 92;
     const twistVals = [2.9, 0.5, 1.1];
-    const isMobile = p5.width < 980;
-    const sliceStep = isMobile ? 2 : 1;
-    const sliceHeight = isMobile ? 2.2 : 1.5;
+    const sliceStep = 1;
+    const sliceHeight = 1.5;
     const twistStart = twistVals[animation.mode];
     const twistEnd = twistVals[(animation.mode + 1) % 3];
     const currentTwistBase =
-      inExitBreath && animation.t >= eraseStart
+      inSecondBreath && animation.t >= eraseStart
         ? p5.lerp(twistStart, twistEnd, 0.5)
         : p5.lerp(twistStart, twistEnd, animation.t);
     const twist = currentTwistBase * growth;
@@ -227,7 +202,7 @@ export default function Preloader({ onComplete, canExit = false }) {
       drawTopBottomErase(p5, eraseProgress);
     }
 
-    if (animation.phase === "done" && canExit && !animation.hasCompleted) {
+    if (animation.finished && canExit && !animation.hasCompleted) {
       animation.hasCompleted = true;
       onComplete?.();
     }
@@ -239,7 +214,9 @@ export default function Preloader({ onComplete, canExit = false }) {
       draw={draw}
       windowResized={(p5) => {
         p5.resizeCanvas(p5.windowWidth, p5.windowHeight);
-        configureGraphics(p5);
+        buffersRef.current.pgFront = p5.createGraphics(p5.width, p5.height);
+        buffersRef.current.pgBack = p5.createGraphics(p5.width, p5.height);
+        buffersRef.current.pgWarp = p5.createGraphics(p5.width, p5.height);
       }}
     />
   );
