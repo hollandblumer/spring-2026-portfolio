@@ -266,10 +266,8 @@ export default function Home() {
 
   if (!mounted) return null;
 
-  const assetsReady =
-    images.length === PROJECTS.filter((item) => item.type === "image").length &&
-    p5Ready;
-  const showPreloader = !preloaderAnimationDone || !assetsReady;
+  const assetsReady = p5Ready;
+  const showPreloader = !preloaderAnimationDone;
   const activeProject = PROJECTS[activeIndex];
   const isProjectExpanded = activeProject && expandedProjectId === activeProject.id;
 
@@ -296,7 +294,7 @@ export default function Home() {
       className="w-screen h-screen overflow-hidden relative"
       style={{ background: "#E33003", cursor: !showPreloader ? OLIVE_CURSOR : "auto" }}
     >
-      {assetsReady && (
+      {p5Ready && (
         <div className="animate-in fade-in duration-500">
           <Carousel
             mediaItems={PROJECTS}
@@ -605,7 +603,7 @@ export default function Home() {
       {showPreloader && (
         <div className="absolute inset-0 z-10">
           <Preloader
-            canExit={assetsReady}
+            canExit
             onComplete={() => setPreloaderAnimationDone(true)}
           />
         </div>
