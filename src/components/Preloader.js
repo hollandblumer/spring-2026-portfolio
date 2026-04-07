@@ -38,7 +38,7 @@ export default function Preloader({ onComplete, canExit = false }) {
   const getCanvasDensity = (p5) => {
     const deviceDensity =
       typeof p5.displayDensity === "function" ? p5.displayDensity() : 1;
-    return Math.min(deviceDensity, p5.windowWidth < 980 ? 1.25 : 2);
+    return Math.min(deviceDensity, p5.windowWidth < 980 ? 1 : 2);
   };
 
   const configureGraphics = (p5) => {
