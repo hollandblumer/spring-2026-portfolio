@@ -40,8 +40,8 @@ export default function IkatText() {
   const [fadeEdge, setFadeEdge] = useState(L2_FADE_EDGE);
 
   // Step 3 dropdowns
-  const [textSettingsOpen, setTextSettingsOpen] = useState(true);
-  const [lookSettingsOpen, setLookSettingsOpen] = useState(true);
+  const [textSettingsOpen, setTextSettingsOpen] = useState(false);
+  const [lookSettingsOpen, setLookSettingsOpen] = useState(false);
 
   // Capture / record controls (below preview)
   const [recordDurationSec, setRecordDurationSec] = useState(7);
@@ -305,11 +305,16 @@ export default function IkatText() {
   return (
     <section className="ikat-text-effect-wrapper">
       <div className="ikat-controls">
-        {/* STEP 1: SELECT LOOK */}
-        <div className="ikat-step ikat-step-1">
-          <h1 className="ikat-step-title">
-            Step 1: Select which look you want
-          </h1>
+        <div className="template-controls-title">
+          <span className="template-controls-title__top">Ikat Effect</span>
+          <span className="template-controls-title__bottom">Ikat Effect</span>
+        </div>
+
+        <details className="ikat-step ikat-step-1">
+          <summary className="ikat-step-title">Look</summary>
+          <p className="template-panel-description">
+            Build a woven text treatment, tune the motion, and export the final look.
+          </p>
 
           <div className="ikat-row ikat-look-row">
             {/* LOOK 1 */}
@@ -364,14 +369,13 @@ export default function IkatText() {
               </div>
             </button>
           </div>
-        </div>
+        </details>
 
-        {/* STEP 2: TEXT */}
-        <div className="ikat-step ikat-step-2">
-          <h1 className="ikat-step-title">Step 2: Add your text </h1>
+        <details className="ikat-step ikat-step-2">
+          <summary className="ikat-step-title">Text</summary>
           <div className="ikat-row">
             <label className="ikat-control ikat-control-wide">
-              <span className="ikat-label">Text (Enter adds a new line)</span>
+              <span className="ikat-label">Text</span>
               <textarea
                 rows={3}
                 value={inputText}
@@ -379,15 +383,15 @@ export default function IkatText() {
               />
             </label>
           </div>
-        </div>
+        </details>
 
-        {/* STEP 3: SETTINGS */}
-        <div className="ikat-step ikat-step-3">
-          <h1 className="ikat-step-title">Step 3: Edit letter settings</h1>
+        <details className="ikat-step ikat-step-3">
+          <summary className="ikat-step-title">Animation</summary>
 
           <button
             type="button"
             className="ikat-step-title ikat-step-title--dropdown"
+            aria-expanded={textSettingsOpen}
             onClick={() => setTextSettingsOpen((o) => !o)}
           >
             <span
@@ -399,7 +403,7 @@ export default function IkatText() {
               ▾
             </span>
             <span className="ikat-dropdown-title">
-              Text size + letter spacing
+              Text spacing
             </span>
           </button>
 
@@ -465,6 +469,7 @@ export default function IkatText() {
           <button
             type="button"
             className="ikat-step-title ikat-step-title--dropdown"
+            aria-expanded={lookSettingsOpen}
             onClick={() => setLookSettingsOpen((o) => !o)}
           >
             <span
@@ -497,7 +502,7 @@ export default function IkatText() {
 
                   <label className="ikat-control">
                     <div className="ikat-label-row">
-                      <span className="ikat-label">Breath period (ms)</span>
+                      <span className="ikat-label">Breath speed</span>
                       <span className="ikat-value">{breathPeriodMs}</span>
                     </div>
                     <input
@@ -516,7 +521,7 @@ export default function IkatText() {
                 <div className="ikat-row">
                   <label className="ikat-control">
                     <div className="ikat-label-row">
-                      <span className="ikat-label">Edge fade factor</span>
+                      <span className="ikat-label">Edge fade</span>
                       <span className="ikat-value">{fadeEdge.toFixed(2)}</span>
                     </div>
                     <input
@@ -532,11 +537,10 @@ export default function IkatText() {
               )}
             </div>
           )}
-        </div>
+        </details>
 
-        {/* STEP 4: COLOR */}
-        <div className="ikat-step ikat-step-4 ikat-step--highlight">
-          <h1 className="ikat-step-title">Step 4: Pick a color</h1>
+        <details className="ikat-step ikat-step-4 ikat-step--highlight">
+          <summary className="ikat-step-title">Color</summary>
           <div className="ikat-row">
             <label className="ikat-control">
               <span className="ikat-label">Main color</span>
@@ -551,49 +555,17 @@ export default function IkatText() {
               />
             </label>
           </div>
-        </div>
+        </details>
 
-        <div className="ikat-row ikat-reset-row">
-          <button
-            className="ikat-reset-button"
-            type="button"
-            onClick={handleReset}
-          >
-            Reset all settings
-          </button>
-        </div>
-      </div>
-
-      {/* MAIN DISPLAY */}
-      <div className="ikat-display-area" ref={displayRef}>
-        <div className="ikat-multiline">
-          {lines.map((line, idx) => {
-            const isLast = idx === lines.length - 1;
-
-            const gap = isLast ? 0 : Math.max(0, lineSpacingPx - autoOverlapPx);
-
-            return (
-              <div
-                className="ikat-line"
-                key={idx}
-                ref={(el) => (lineWrapRefs.current[idx] = el)}
-                style={{ marginBottom: gap }}
-              >
-                {renderLine(line, idx)}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Controls BELOW the preview */}
-        <div className="ikat-preview-tools">
+        <details className="ikat-step ikat-step-5">
+          <summary className="ikat-step-title template-caret-title">Export</summary>
           <div className="ikat-row">
             <button
               type="button"
               className="ikat-action-button"
               onClick={capturePNG}
             >
-              Capture image
+              Save image
             </button>
 
             <button
@@ -621,7 +593,36 @@ export default function IkatText() {
                 }
               />
             </label>
+
+            <button
+              className="ikat-reset-button"
+              type="button"
+              onClick={handleReset}
+            >
+              Reset
+            </button>
           </div>
+        </details>
+      </div>
+
+      <div className="ikat-display-area" ref={displayRef}>
+        <div className="ikat-multiline">
+          {lines.map((line, idx) => {
+            const isLast = idx === lines.length - 1;
+
+            const gap = isLast ? 0 : Math.max(0, lineSpacingPx - autoOverlapPx);
+
+            return (
+              <div
+                className="ikat-line"
+                key={idx}
+                ref={(el) => (lineWrapRefs.current[idx] = el)}
+                style={{ marginBottom: gap }}
+              >
+                {renderLine(line, idx)}
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>

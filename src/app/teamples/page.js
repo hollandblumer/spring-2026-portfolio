@@ -4,6 +4,7 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 import { Bricolage_Grotesque } from "next/font/google";
 import ElasticMenu from "../../components/ElasticMenu";
+import Preloader from "../../components/Preloader";
 import SmearEffect from "../../components/templates/SmearEffect";
 import TemplatesHeader from "../../components/templates/TemplatesHeader";
 
@@ -12,6 +13,7 @@ const LINKEDIN_URL = "https://linkedin.com/in/hollandblumer";
 const CODEPEN_URL = "https://codepen.io/hollandblumer";
 
 const FILTERS = [
+  { key: "contour-lines", label: "contour lines" },
   { key: "smear-effect", label: "smear effect" },
   { key: "ikat-text", label: "ikat text" },
 ];
@@ -24,6 +26,18 @@ const IkatText = dynamic(() => import("../../components/templates/IkatText"), {
     </div>
   ),
 });
+
+const ContourLines = dynamic(
+  () => import("../../components/templates/ContourLines"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="rounded-[26px] border border-[rgba(112,82,8,0.14)] bg-[rgba(255,255,255,0.3)] px-6 py-16 text-center text-[rgba(112,82,8,0.8)] backdrop-blur-[8px]">
+        Loading contour lines...
+      </div>
+    ),
+  },
+);
 
 const bricolage = Bricolage_Grotesque({
   subsets: ["latin"],
@@ -77,7 +91,8 @@ function CodePenIcon(props) {
 
 export default function TemplatesPage() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [activeFilter, setActiveFilter] = useState("smear-effect");
+  const [preloaderDone, setPreloaderDone] = useState(false);
+  const [activeFilter, setActiveFilter] = useState("contour-lines");
 
   return (
     <main className="teamples-page">
@@ -198,11 +213,19 @@ export default function TemplatesPage() {
         <div className="teamples-content">
           {activeFilter === "smear-effect" ? (
             <SmearEffect imageUrl="https://assets.codepen.io/9259849/Screenshot%202025-11-26%20at%202.51.05%E2%80%AFPM.png" />
-          ) : (
+          ) : activeFilter === "ikat-text" ? (
             <IkatText />
+          ) : (
+            <ContourLines />
           )}
         </div>
       </div>
+
+      {!preloaderDone && (
+        <div className="fixed inset-0 z-[2000]">
+          <Preloader canExit onComplete={() => setPreloaderDone(true)} />
+        </div>
+      )}
     </main>
   );
 }

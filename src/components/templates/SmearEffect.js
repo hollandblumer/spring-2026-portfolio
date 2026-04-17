@@ -375,10 +375,16 @@ export default function SmearEffect({ imageUrl }) {
   return (
     <section className="smear-wrapper">
       <div className="smear-controls-column">
-        <div className="smear-step smear-step-1">
-          <h2 className="smear-step-title">
-            Step 1: Choose an image and set the size
-          </h2>
+        <div className="template-controls-title">
+          <span className="template-controls-title__top">Smear Effect</span>
+          <span className="template-controls-title__bottom">Smear Effect</span>
+        </div>
+
+        <details className="smear-step smear-step-1">
+          <summary className="smear-step-title">Image</summary>
+          <p className="template-panel-description">
+            Upload an image, shape the motion, and export a warped loop or still.
+          </p>
 
           <div className="smear-row">
             <label className="smear-control smear-control-inline">
@@ -394,7 +400,7 @@ export default function SmearEffect({ imageUrl }) {
                   </button>
                   {activeInfo === "upload" && (
                     <div className="smear-info-tooltip">
-                      Pick your own image instead of the default one.
+                      Use your own image instead of the default.
                     </div>
                   )}
                 </span>
@@ -415,7 +421,7 @@ export default function SmearEffect({ imageUrl }) {
                   </button>
                   {activeInfo === "imageScale" && (
                     <div className="smear-info-tooltip">
-                      Zoom the whole image in or out.
+                      Zoom the full image in or out.
                     </div>
                   )}
                 </span>
@@ -431,306 +437,303 @@ export default function SmearEffect({ imageUrl }) {
               />
             </label>
           </div>
-        </div>
+        </details>
 
         <div className="smear-step smear-step-2">
-          <h2 className="smear-step-title">Step 2: Edit smear settings</h2>
+          <details className="smear-style-details">
+            <summary className="smear-step-title template-caret-title">Style</summary>
+            <div className="smear-row smear-row-bottom">
+              <details className="smear-group">
+                <summary className="smear-group-title">Smear motion</summary>
 
-          <details className="smear-group">
-            <summary className="smear-group-title">
-              Smear style (wiggles & wobble)
-            </summary>
+                <div className="smear-row smear-row-spaced">
+                  <label className="smear-control">
+                    <div className="smear-label-row">
+                      <span className="smear-info-wrap">
+                        <span className="smear-label">Smear scale</span>
+                        <button
+                          type="button"
+                          className="smear-info-icon"
+                          onClick={() => toggleInfo("smearScale")}
+                        >
+                          i
+                        </button>
+                        {activeInfo === "smearScale" && (
+                          <div className="smear-info-tooltip">
+                            Overall smear strength.
+                          </div>
+                        )}
+                      </span>
+                      <span className="smear-value">{smearScale.toFixed(2)}</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="3"
+                      step="0.1"
+                      value={smearScale}
+                      onChange={(e) => setSmearScale(parseFloat(e.target.value))}
+                    />
+                  </label>
 
-            <div className="smear-row smear-row-spaced">
-              <label className="smear-control">
-                <div className="smear-label-row">
-                  <span className="smear-info-wrap">
-                    <span className="smear-label">Smear scale</span>
-                    <button
-                      type="button"
-                      className="smear-info-icon"
-                      onClick={() => toggleInfo("smearScale")}
-                    >
-                      i
-                    </button>
-                    {activeInfo === "smearScale" && (
-                      <div className="smear-info-tooltip">
-                        Overall strength of the smear warp.
-                      </div>
-                    )}
-                  </span>
-                  <span className="smear-value">{smearScale.toFixed(2)}</span>
+                  <label className="smear-control">
+                    <div className="smear-label-row">
+                      <span className="smear-info-wrap">
+                        <span className="smear-label">Base wave</span>
+                        <button
+                          type="button"
+                          className="smear-info-icon"
+                          onClick={() => toggleInfo("baseWave")}
+                        >
+                          i
+                        </button>
+                        {activeInfo === "baseWave" && (
+                          <div className="smear-info-tooltip">
+                            Large, slow side-to-side wobble.
+                          </div>
+                        )}
+                      </span>
+                      <span className="smear-value">{baseWaveAmp.toFixed(0)}</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="150"
+                      step="1"
+                      value={baseWaveAmp}
+                      onChange={(e) => setBaseWaveAmp(parseFloat(e.target.value))}
+                    />
+                  </label>
+
+                  <label className="smear-control">
+                    <div className="smear-label-row">
+                      <span className="smear-info-wrap">
+                        <span className="smear-label">Fine wave</span>
+                        <button
+                          type="button"
+                          className="smear-info-icon"
+                          onClick={() => toggleInfo("fineWave")}
+                        >
+                          i
+                        </button>
+                        {activeInfo === "fineWave" && (
+                          <div className="smear-info-tooltip">
+                            Smaller inner movement.
+                          </div>
+                        )}
+                      </span>
+                      <span className="smear-value">{fineWaveAmp.toFixed(0)}</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="60"
+                      step="1"
+                      value={fineWaveAmp}
+                      onChange={(e) => setFineWaveAmp(parseFloat(e.target.value))}
+                    />
+                  </label>
+
+                  <label className="smear-control">
+                    <div className="smear-label-row">
+                      <span className="smear-info-wrap">
+                        <span className="smear-label">freqX</span>
+                        <button
+                          type="button"
+                          className="smear-info-icon"
+                          onClick={() => toggleInfo("freqX")}
+                        >
+                          i
+                        </button>
+                        {activeInfo === "freqX" && (
+                          <div className="smear-info-tooltip">
+                            Horizontal frequency.
+                          </div>
+                        )}
+                      </span>
+                      <span className="smear-value">{freqX.toFixed(3)}</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="0.2"
+                      step="0.005"
+                      value={freqX}
+                      onChange={(e) => setFreqX(parseFloat(e.target.value))}
+                    />
+                  </label>
+
+                  <label className="smear-control">
+                    <div className="smear-label-row">
+                      <span className="smear-info-wrap">
+                        <span className="smear-label">freqY</span>
+                        <button
+                          type="button"
+                          className="smear-info-icon"
+                          onClick={() => toggleInfo("freqY")}
+                        >
+                          i
+                        </button>
+                        {activeInfo === "freqY" && (
+                          <div className="smear-info-tooltip">
+                            Vertical frequency.
+                          </div>
+                        )}
+                      </span>
+                      <span className="smear-value">{freqY.toFixed(3)}</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="0.5"
+                      step="0.01"
+                      value={freqY}
+                      onChange={(e) => setFreqY(parseFloat(e.target.value))}
+                    />
+                  </label>
                 </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="3"
-                  step="0.1"
-                  value={smearScale}
-                  onChange={(e) => setSmearScale(parseFloat(e.target.value))}
-                />
-              </label>
+              </details>
 
-              <label className="smear-control">
-                <div className="smear-label-row">
-                  <span className="smear-info-wrap">
-                    <span className="smear-label">Base wave</span>
-                    <button
-                      type="button"
-                      className="smear-info-icon"
-                      onClick={() => toggleInfo("baseWave")}
-                    >
-                      i
-                    </button>
-                    {activeInfo === "baseWave" && (
-                      <div className="smear-info-tooltip">
-                        Big, slow side-to-side wobble.
-                      </div>
-                    )}
-                  </span>
-                  <span className="smear-value">{baseWaveAmp.toFixed(0)}</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="150"
-                  step="1"
-                  value={baseWaveAmp}
-                  onChange={(e) => setBaseWaveAmp(parseFloat(e.target.value))}
-                />
-              </label>
+              <details className="smear-group">
+                <summary className="smear-group-title">Animation</summary>
 
-              <label className="smear-control">
-                <div className="smear-label-row">
-                  <span className="smear-info-wrap">
-                    <span className="smear-label">Fine wave</span>
-                    <button
-                      type="button"
-                      className="smear-info-icon"
-                      onClick={() => toggleInfo("fineWave")}
+                <div className="smear-row">
+                  <label className="smear-control smear-control-inline">
+                    <div className="smear-label-row">
+                      <span className="smear-info-wrap">
+                        <span className="smear-label">Direction</span>
+                        <button
+                          type="button"
+                          className="smear-info-icon"
+                          onClick={() => toggleInfo("direction")}
+                        >
+                          i
+                        </button>
+                        {activeInfo === "direction" && (
+                          <div className="smear-info-tooltip">
+                            Set upward or downward motion.
+                          </div>
+                        )}
+                      </span>
+                    </div>
+                    <select
+                      className="smear-select"
+                      value={direction}
+                      onChange={(e) => setDirection(e.target.value)}
                     >
-                      i
-                    </button>
-                    {activeInfo === "fineWave" && (
-                      <div className="smear-info-tooltip">
-                        Smaller detailed wiggles inside the smear.
-                      </div>
-                    )}
-                  </span>
-                  <span className="smear-value">{fineWaveAmp.toFixed(0)}</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="60"
-                  step="1"
-                  value={fineWaveAmp}
-                  onChange={(e) => setFineWaveAmp(parseFloat(e.target.value))}
-                />
-              </label>
+                      <option value="up">Up</option>
+                      <option value="down">Down</option>
+                    </select>
+                  </label>
 
-              <label className="smear-control">
-                <div className="smear-label-row">
-                  <span className="smear-info-wrap">
-                    <span className="smear-label">freqX</span>
-                    <button
-                      type="button"
-                      className="smear-info-icon"
-                      onClick={() => toggleInfo("freqX")}
-                    >
-                      i
-                    </button>
-                    {activeInfo === "freqX" && (
-                      <div className="smear-info-tooltip">
-                        How tight the wiggles are left-to-right.
-                      </div>
-                    )}
-                  </span>
-                  <span className="smear-value">{freqX.toFixed(3)}</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="0.2"
-                  step="0.005"
-                  value={freqX}
-                  onChange={(e) => setFreqX(parseFloat(e.target.value))}
-                />
-              </label>
+                  <label className="smear-control">
+                    <div className="smear-label-row">
+                      <span className="smear-info-wrap">
+                        <span className="smear-label">Start %</span>
+                        <button
+                          type="button"
+                          className="smear-info-icon"
+                          onClick={() => toggleInfo("startPercent")}
+                        >
+                          i
+                        </button>
+                        {activeInfo === "startPercent" && (
+                          <div className="smear-info-tooltip">
+                            Where the band starts.
+                          </div>
+                        )}
+                      </span>
+                      <span className="smear-value">
+                        {startPercent.toFixed(0)}%
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="1"
+                      value={startPercent}
+                      onChange={(e) => setStartPercent(parseFloat(e.target.value))}
+                    />
+                  </label>
 
-              <label className="smear-control">
-                <div className="smear-label-row">
-                  <span className="smear-info-wrap">
-                    <span className="smear-label">freqY</span>
-                    <button
-                      type="button"
-                      className="smear-info-icon"
-                      onClick={() => toggleInfo("freqY")}
-                    >
-                      i
-                    </button>
-                    {activeInfo === "freqY" && (
-                      <div className="smear-info-tooltip">
-                        How tight the waves are top-to-bottom.
-                      </div>
-                    )}
-                  </span>
-                  <span className="smear-value">{freqY.toFixed(3)}</span>
+                  <label className="smear-control">
+                    <div className="smear-label-row">
+                      <span className="smear-info-wrap">
+                        <span className="smear-label">End %</span>
+                        <button
+                          type="button"
+                          className="smear-info-icon"
+                          onClick={() => toggleInfo("endPercent")}
+                        >
+                          i
+                        </button>
+                        {activeInfo === "endPercent" && (
+                          <div className="smear-info-tooltip">
+                            Where the band ends.
+                          </div>
+                        )}
+                      </span>
+                      <span className="smear-value">{endPercent.toFixed(0)}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="1"
+                      value={endPercent}
+                      onChange={(e) => setEndPercent(parseFloat(e.target.value))}
+                    />
+                  </label>
+
+                  <label className="smear-control">
+                    <div className="smear-label-row">
+                      <span className="smear-info-wrap">
+                        <span className="smear-label">Travel time</span>
+                        <button
+                          type="button"
+                          className="smear-info-icon"
+                          onClick={() => toggleInfo("duration")}
+                        >
+                          i
+                        </button>
+                        {activeInfo === "duration" && (
+                          <div className="smear-info-tooltip">
+                            How long the motion lasts.
+                          </div>
+                        )}
+                      </span>
+                      <span className="smear-value">
+                        {(duration / 1000).toFixed(1)}s
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="2"
+                      max="30"
+                      step="1"
+                      value={duration / 1000}
+                      onChange={(e) =>
+                        setDuration(parseFloat(e.target.value) * 1000)
+                      }
+                    />
+                  </label>
                 </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="0.5"
-                  step="0.01"
-                  value={freqY}
-                  onChange={(e) => setFreqY(parseFloat(e.target.value))}
-                />
-              </label>
+              </details>
+
+              <button
+                type="button"
+                className="smear-reset-button"
+                onClick={handleReset}
+              >
+                Reset
+              </button>
             </div>
           </details>
-
-          <details className="smear-group">
-            <summary className="smear-group-title">
-              Smear span & flow direction
-            </summary>
-
-            <div className="smear-row">
-              <label className="smear-control smear-control-inline">
-                <div className="smear-label-row">
-                  <span className="smear-info-wrap">
-                    <span className="smear-label">Direction</span>
-                    <button
-                      type="button"
-                      className="smear-info-icon"
-                      onClick={() => toggleInfo("direction")}
-                    >
-                      i
-                    </button>
-                    {activeInfo === "direction" && (
-                      <div className="smear-info-tooltip">
-                        Choose if the smear moves up or down.
-                      </div>
-                    )}
-                  </span>
-                </div>
-                <select
-                  className="smear-select"
-                  value={direction}
-                  onChange={(e) => setDirection(e.target.value)}
-                >
-                  <option value="up">Up</option>
-                  <option value="down">Down</option>
-                </select>
-              </label>
-
-              <label className="smear-control">
-                <div className="smear-label-row">
-                  <span className="smear-info-wrap">
-                    <span className="smear-label">Start %</span>
-                    <button
-                      type="button"
-                      className="smear-info-icon"
-                      onClick={() => toggleInfo("startPercent")}
-                    >
-                      i
-                    </button>
-                    {activeInfo === "startPercent" && (
-                      <div className="smear-info-tooltip">
-                        Where the smear band begins (0% top, 100% bottom).
-                      </div>
-                    )}
-                  </span>
-                  <span className="smear-value">
-                    {startPercent.toFixed(0)}%
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="1"
-                  value={startPercent}
-                  onChange={(e) => setStartPercent(parseFloat(e.target.value))}
-                />
-              </label>
-
-              <label className="smear-control">
-                <div className="smear-label-row">
-                  <span className="smear-info-wrap">
-                    <span className="smear-label">End %</span>
-                    <button
-                      type="button"
-                      className="smear-info-icon"
-                      onClick={() => toggleInfo("endPercent")}
-                    >
-                      i
-                    </button>
-                    {activeInfo === "endPercent" && (
-                      <div className="smear-info-tooltip">
-                        Where the smear band ends over time.
-                      </div>
-                    )}
-                  </span>
-                  <span className="smear-value">{endPercent.toFixed(0)}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="1"
-                  value={endPercent}
-                  onChange={(e) => setEndPercent(parseFloat(e.target.value))}
-                />
-              </label>
-
-              <label className="smear-control">
-                <div className="smear-label-row">
-                  <span className="smear-info-wrap">
-                    <span className="smear-label">Travel time</span>
-                    <button
-                      type="button"
-                      className="smear-info-icon"
-                      onClick={() => toggleInfo("duration")}
-                    >
-                      i
-                    </button>
-                    {activeInfo === "duration" && (
-                      <div className="smear-info-tooltip">
-                        How long the smear takes to move from start to end.
-                      </div>
-                    )}
-                  </span>
-                  <span className="smear-value">
-                    {(duration / 1000).toFixed(1)}s
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min="2"
-                  max="30"
-                  step="1"
-                  value={duration / 1000}
-                  onChange={(e) =>
-                    setDuration(parseFloat(e.target.value) * 1000)
-                  }
-                />
-              </label>
-            </div>
-          </details>
-
-          <div className="smear-row smear-row-bottom">
-            <button
-              type="button"
-              className="smear-reset-button"
-              onClick={handleReset}
-            >
-              Reset all settings
-            </button>
-          </div>
         </div>
 
-        <div className="smear-step smear-step-3">
-          <h2 className="smear-step-title">Step 3: Save your work</h2>
+        <details className="smear-step smear-step-3">
+          <summary className="smear-step-title template-caret-title">Export</summary>
 
           <div className="smear-export-controls">
             <button
@@ -738,7 +741,7 @@ export default function SmearEffect({ imageUrl }) {
               className="smear-export-button"
               onClick={handleCaptureFrame}
             >
-              Save frame as image
+              Save image
             </button>
 
             <div className="smear-record-row">
@@ -748,7 +751,7 @@ export default function SmearEffect({ imageUrl }) {
                 onClick={handleRecordFromStart}
                 disabled={isRecording}
               >
-                {isRecording ? `Recording ${recordSeconds}s…` : "Record Video"}
+                {isRecording ? `Recording ${recordSeconds}s…` : "Record video"}
               </button>
 
               <label className="smear-record-duration">
@@ -770,7 +773,7 @@ export default function SmearEffect({ imageUrl }) {
               </label>
             </div>
           </div>
-        </div>
+        </details>
       </div>
 
       <div className="smear-canvas-wrapper">
