@@ -17,7 +17,7 @@ export function PosterCallouts({
   if (calloutElements.length === 0) return null;
 
   return (
-    <div className="poster-callouts pointer-events-none absolute inset-0 z-20 hidden xl:block">
+    <div className="poster-callouts pointer-events-none absolute inset-0 z-20 block">
       {calloutElements.map((element) => {
         const isSelected = selectedElement.id === element.id;
         const side = "right";
@@ -34,7 +34,7 @@ export function PosterCallouts({
         return (
           <React.Fragment key={element.id}>
             <svg
-              className="absolute overflow-visible"
+              className="absolute hidden overflow-visible xl:block"
               style={
                 side === "right"
                   ? {
@@ -83,7 +83,7 @@ export function PosterCallouts({
               />
             </svg>
             <button
-              className={`pointer-events-auto absolute h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#f0f2f3] bg-[#f7f8f8] shadow-[0_0_10px_rgba(233,238,244,0.34)] transition-opacity duration-200 ${
+              className={`pointer-events-auto absolute flex h-7 w-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-[#f0f2f3] bg-[#f7f8f8] font-mono text-[13px] font-semibold leading-none text-[#1b1d23] shadow-[0_0_10px_rgba(233,238,244,0.34)] transition-opacity duration-200 ${
                 isSelected ? "opacity-100" : "opacity-85 hover:opacity-100"
               }`}
               style={{ left: element.x, top: element.y }}
@@ -92,9 +92,11 @@ export function PosterCallouts({
                 onSelect(element);
               }}
               aria-label={`Select ${element.label}`}
-            />
+            >
+              {number}
+            </button>
             <button
-              className={`pointer-events-auto absolute left-[calc(100%+78px)] -translate-y-1/2 bg-transparent text-left font-mono text-[18px] font-semibold uppercase leading-none text-[#f6f7fd] transition-opacity duration-200 ${
+              className={`pointer-events-auto absolute left-[calc(100%+78px)] hidden -translate-y-1/2 bg-transparent text-left font-mono text-[18px] font-semibold uppercase leading-none text-[#f6f7fd] transition-opacity duration-200 xl:block ${
                 isSelected ? "opacity-100" : "opacity-68 hover:opacity-100"
               }`}
               style={{ top: calloutTop }}
