@@ -146,6 +146,12 @@ export default function Carousel({
     const imgH = imgW * 1.3;
     const topBound = p5.height / 2 - imgH / 2;
     const bottomBound = p5.height / 2 + imgH / 2;
+    const getDisplayWidth = (item, scale = 1, isFocused = false) => {
+      const multiplier = item?.displayWidthMultiplier || 1;
+      const sideMultiplier = multiplier > 1 ? 1 + (multiplier - 1) * 0.45 : 1;
+      return imgW * (isFocused ? multiplier : sideMultiplier) * scale;
+    };
+    const getDisplayHeight = (item, scale = 1) => imgH * scale;
 
     let leftIdx = (state.currentIdx - 1 + media.length) % media.length;
     let rightIdx = (state.currentIdx + 1) % media.length;
@@ -190,8 +196,9 @@ export default function Carousel({
                 ? p5.map(p5.width, 1000, 1800, 0.96, 1.08, true)
                 : 1;
             const baseSideScale = isMobile ? 0.62 : 0.7;
-            let finalW = imgW * baseSideScale * sideBoost;
-            let finalH = imgH * baseSideScale * sideBoost;
+            const sideImg = media[displayIndices[i]];
+            let finalW = getDisplayWidth(sideImg, baseSideScale * sideBoost);
+            let finalH = getDisplayHeight(sideImg, baseSideScale * sideBoost);
             let dx = state.sideX[i] - finalW / 2;
             let sideTop = p5.height / 2 - finalH / 2;
             let sideBottom = p5.height / 2 + finalH / 2;
@@ -200,7 +207,6 @@ export default function Carousel({
               continue;
             }
 
-            const sideImg = media[displayIndices[i]];
             const sideAsset = getRenderableAsset(sideImg, false);
             const imgSy = p5.map(
               y,
@@ -226,13 +232,15 @@ export default function Carousel({
           const centerAsset = getRenderableAsset(centerImg, true);
           const centerHeight =
             getRenderableAssetHeight(centerImg, centerAsset) || imgH;
-          const cx = p5.width / 2 - imgW / 2;
+          const centerW = getDisplayWidth(centerImg, 1, true);
+          const centerH = getDisplayHeight(centerImg);
+          const cx = p5.width / 2 - centerW / 2;
           const cImgSy = p5.map(y, topBound, bottomBound, 0, centerHeight);
           pgWarp.image(
             centerAsset,
             cx,
             y,
-            imgW,
+            centerW,
             1,
             0,
             cImgSy,
@@ -247,29 +255,34 @@ export default function Carousel({
               ? p5.map(p5.width, 1000, 1800, 0.96, 1.08, true)
               : 1;
           const baseSideScale = isMobile ? 0.62 : 0.7;
-          const sideW = imgW * baseSideScale * transitionSideBoost;
-          const sideH = imgH * baseSideScale * transitionSideBoost;
+          const sideScale = baseSideScale * transitionSideBoost;
+          const inImg = media[transition.incomingIdx];
+          const outImg = media[transition.outgoingIdx];
+          const sideW = getDisplayWidth(outImg, sideScale);
+          const sideH = getDisplayHeight(outImg, sideScale);
           const sideTop = p5.height / 2 - sideH / 2;
           const sideBottom = p5.height / 2 + sideH / 2;
+          const incomingW = getDisplayWidth(inImg, 1, true);
           let inStartX =
             state.transitionDir === 1
-              ? state.targetSideX[1] - sideW / 2
-              : state.targetSideX[0] - sideW / 2;
+              ? state.targetSideX[1] - getDisplayWidth(inImg, sideScale) / 2
+              : state.targetSideX[0] - getDisplayWidth(inImg, sideScale) / 2;
           let outEndX =
             state.transitionDir === 1
               ? state.targetSideX[0] - sideW / 2
               : state.targetSideX[1] - sideW / 2;
 
-          const centerX = p5.width / 2 - imgW / 2;
-          const incomingX = p5.lerp(inStartX, centerX, e);
-          const outgoingX = p5.lerp(centerX, outEndX, e);
-          const outgoingW = p5.lerp(imgW, sideW, e);
-          const outgoingH = p5.lerp(imgH, sideH, e);
+          const incomingCenterX =
+            p5.width / 2 - getDisplayWidth(inImg, 1, true) / 2;
+          const outgoingCenterX =
+            p5.width / 2 - getDisplayWidth(outImg, 1, true) / 2;
+          const incomingX = p5.lerp(inStartX, incomingCenterX, e);
+          const outgoingX = p5.lerp(outgoingCenterX, outEndX, e);
+          const outgoingW = p5.lerp(getDisplayWidth(outImg, 1, true), sideW, e);
+          const outgoingH = p5.lerp(getDisplayHeight(outImg), sideH, e);
           const outgoingTop = p5.height / 2 - outgoingH / 2;
           const outgoingBottom = p5.height / 2 + outgoingH / 2;
 
-          const inImg = media[transition.incomingIdx];
-          const outImg = media[transition.outgoingIdx];
           const inAsset = getRenderableAsset(inImg, true);
           const outAsset = getRenderableAsset(outImg, false);
           const inSy = p5.map(
@@ -304,7 +317,7 @@ export default function Carousel({
             inAsset,
             incomingX,
             y,
-            imgW,
+            incomingW,
             1,
             0,
             inSy,
@@ -323,6 +336,7 @@ export default function Carousel({
           if (y >= sideTop && y <= sideBottom) {
             const farImg = media[farIdx];
             const farAsset = getRenderableAsset(farImg, false);
+            const farSideW = getDisplayWidth(farImg, sideScale);
             let fSy = p5.map(
               y,
               sideTop,
@@ -332,9 +346,9 @@ export default function Carousel({
             );
             pgWarp.image(
               farAsset,
-              farSideCX - sideW / 2,
+              farSideCX - farSideW / 2,
               y,
-              sideW,
+              farSideW,
               1,
               0,
               fSy,

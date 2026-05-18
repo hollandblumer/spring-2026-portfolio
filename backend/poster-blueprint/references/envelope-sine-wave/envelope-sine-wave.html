@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Modulated Oscilloscope Wave</title>
+    <style>
+        body {
+            margin: 0;
+            background: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="waveCanvas"></canvas>
+
+<script>
+    const canvas = document.getElementById('waveCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Make canvas responsive
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    let time = 0;
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+        const waveWidth = 600; // Total width of the wave effect
+
+        ctx.beginPath();
+        ctx.strokeStyle = "black";
+        ctx.lineWidth = 4;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+
+        const baseAmplitude = 120; // Height of the center peak
+        const frequency = 0.06;    // How many waves
+
+        // Loop through the width of the wave
+        for (let x = 0; x <= waveWidth; x++) {
+            const screenX = (cx - waveWidth / 2) + x;
+
+            // 1. Create the Envelope (The "Bulge" Logic)
+            // Normalized distance from center (-1 to 1)
+            let dist = (x - waveWidth / 2) / (waveWidth / 2);
+            // cosine-based bell curve: peaks at 1 in center, hits 0 at edges
+            let envelope = Math.cos(dist * (Math.PI / 2));
+
+            // 2. The Wave Math
+            // y = center + (Bulge Strength * Sine Wave)
+            const y = cy + (envelope * Math.sin(x * frequency - time) * baseAmplitude);
+
+            if (x === 0) ctx.moveTo(screenX, y);
+            else ctx.lineTo(screenX, y);
+        }
+
+        ctx.stroke();
+
+        time += 0.15; // Speed of horizontal crawl
+        requestAnimationFrame(draw);
+    }
+
+    draw();
+</script>
+</body>
+</html>

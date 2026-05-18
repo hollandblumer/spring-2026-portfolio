@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Olive and Pimento Circle Packing</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <style>
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f7f7f7;
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+        }
+        canvas {
+            max-height: 95vh;
+            width: auto;
+        }
+    </style>
+</head>
+<body>
+
+<script>
+let gfx;
+let circles;
+let paperGfx;
+let paperGfxLines;
+
+const PRIMARY_OLIVE = 'rgb(85, 107, 47)';
+const CORE_RED = '#E54423';
+const LIGHT_BACKGROUND = 'rgb(240, 240, 240)';
+
+const ASPECT_RATIO = 4 / 5;
+
+function setup () {
+    const availableHeight = windowHeight * 0.95;
+    const availableWidth = windowWidth;
+
+    let finalH, finalW;
+
+    if (availableHeight * ASPECT_RATIO <= availableWidth) {
+        finalH = availableHeight;
+        finalW = finalH * ASPECT_RATIO;
+    } else {
+        finalW = availableWidth;
+        finalH = finalW / ASPECT_RATIO;
+    }
+
+    createCanvas(10, 10);
+    resizeCanvas(finalW, finalH);
+    smooth();
+
+    paperGfx = createGraphics(width, height);
+    paperGfxLines = createGraphics(width, height);
+
+    genPaper(paperGfx, 2, 15, 7000 * (width * height) / (720 * 900));
+    paperGfx.filter(BLUR, 2);
+    genPaper(paperGfx, 10, 5, 4000 * (width * height) / (720 * 900));
+
+    genPaperLines(paperGfxLines, 10, 1000);
+    genPaperLines(paperGfxLines, 20, 40);
+    genPaperLines(paperGfxLines, 40 , 5);
+
+    gfx = createGraphics(width, height);
+    const areaScale = (width * height) / (720 * 900);
+    circles = circlePack({
+        gfx: gfx,
+        minSize: 10,
+        maxSize: 50,
+        maxAttempts: 350,
+        padding: 0,
+        maxCount: 1250 * areaScale,
+        parentRad: width / 2
+    });
+}
+
+function windowResized() {
+    setup();
+}
+
+function draw(){
+    background(LIGHT_BACKGROUND);
+    image(paperGfx,0,0);
+    image(paperGfxLines,0,0);
+
+    translate(width/2, height/2);
+
+    circles.forEach( c => {
+        c.rotation += c.rotationSpeed;
+
+        push();
+
+        const p = c.pos;
+        const r = c.rad;
+
+        translate(p.x, p.y);
+        rotate(c.rotation);
+
+        const innerRPct = 0.7;
+        const coreRPct = 0.4;
+
+        const outerLayerOffsetPct = 0.2;
+        const fixedOffsetX = -r * outerLayerOffsetPct;
+        const fixedOffsetY = -r * outerLayerOffsetPct;
+
+        const innerR = r * innerRPct;
+        const coreR = r * coreRPct;
+
+        noStroke();
+
+        fill(PRIMARY_OLIVE);
+        ellipse(0, 0, r * 2);
+
+        fill(LIGHT_BACKGROUND);
+        ellipse(fixedOffsetX, fixedOffsetY, innerR * 2);
+
+        const totalShiftDist = (innerR - coreR) / 2;
+
+        const coreShiftX = fixedOffsetX - totalShiftDist;
+        const coreShiftY = fixedOffsetY - totalShiftDist;
+
+        fill(CORE_RED);
+        ellipse(coreShiftX, coreShiftY, coreR * 2);
+
+        pop();
+    });
+}
+
+function keyPressed(){
+    if(key === 's') save('olive-pimento-packing-art.png');
+}
+
+function circlePack(cfg){
+    let c = cfg;
+
+    function Circle(p, r){
+        this.pos = createVector(p.x, p.y);
+        this.rad = r;
+        this.rotation = random(TAU);
+        this.rotationSpeed = random(-0.01, 0.01);
+    }
+
+    function getRandomPointInCanvas(p, gfxWidth, gfxHeight) {
+        const halfW = width / 2;
+        const halfH = height / 2;
+
+        const safeRadius = c.maxSize;
+
+        const minX = -halfW + safeRadius;
+        const maxX = halfW - safeRadius;
+
+        const minY = -halfH + safeRadius;
+        const maxY = halfH - safeRadius;
+
+        if (minX > maxX || minY > maxY) {
+            p.x = random(-halfW, halfW);
+            p.y = random(-halfH, halfH);
+        } else {
+            p.x = random(minX, maxX);
+            p.y = random(minY, maxY);
+        }
+    }
+
+    function distToCircle(c, pos, padding) {
+        return dist(c.pos.x, c.pos.y, pos.x, pos.y) - c.rad;
+    }
+
+    function pointInCircle(pos, c) {
+        return dist(pos.x, pos.y, c.pos.x, c.pos.y) <= c.rad;
+    }
+
+    let circles = [];
+    let p = createVector();
+
+    let iterations = 0;
+    while(circles.length < c.maxCount && iterations < 10000){
+        iterations++;
+
+        let shortestDistance = Infinity;
+        let rad = c.maxSize;
+        let invalidSpot = true;
+        let attempts = 0;
+
+        while (invalidSpot && attempts < c.maxAttempts) {
+            getRandomPointInCanvas(p, width, height);
+
+            attempts++;
+            invalidSpot = false;
+
+            for (let cc = 0; cc < circles.length; cc++) {
+                if (pointInCircle(p, circles[cc])) {
+                    invalidSpot = true;
+                    break;
+                }
+            }
+        }
+
+        if (invalidSpot) continue;
+
+        if (circles.length !== 0) {
+            for(let j = 0; j < circles.length; j++){
+                let existingCircle = circles[j];
+                let d = distToCircle(existingCircle, p, existingCircle.padding);
+                if (d < shortestDistance) {
+                    shortestDistance = d;
+                    rad = d;
+                }
+            }
+        }
+
+        if (rad < c.minSize) continue;
+
+        const marginX = (width / 2) - abs(p.x);
+        const marginY = (height / 2) - abs(p.y);
+
+        const maxRadForCurrentPos = min(marginX, marginY);
+
+        rad = constrain(rad, c.minSize, maxRadForCurrentPos);
+
+        if (rad < c.minSize) continue;
+
+        rad = constrain(rad, c.minSize, c.maxSize);
+
+        circles.push(new Circle(p, rad));
+    }
+
+    return circles;
+}
+
+function genPaper(g, op, r, cnt){
+    g.push();
+    g.noStroke();
+    g.fill(255,255, 255, op);
+    for(let i = 0; i < cnt; i++){
+        let rx = random(0, width);
+        let ry = random(0, height);
+        g.ellipse(rx, ry, r)
+    }
+    g.pop();
+}
+
+function genPaperLines(g, op, cnt){
+    g.push();
+    g.stroke(200, op);
+    g.noFill();
+
+    for(let i = 0; i < cnt; i++){
+        let rx = random(0, width);
+        let ry = random(0, height);
+
+        g.push();
+        g.translate(rx, ry);
+        g.rotate(random()*TAU);
+
+        let a0 = createVector(0,0);
+        let c0 = randomVec(PI, 3/4*TAU);
+        c0.mult(40);
+
+        let a1 = createVector(50, 0);
+        let c1 = a1.copy();
+        let v = randomVec(PI/2, 3/4 * TAU);
+        v.x *= -1;
+        v.mult(40);
+        c1.add(v);
+
+        g.bezier(a0.x, a0.y,
+                 c0.x, c0.y,
+                 c1.x, c1.y,
+                 a1.x, a1.y);
+
+        g.pop();
+    }
+    g.pop();
+}
+
+function randomVec(lower, higher){
+    let r = random(lower, higher);
+
+    let v = createVector(0, 1);
+    v.rotate(r);
+    return v;
+}
+</script>
+</body>
+</html>

@@ -19,6 +19,15 @@ const PROJECTS = [
       "Inspired by that New Year's Eve countdown feeling where everything tightens right before midnight. I used Three.js to take 3, 2, 1 and let them build instead of just appear. The numbers kind of form out of these vertical ribbons that stretch, snap, and settle, almost like they're being pulled into place.\n\nIt's less about clearly reading the digits and more about that moment of anticipation. Each transition has a bit of randomness to it, so it never feels perfectly clean, more like that chaotic energy right before the drop. The forms push forward, collapse back, and then lock in just long enough before shifting again.",
   },
   {
+    id: "poster-blueprint",
+    title: "Poster Blueprint",
+    type: "image",
+    src: "/poster-blueprint/snapshot.png",
+    poster: "/poster-blueprint/snapshot.png",
+    href: "/poster-blueprint/",
+    displayWidthMultiplier: 2.15,
+  },
+  {
     id: "type-lab",
     title: "Type Experiments",
     type: "video",
@@ -200,8 +209,8 @@ export default function Home() {
   const [mounted, setMounted] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [localTime, setLocalTime] = useState("");
-  const [activeIndex, setActiveIndex] = useState(1);
-  const [currentSlide, setCurrentSlide] = useState(2);
+  const [activeIndex, setActiveIndex] = useState(2);
+  const [currentSlide, setCurrentSlide] = useState(3);
   const [showAboutCard, setShowAboutCard] = useState(false);
   const [expandedProjectId, setExpandedProjectId] = useState(null);
   const [showProjectPicker, setShowProjectPicker] = useState(false);

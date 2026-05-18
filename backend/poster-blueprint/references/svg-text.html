@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lalezar&family=Mulish:ital,wght@0,200..1000;1,200..1000&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+
+<style>
+* {
+  margin: 0;
+  font-family: serif;
+  font-style: Italic;
+  font-size: 4rem; 
+  font-spacing: -20px;
+  color: cyan;
+  color: #ffffe0;
+  font-family: "lalezar";
+  font-weight: 700;
+}
+
+#container { 
+  filter:url('#noise') blur(4px);
+  position: absolute;
+  width: 90%;
+  height: 100%;
+  overflow-y: auto;
+  text-align: center;
+}
+
+#container::-webkit-scrollbar {
+  display: none;
+}
+
+#text {
+  margin: 0;
+  line-height: 2.5rem; 
+  word-break: break-all;
+  animation: scrollAnimation 6s infinite alternate;
+  line-height: .63;
+  letter-spacing: 20px;
+  transform: scaleX(.5);
+}
+
+html {
+  filter: url('#contrast');
+  height: 100%;
+}
+
+body {
+  background: #021;
+  background: red;
+  filter: url('#contrast');
+  height: 100%;
+}
+
+@keyframes scaleAnimation {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.3);
+  }
+}
+
+@keyframes scrollAnimation {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-3%);
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div id="container">
+  <p id="text">
+    WORK<br/> ABOUT <br/> ETHOS </br> CONTACT
+  </p> 
+</div>
+
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1">
+  <defs>
+    <filter id="noise">
+      <feTurbulence type="fractalNoise" id="turbulence" baseFrequency="0.002" numOctaves="3" result="noise" seed="0"/>
+      <feDisplacementMap id="displacement" in="SourceGraphic" in2="noise" scale="300" />
+    </filter>   
+    
+    <filter id="contrast">
+      <feColorMatrix in="SourceGraphic" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 30 -10" result="matrix" />
+      <feComposite in="SourceGraphic" in2="matrix" operator="atop"/> 
+    </filter>  
+  </defs>
+</svg>
+
+</body>
+</html>

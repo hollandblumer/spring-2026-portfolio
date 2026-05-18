@@ -1,0 +1,110 @@
+{
+  "features": [
+    {
+      "id": "wavy-lines",
+      "label": "Wavy Lines",
+      "description": "Organic, ink-bleed linework that can be recreated with layered sine waves.",
+      "code_references": [
+        "ink_bleeding_wavy_lines.js",
+        "metaballs.html"
+      ],
+      "images": [
+        "images/wavylines.png"
+      ]
+    },
+    {
+      "id": "converging-spiral",
+      "label": "Converging Spiral",
+      "description": "A radial spiral structure that tightens toward a focal point.",
+      "code_references": [
+        "converging_spiral.js"
+      ],
+      "images": [
+        "images/logarithmic-spiral.png"
+      ]
+    },
+    {
+      "id": "envelope-sine-wave",
+      "label": "Envelope Sine Wave",
+      "description": "A sine-wave structure whose amplitude is shaped by an envelope.",
+      "code_references": [
+        "envelope_sine_wave.js",
+        "envelope-sine-wave/envelope-sine-wave.html"
+      ],
+      "images": [
+        "images/envelope-sine-wave.png"
+      ]
+    },
+    {
+      "id": "warped-svg-text",
+      "label": "Warped SVG Text",
+      "description": "Liquid, distorted typography generated with SVG turbulence and displacement filters.",
+      "code_references": [
+        "svg-text.html"
+      ],
+      "images": [
+        "images/warped-text.png"
+      ]
+    },
+    {
+      "id": "contour-lines",
+      "label": "Contour Lines",
+      "description": "Distance-field contour bands generated from a text or shape mask.",
+      "code_references": [
+        "contour-lines/contour-lines.html"
+      ],
+      "images": [
+        "images/contour-lines.png"
+      ]
+    },
+    {
+      "id": "egg-warp",
+      "label": "Egg Warp",
+      "description": "A Three.js shader that maps repeated poster text through an oval bulge and edge-slit distortion.",
+      "code_references": [
+        "egg-warp/egg-warp.html"
+      ],
+      "images": [
+        "images/egg-shape-text.png"
+      ]
+    },
+    {
+      "id": "organic-text-fill",
+      "label": "Organic Text Fill",
+      "description": "A p5.js scanline text warp that fills hand-drawn organic shapes with stretched typography.",
+      "code_references": [
+        "organic-text-fill/organic-text-fill.html"
+      ],
+      "images": []
+    },
+    {
+      "id": "eye-circle-packing",
+      "label": "Eye Circle Packing",
+      "description": "A p5.js circle-packing pattern where each packed circle becomes an offset eye-like olive and pimento motif.",
+      "code_references": [
+        "eye-circle-packing/eye-circle-packing.html"
+      ],
+      "images": [
+        "images/eye-pattern.png"
+      ]
+    },
+    {
+      "id": "fractal-trees",
+      "label": "Fractal Trees",
+      "description": "Recursive branching ornaments that grow from repeated branch rotations and scale reductions.",
+      "code_references": [],
+      "images": [
+        "images/fractal-trees.png"
+      ]
+    },
+    {
+      "id": "spherical-bent-3d-text",
+      "label": "Spherical Bent 3D Text",
+      "description": "A Three.js text geometry remapped over a spherical surface to create dimensional bent poster typography.",
+      "code_references": [
+        "spherical-bent-3d-text/spherical-bent-3d-text.html"
+      ],
+      "images": []
+    }
+  ]
+}

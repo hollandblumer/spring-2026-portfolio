@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Wobbly Floating Text Blobs</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.js"></script>
+  <style>
+    html,
+    body {
+      margin: 0;
+      height: 100%;
+      background: #111;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+
+    canvas {
+      box-shadow: 0 0 50px rgba(0,0,0,0.65);
+      border-radius: 14px;
+      cursor: crosshair;
+    }
+
+    .ui {
+      position: fixed;
+      left: 14px;
+      top: 14px;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 15px;
+      border-radius: 12px;
+      font-size: 12px;
+      width: 280px;
+      color: #111;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      z-index: 10;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 8px 0;
+    }
+
+    input[type="range"] {
+      width: 120px;
+    }
+
+    input[type="text"] {
+      width: 140px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      width: 100%;
+      padding: 8px;
+      margin-top: 10px;
+      cursor: pointer;
+      border-radius: 6px;
+      border: none;
+      background: #333;
+      color: white;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background: #000;
+    }
+  </style>
+</head>
+<body>
+
+<div class="ui">
+  <div style="font-weight:bold; margin-bottom:5px;">Blob Controls</div>
+  <div class="row"><label>Text</label><input id="txt" type="text" value="GLOOP" /></div>
+  <div class="row"><label>Wobble</label><input id="amp" type="range" min="0" max="100" value="30" /></div>
+  <div class="row"><label>Speed</label><input id="spd" type="range" min="0" max="2" step="0.01" value="0.6" /></div>
+  <div class="row"><label>Blob Color</label><input id="fillColor" type="text" value="#f4e115" /></div>
+  <div class="row"><label>BG Color</label><input id="bgColor" type="text" value="#ff6714" /></div>
+  <button onclick="blobs=[]">Clear All</button>
+  <p style="font-size:10px; color:#666; margin-top:10px;">Draw a shape to create a floating wobbly blob!</p>
+</div>
+
+<script>
+let pgText;
+let blobs = [];
+let currentPoints = [];
+let isDrawing = false;
+
+function setup() {
+  const H = Math.min(window.innerHeight * 0.85, 700);
+  const W = H * 0.9;
+  createCanvas(W, H);
+  pixelDensity(1);
+  pgText = createGraphics(width, height);
+}
+
+function draw() {
+  background(select("#bgColor").value());
+
+  const globalAmp = parseFloat(select("#amp").value());
+  const globalSpd = parseFloat(select("#spd").value());
+
+  for (let b of blobs) {
+    updateAndDrawBlob(b, globalAmp, globalSpd);
+  }
+
+  if (isDrawing) {
+    stroke(255);
+    strokeWeight(2);
+    noFill();
+    beginShape();
+    for (let p of currentPoints) vertex(p.x, p.y);
+    endShape();
+  }
+}
+
+function mousePressed() {
+  if (mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
+    isDrawing = true;
+    currentPoints = [];
+  }
+}
+
+function mouseDragged() {
+  if (isDrawing) {
+    currentPoints.push({ x: mouseX, y: mouseY });
+  }
+}
+
+function mouseReleased() {
+  if (isDrawing && currentPoints.length > 10) {
+    let cx = 0;
+    let cy = 0;
+    for (let p of currentPoints) {
+      cx += p.x;
+      cy += p.y;
+    }
+    cx /= currentPoints.length;
+    cy /= currentPoints.length;
+
+    let basePoints = currentPoints.map((p) => {
+      let angle = atan2(p.y - cy, p.x - cx);
+      let d = dist(cx, cy, p.x, p.y);
+      return { a: angle, r: d };
+    });
+
+    let blobData = {
+      cx,
+      cy,
+      velX: (mouseX - pmouseX) * 0.2 || random(-0.5, 0.5),
+      velY: (mouseY - pmouseY) * 0.2 || random(-0.5, 0.5),
+      basePoints,
+      text: select("#txt").value(),
+      color: select("#fillColor").value(),
+      offsetT: random(100)
+    };
+    blobs.push(blobData);
+  }
+  isDrawing = false;
+  currentPoints = [];
+}
+
+function updateAndDrawBlob(b, amp, spd) {
+  b.cx += b.velX;
+  b.cy += b.velY;
+
+  if (b.cx < 50 || b.cx > width - 50) b.velX *= -1;
+  if (b.cy < 50 || b.cy > height - 50) b.velY *= -1;
+
+  let t = (millis() / 1000) * spd + b.offsetT;
+  let activePts = [];
+
+  for (let p of b.basePoints) {
+    let wobble = sin(p.a * 3 + t * 2) * 0.6 + sin(p.a * 5 - t * 1.2) * 0.4;
+    let currentR = p.r + wobble * amp;
+    activePts.push({
+      x: b.cx + cos(p.a) * currentR,
+      y: b.cy + sin(p.a) * currentR
+    });
+  }
+
+  fill(b.color);
+  noStroke();
+  beginShape();
+  for (let p of activePts) vertex(p.x, p.y);
+  endShape(CLOSE);
+
+  renderTextToBuffer(b.text);
+  let edges = calculateEdges(activePts);
+  warpText(edges);
+}
+
+function renderTextToBuffer(txt) {
+  pgText.clear();
+  pgText.fill(0);
+  pgText.noStroke();
+  pgText.textAlign(CENTER, CENTER);
+  pgText.textStyle(BOLD);
+  pgText.textFont("Impact");
+  pgText.textSize(height * 0.4);
+  pgText.text(txt, pgText.width / 2, pgText.height / 2);
+}
+
+function warpText(edges) {
+  let minY = height;
+  let maxY = 0;
+  for (let y = 0; y < height; y++) {
+    if (edges[y]) {
+      minY = Math.min(minY, y);
+      maxY = Math.max(maxY, y);
+    }
+  }
+  if (maxY <= minY) return;
+
+  const srcYStart = height * 0.3;
+  const srcYEnd = height * 0.7;
+
+  for (let y = minY; y <= maxY; y++) {
+    const e = edges[y];
+    if (!e) continue;
+    const targetW = Math.max(1, e.xR - e.xL);
+    const sourceY = map(y, minY, maxY, srcYStart, srcYEnd);
+    image(pgText, e.xL, y, targetW, 1, 0, sourceY, pgText.width, 1);
+  }
+}
+
+function calculateEdges(pts) {
+  let edges = new Array(Math.floor(height)).fill(null);
+  for (let y = 0; y < height; y++) {
+    let intersections = [];
+    for (let i = 0; i < pts.length; i++) {
+      let p1 = pts[i];
+      let p2 = pts[(i + 1) % pts.length];
+      if ((p1.y <= y && p2.y > y) || (p2.y <= y && p1.y > y)) {
+        let t = (y - p1.y) / (p2.y - p1.y);
+        intersections.push(p1.x + t * (p2.x - p1.x));
+      }
+    }
+    if (intersections.length >= 2) {
+      intersections.sort((a, b) => a - b);
+      edges[y] = { xL: intersections[0], xR: intersections[intersections.length - 1] };
+    }
+  }
+  return edges;
+}
+
+function windowResized() {
+  const H = Math.min(window.innerHeight * 0.85, 700);
+  resizeCanvas(H * 0.9, H);
+  pgText = createGraphics(width, height);
+}
+</script>
+
+</body>
+</html>
