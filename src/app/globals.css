@@ -32,12 +32,6 @@ body {
   position: relative;
 }
 
-@media (max-height: 720px), (max-width: 1180px) {
-  .poster-callouts {
-    display: none;
-  }
-}
-
 nextjs-portal {
   display: none !important;
 }
