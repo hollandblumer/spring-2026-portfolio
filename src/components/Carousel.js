@@ -20,6 +20,8 @@ export default function Carousel({
     isTransitioning: false,
     transitionDir: 0,
     transitionStart: 0,
+    revealPhase: "waiting",
+    revealStart: 0,
   });
   const transitionDur = 700;
   const transitionRef = useRef({
@@ -50,6 +52,14 @@ export default function Carousel({
     stateRef.current.transitionDir = 0;
     onIndexChange?.(currentIndex + 1);
   }, [currentIndex, mediaItems.length, onIndexChange]);
+
+  useEffect(() => {
+    const state = stateRef.current;
+    if (canPlayActiveMedia && state.revealPhase === "waiting") {
+      state.revealPhase = "revealing";
+      state.revealStart = 0;
+    }
+  }, [canPlayActiveMedia]);
 
   useEffect(() => {
     return () => {
@@ -100,6 +110,58 @@ export default function Carousel({
 
   const easeInOutCubic = (t) => {
     return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  };
+
+  const drawTopBottomRevealMask = (p5, progress) => {
+    const eased = easeInOutCubic(progress);
+    const ctx = p5.drawingContext;
+    const mid = p5.height / 2;
+    const revealSpread = eased * mid;
+    const feather = 2;
+    const topEdge = revealSpread;
+    const bottomEdge = p5.height - revealSpread;
+
+    ctx.save();
+    ctx.fillStyle = `rgb(${BG_COLOR[0]}, ${BG_COLOR[1]}, ${BG_COLOR[2]})`;
+
+    if (topEdge < bottomEdge) {
+      ctx.fillRect(0, topEdge, p5.width, bottomEdge - topEdge);
+      const topGrad = ctx.createLinearGradient(
+        0,
+        topEdge + feather,
+        0,
+        topEdge,
+      );
+      topGrad.addColorStop(
+        0,
+        `rgba(${BG_COLOR[0]}, ${BG_COLOR[1]}, ${BG_COLOR[2]}, 0)`,
+      );
+      topGrad.addColorStop(
+        1,
+        `rgba(${BG_COLOR[0]}, ${BG_COLOR[1]}, ${BG_COLOR[2]}, 1)`,
+      );
+      ctx.fillStyle = topGrad;
+      ctx.fillRect(0, topEdge, p5.width, feather);
+
+      const bottomGrad = ctx.createLinearGradient(
+        0,
+        bottomEdge,
+        0,
+        bottomEdge - feather,
+      );
+      bottomGrad.addColorStop(
+        0,
+        `rgba(${BG_COLOR[0]}, ${BG_COLOR[1]}, ${BG_COLOR[2]}, 1)`,
+      );
+      bottomGrad.addColorStop(
+        1,
+        `rgba(${BG_COLOR[0]}, ${BG_COLOR[1]}, ${BG_COLOR[2]}, 0)`,
+      );
+      ctx.fillStyle = bottomGrad;
+      ctx.fillRect(0, bottomEdge - feather, p5.width, feather);
+    }
+
+    ctx.restore();
   };
 
   const drawTextLayer = (p5) => {
@@ -408,6 +470,23 @@ export default function Carousel({
       }
     }
     p5.image(pgWarp, 0, 0);
+
+    if (state.revealPhase === "revealing") {
+      if (!state.revealStart) {
+        state.revealStart = p5.millis();
+      }
+
+      const revealProgress = p5.constrain(
+        (p5.millis() - state.revealStart) / 900,
+        0,
+        1,
+      );
+      drawTopBottomRevealMask(p5, revealProgress);
+
+      if (revealProgress >= 1) {
+        state.revealPhase = "done";
+      }
+    }
   };
 
   const startTransition = (p5, dir) => {
