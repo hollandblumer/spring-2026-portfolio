@@ -210,10 +210,31 @@ export default function Carousel({
     const bottomBound = p5.height / 2 + imgH / 2;
     const getDisplayWidth = (item, scale = 1, isFocused = false) => {
       const multiplier = item?.displayWidthMultiplier || 1;
+      if (multiplier > 1 && !isFocused) {
+        return imgW * scale;
+      }
+
       const sideMultiplier = multiplier > 1 ? 1 + (multiplier - 1) * 0.45 : 1;
       return imgW * (isFocused ? multiplier : sideMultiplier) * scale;
     };
     const getDisplayHeight = (item, scale = 1) => imgH * scale;
+    const getHorizontalCrop = (item, asset, displayWidth, scale = 1) => {
+      const sourceWidth = getRenderableAssetWidth(item, asset) || imgW;
+      const multiplier = item?.displayWidthMultiplier || 1;
+
+      if (multiplier <= 1) {
+        return { sx: 0, sw: sourceWidth };
+      }
+
+      const fullDisplayWidth = imgW * multiplier * scale;
+      const cropRatio = p5.constrain(displayWidth / fullDisplayWidth, 0, 1);
+      const sw = sourceWidth * cropRatio;
+
+      return {
+        sx: (sourceWidth - sw) / 2,
+        sw,
+      };
+    };
 
     let leftIdx = (state.currentIdx - 1 + media.length) % media.length;
     let rightIdx = (state.currentIdx + 1) % media.length;
@@ -277,15 +298,21 @@ export default function Carousel({
               0,
               getRenderableAssetHeight(sideImg, sideAsset) || imgH,
             );
+            const sideCrop = getHorizontalCrop(
+              sideImg,
+              sideAsset,
+              finalW,
+              finalH / imgH,
+            );
             pgWarp.image(
               sideAsset,
               dx,
               y,
               finalW,
               1,
-              0,
+              sideCrop.sx,
               imgSy,
-              getRenderableAssetWidth(sideImg, sideAsset) || imgW,
+              sideCrop.sw,
               1,
             );
           }
@@ -298,15 +325,16 @@ export default function Carousel({
           const centerH = getDisplayHeight(centerImg);
           const cx = p5.width / 2 - centerW / 2;
           const cImgSy = p5.map(y, topBound, bottomBound, 0, centerHeight);
+          const centerCrop = getHorizontalCrop(centerImg, centerAsset, centerW);
           pgWarp.image(
             centerAsset,
             cx,
             y,
             centerW,
             1,
-            0,
+            centerCrop.sx,
             cImgSy,
-            getRenderableAssetWidth(centerImg, centerAsset) || imgW,
+            centerCrop.sw,
             1,
           );
         } else {
@@ -324,7 +352,6 @@ export default function Carousel({
           const sideH = getDisplayHeight(outImg, sideScale);
           const sideTop = p5.height / 2 - sideH / 2;
           const sideBottom = p5.height / 2 + sideH / 2;
-          const incomingW = getDisplayWidth(inImg, 1, true);
           let inStartX =
             state.transitionDir === 1
               ? state.targetSideX[1] - getDisplayWidth(inImg, sideScale) / 2
@@ -338,10 +365,13 @@ export default function Carousel({
             p5.width / 2 - getDisplayWidth(inImg, 1, true) / 2;
           const outgoingCenterX =
             p5.width / 2 - getDisplayWidth(outImg, 1, true) / 2;
+          const incomingSideW = getDisplayWidth(inImg, sideScale);
+          const incomingCenterW = getDisplayWidth(inImg, 1, true);
           const incomingX = p5.lerp(inStartX, incomingCenterX, e);
           const outgoingX = p5.lerp(outgoingCenterX, outEndX, e);
           const outgoingW = p5.lerp(getDisplayWidth(outImg, 1, true), sideW, e);
           const outgoingH = p5.lerp(getDisplayHeight(outImg), sideH, e);
+          const incomingW = p5.lerp(incomingSideW, incomingCenterW, e);
           const outgoingTop = p5.height / 2 - outgoingH / 2;
           const outgoingBottom = p5.height / 2 + outgoingH / 2;
 
@@ -363,27 +393,34 @@ export default function Carousel({
               0,
               getRenderableAssetHeight(outImg, outAsset) || imgH,
             );
+            const outCrop = getHorizontalCrop(
+              outImg,
+              outAsset,
+              outgoingW,
+              outgoingH / imgH,
+            );
             pgWarp.image(
               outAsset,
               outgoingX,
               y,
               outgoingW,
               1,
-              0,
+              outCrop.sx,
               outSy,
-              getRenderableAssetWidth(outImg, outAsset) || imgW,
+              outCrop.sw,
               1,
             );
           }
+          const inCrop = getHorizontalCrop(inImg, inAsset, incomingW);
           pgWarp.image(
             inAsset,
             incomingX,
             y,
             incomingW,
             1,
-            0,
+            inCrop.sx,
             inSy,
-            getRenderableAssetWidth(inImg, inAsset) || imgW,
+            inCrop.sw,
             1,
           );
 
@@ -406,15 +443,21 @@ export default function Carousel({
               0,
               getRenderableAssetHeight(farImg, farAsset) || imgH,
             );
+            const farCrop = getHorizontalCrop(
+              farImg,
+              farAsset,
+              farSideW,
+              sideScale,
+            );
             pgWarp.image(
               farAsset,
               farSideCX - farSideW / 2,
               y,
               farSideW,
               1,
-              0,
+              farCrop.sx,
               fSy,
-              getRenderableAssetWidth(farImg, farAsset) || imgW,
+              farCrop.sw,
               1,
             );
           }
