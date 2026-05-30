@@ -11,6 +11,7 @@ export default function Carousel({
   const buffersRef = useRef({
     pgText: null,
     pgWarp: null,
+    pgSpeckles: null,
   });
   const mediaRef = useRef([]);
   const stateRef = useRef({
@@ -31,7 +32,7 @@ export default function Carousel({
 
   const BG_COLOR = [227, 48, 3];
   const TEXT_COL = [207, 207, 207];
-  const WORD = "LOADING";
+  const WORD = "WORK";
 
   useEffect(() => {
     onIndexChange?.(stateRef.current.currentIdx + 1);
@@ -78,6 +79,7 @@ export default function Carousel({
 
     buffersRef.current.pgText = p5.createGraphics(p5.width, p5.height);
     buffersRef.current.pgWarp = p5.createGraphics(p5.width, p5.height);
+    buffersRef.current.pgSpeckles = makeSpeckleLayer(p5);
 
     mediaRef.current = mediaItems.map((item) => {
       if (item.type === "video") {
@@ -104,12 +106,31 @@ export default function Carousel({
   };
 
   const updateSideTargets = (p5) => {
-    const gap = p5.width * 0.32;
+    const gap = p5.width * 0.27;
     stateRef.current.targetSideX = [p5.width / 2 - gap, p5.width / 2 + gap];
   };
 
   const easeInOutCubic = (t) => {
     return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  };
+
+  const makeSpeckleLayer = (p5) => {
+    const pg = p5.createGraphics(p5.width, p5.height);
+    const speckCount = Math.floor(p5.width * p5.height * 0.011);
+    const maxSize = Math.max(1.6, p5.width * 0.002);
+
+    pg.pixelDensity(1);
+    pg.noStroke();
+
+    for (let i = 0; i < speckCount; i++) {
+      const x = p5.random(p5.width);
+      const y = p5.random(p5.height);
+      const n = p5.noise(x * 0.01, y * 0.01) * maxSize;
+      pg.fill(255, 226, 136, 44);
+      pg.ellipse(x, y, n, n);
+    }
+
+    return pg;
   };
 
   const drawTopBottomRevealMask = (p5, progress) => {
@@ -176,7 +197,7 @@ export default function Carousel({
   };
 
   const draw = (p5) => {
-    const { pgText, pgWarp } = buffersRef.current;
+    const { pgText, pgWarp, pgSpeckles } = buffersRef.current;
     const media = mediaRef.current;
     const state = stateRef.current;
     const transition = transitionRef.current;
@@ -188,6 +209,9 @@ export default function Carousel({
       media.length === 0
     ) {
       p5.background(...BG_COLOR);
+      if (pgSpeckles) {
+        p5.image(pgSpeckles, 0, 0);
+      }
       return;
     }
 
@@ -199,12 +223,14 @@ export default function Carousel({
     );
 
     p5.background(...BG_COLOR);
+    p5.image(pgSpeckles, 0, 0);
 
     const time = p5.millis() * 0.0015;
     drawTextLayer(p5);
     pgWarp.clear();
 
-    const imgW = p5.min(p5.width, p5.height) * 0.45;
+    const imgW =
+      p5.min(p5.width, p5.height) * (p5.width < 720 ? 0.58 : 0.45);
     const imgH = imgW * 1.3;
     const topBound = p5.height / 2 - imgH / 2;
     const bottomBound = p5.height / 2 + imgH / 2;
@@ -235,6 +261,49 @@ export default function Carousel({
         sw,
       };
     };
+    const drawPerspectiveSideImage = (
+      item,
+      asset,
+      centerX,
+      centerY,
+      displayWidth,
+      displayHeight,
+      side,
+      scale = 1,
+    ) => {
+      const projectedWidth = displayWidth * 0.68;
+      const minScale = 0.86;
+      const sourceHeight = getRenderableAssetHeight(item, asset) || imgH;
+      const top = centerY - displayHeight / 2;
+      const crop = getHorizontalCrop(item, asset, displayWidth, scale);
+
+      for (let x = 0; x < projectedWidth; x++) {
+        const progress = x / projectedWidth;
+        const depth =
+          side === "left" ? progress : 1 - progress;
+        const sliceScale = p5.lerp(minScale, 1, depth);
+        const sliceH = displayHeight * sliceScale;
+        const sliceTop = top + (displayHeight - sliceH) / 2;
+        const destX = centerX - projectedWidth / 2 + x;
+        const sourceProgress =
+          side === "left"
+            ? Math.pow(progress, 0.72)
+            : 1 - Math.pow(1 - progress, 0.72);
+        const sx = crop.sx + sourceProgress * crop.sw;
+
+        pgWarp.image(
+          asset,
+          destX,
+          sliceTop,
+          1.35,
+          sliceH,
+          sx,
+          0,
+          crop.sw / projectedWidth,
+          sourceHeight,
+        );
+      }
+    };
 
     let leftIdx = (state.currentIdx - 1 + media.length) % media.length;
     let rightIdx = (state.currentIdx + 1) % media.length;
@@ -262,61 +331,71 @@ export default function Carousel({
       ? 0
       : p5.sin(time * 0.8) * (p5.width * 0.02);
 
+    if (!state.isTransitioning) {
+      let displayIndices = [leftIdx, rightIdx];
+      for (let i = 0; i < 2; i++) {
+        state.sideX[i] = p5.lerp(
+          state.sideX[i],
+          state.targetSideX[i],
+          0.1,
+        );
+        const isMobile = p5.width < 980;
+        const sideBoost =
+          p5.width > 1000
+            ? p5.map(p5.width, 1000, 1800, 0.96, 1.08, true)
+            : 1;
+        const baseSideScale = isMobile ? 0.72 : 0.82;
+        const sideImg = media[displayIndices[i]];
+        const finalW =
+          getDisplayWidth(sideImg, baseSideScale * sideBoost) * 0.9;
+        const finalH = getDisplayHeight(sideImg, baseSideScale * sideBoost);
+        const sideAsset = getRenderableAsset(sideImg, false);
+
+        drawPerspectiveSideImage(
+          sideImg,
+          sideAsset,
+          state.sideX[i],
+          p5.height / 2,
+          finalW,
+          finalH,
+          i === 0 ? "left" : "right",
+          finalH / imgH,
+        );
+      }
+    } else {
+      const isMobile = p5.width < 980;
+      const transitionSideBoost =
+        p5.width > 1000
+          ? p5.map(p5.width, 1000, 1800, 0.96, 1.08, true)
+          : 1;
+      const sideScale = (isMobile ? 0.72 : 0.82) * transitionSideBoost;
+      const sideH = getDisplayHeight(media[transition.outgoingIdx], sideScale);
+      const farIdx =
+        state.transitionDir === 1
+          ? (transition.outgoingIdx - 1 + media.length) % media.length
+          : (transition.outgoingIdx + 1) % media.length;
+      const farImg = media[farIdx];
+      const farAsset = getRenderableAsset(farImg, false);
+      const farSideW = getDisplayWidth(farImg, sideScale) * 0.9;
+      const farSideCX =
+        state.transitionDir === 1 ? state.targetSideX[0] : state.targetSideX[1];
+
+      drawPerspectiveSideImage(
+        farImg,
+        farAsset,
+        farSideCX,
+        p5.height / 2,
+        farSideW,
+        sideH,
+        state.transitionDir === 1 ? "left" : "right",
+        sideScale,
+      );
+    }
+
     for (let y = 0; y < p5.height; y++) {
       if (y >= topBound && y <= bottomBound) {
         if (!state.isTransitioning) {
           // ---- IDLE IMAGE STATE ----
-          let displayIndices = [leftIdx, rightIdx];
-          for (let i = 0; i < 2; i++) {
-            state.sideX[i] = p5.lerp(
-              state.sideX[i],
-              state.targetSideX[i],
-              0.1,
-            );
-            const isMobile = p5.width < 980;
-            const sideBoost =
-              p5.width > 1000
-                ? p5.map(p5.width, 1000, 1800, 0.96, 1.08, true)
-                : 1;
-            const baseSideScale = isMobile ? 0.62 : 0.7;
-            const sideImg = media[displayIndices[i]];
-            let finalW = getDisplayWidth(sideImg, baseSideScale * sideBoost);
-            let finalH = getDisplayHeight(sideImg, baseSideScale * sideBoost);
-            let dx = state.sideX[i] - finalW / 2;
-            let sideTop = p5.height / 2 - finalH / 2;
-            let sideBottom = p5.height / 2 + finalH / 2;
-
-            if (y < sideTop || y > sideBottom) {
-              continue;
-            }
-
-            const sideAsset = getRenderableAsset(sideImg, false);
-            const imgSy = p5.map(
-              y,
-              sideTop,
-              sideBottom,
-              0,
-              getRenderableAssetHeight(sideImg, sideAsset) || imgH,
-            );
-            const sideCrop = getHorizontalCrop(
-              sideImg,
-              sideAsset,
-              finalW,
-              finalH / imgH,
-            );
-            pgWarp.image(
-              sideAsset,
-              dx,
-              y,
-              finalW,
-              1,
-              sideCrop.sx,
-              imgSy,
-              sideCrop.sw,
-              1,
-            );
-          }
-
           const centerImg = media[state.currentIdx];
           const centerAsset = getRenderableAsset(centerImg, true);
           const centerHeight =
@@ -344,14 +423,12 @@ export default function Carousel({
             p5.width > 1000
               ? p5.map(p5.width, 1000, 1800, 0.96, 1.08, true)
               : 1;
-          const baseSideScale = isMobile ? 0.62 : 0.7;
+          const baseSideScale = isMobile ? 0.72 : 0.82;
           const sideScale = baseSideScale * transitionSideBoost;
           const inImg = media[transition.incomingIdx];
           const outImg = media[transition.outgoingIdx];
           const sideW = getDisplayWidth(outImg, sideScale);
           const sideH = getDisplayHeight(outImg, sideScale);
-          const sideTop = p5.height / 2 - sideH / 2;
-          const sideBottom = p5.height / 2 + sideH / 2;
           let inStartX =
             state.transitionDir === 1
               ? state.targetSideX[1] - getDisplayWidth(inImg, sideScale) / 2
@@ -424,43 +501,6 @@ export default function Carousel({
             1,
           );
 
-          let farIdx =
-            state.transitionDir === 1
-              ? (transition.outgoingIdx - 1 + media.length) % media.length
-              : (transition.outgoingIdx + 1) % media.length;
-          let farSideCX =
-            state.transitionDir === 1
-              ? state.targetSideX[0]
-              : state.targetSideX[1];
-          if (y >= sideTop && y <= sideBottom) {
-            const farImg = media[farIdx];
-            const farAsset = getRenderableAsset(farImg, false);
-            const farSideW = getDisplayWidth(farImg, sideScale);
-            let fSy = p5.map(
-              y,
-              sideTop,
-              sideBottom,
-              0,
-              getRenderableAssetHeight(farImg, farAsset) || imgH,
-            );
-            const farCrop = getHorizontalCrop(
-              farImg,
-              farAsset,
-              farSideW,
-              sideScale,
-            );
-            pgWarp.image(
-              farAsset,
-              farSideCX - farSideW / 2,
-              y,
-              farSideW,
-              1,
-              farCrop.sx,
-              fSy,
-              farCrop.sw,
-              1,
-            );
-          }
         }
       } else {
         // ---- GREY TEXT STRETCH ----
@@ -492,21 +532,25 @@ export default function Carousel({
           tailOffset +
           centerShift;
 
+        const isMobileText = p5.width < 720;
+        const textSampleSpan = isMobileText
+          ? p5.min(p5.width, p5.height) * 0.11
+          : 110;
         let sy =
           y < topBound
             ? p5.map(
                 y,
-                topBound - 220,
+                isMobileText ? 0 : topBound - 220,
                 topBound,
-                p5.height / 2 - 110,
+                p5.height / 2 - textSampleSpan,
                 p5.height / 2,
               )
             : p5.map(
                 y,
                 bottomBound,
-                bottomBound + 220,
+                isMobileText ? p5.height : bottomBound + 220,
                 p5.height / 2,
-                p5.height / 2 + 110,
+                p5.height / 2 + textSampleSpan,
               );
 
         pgWarp.image(pgText, dx, y, finalW, 1, 0, sy, p5.width, 1);
@@ -629,6 +673,7 @@ export default function Carousel({
         p5.resizeCanvas(p5.windowWidth, p5.windowHeight);
         buffersRef.current.pgText = p5.createGraphics(p5.width, p5.height);
         buffersRef.current.pgWarp = p5.createGraphics(p5.width, p5.height);
+        buffersRef.current.pgSpeckles = makeSpeckleLayer(p5);
         updateSideTargets(p5);
         stateRef.current.sideX = [...stateRef.current.targetSideX];
       }}
