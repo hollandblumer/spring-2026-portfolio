@@ -70,18 +70,29 @@ export default function ImageSpiralCarousel({
     rendererRef.current = renderer;
 
     const makeSpeckleField = () => {
+      const isMobileViewport = window.innerWidth < 720;
       const speckCount = Math.min(
-        5200,
-        Math.floor(window.innerWidth * window.innerHeight * 0.0045),
+        isMobileViewport ? 4200 : 5200,
+        Math.max(
+          isMobileViewport ? 3200 : 0,
+          Math.floor(
+            window.innerWidth *
+              window.innerHeight *
+              (isMobileViewport ? 0.0105 : 0.0045),
+          ),
+        ),
       );
       const geometry = new THREE.BufferGeometry();
       const positions = new Float32Array(speckCount * 3);
       const seeds = new Float32Array(speckCount);
       const sizes = new Float32Array(speckCount);
       const anchors = new Float32Array(speckCount);
-      const maxSpeckSize = Math.max(1.6, window.innerWidth * 0.002);
-      const worldWidth = 88;
-      const worldHeight = 52;
+      const maxSpeckSize = Math.max(
+        isMobileViewport ? 2.3 : 1.6,
+        window.innerWidth * (isMobileViewport ? 0.0048 : 0.002),
+      );
+      const worldWidth = isMobileViewport ? 34 : 88;
+      const worldHeight = isMobileViewport ? 60 : 52;
       const randomBell = () => {
         const u = Math.max(0.0001, Math.random());
         const v = Math.max(0.0001, Math.random());
@@ -105,33 +116,69 @@ export default function ImageSpiralCarousel({
 
         if (cornerParticle) {
           const topRight = clusterRoll < 0.23;
-          const centerX = topRight ? 27.5 : -28.5;
-          const centerY = topRight ? 15.5 : -16.5;
+          const centerX = isMobileViewport
+            ? topRight
+              ? 11.5
+              : -12
+            : topRight
+              ? 27.5
+              : -28.5;
+          const centerY = isMobileViewport
+            ? topRight
+              ? 20
+              : -20
+            : topRight
+              ? 15.5
+              : -16.5;
           const diagonalX = topRight ? -1 : 1;
           const diagonalY = topRight ? -1 : 1;
           const spreadRoll = Math.random();
           const angle = Math.random() * Math.PI * 2;
 
           if (spreadRoll < 0.5) {
-            const radius = Math.pow(Math.random(), 0.62) * 15;
-            x = centerX + Math.cos(angle) * radius * (0.82 + Math.random() * 0.72);
-            y = centerY + Math.sin(angle) * radius * (0.58 + Math.random() * 0.56);
-            anchor = 0.9 + Math.random() * 0.1;
-          } else if (spreadRoll < 0.82) {
-            const radius = 8 + Math.pow(Math.random(), 0.7) * 24;
+            const radius =
+              Math.pow(Math.random(), 0.62) * (isMobileViewport ? 8.5 : 15);
             x =
               centerX +
-              diagonalX * radius * (0.34 + Math.random() * 0.52) +
-              randomBell() * 5.8;
+              Math.cos(angle) *
+                radius *
+                (0.82 + Math.random() * (isMobileViewport ? 0.42 : 0.72));
             y =
               centerY +
-              diagonalY * radius * (0.26 + Math.random() * 0.44) +
-              randomBell() * 4.5;
+              Math.sin(angle) *
+                radius *
+                (0.58 + Math.random() * (isMobileViewport ? 0.4 : 0.56));
+            anchor = 0.9 + Math.random() * 0.1;
+          } else if (spreadRoll < 0.82) {
+            const radius =
+              (isMobileViewport ? 4 : 8) +
+              Math.pow(Math.random(), 0.7) *
+                (isMobileViewport ? 13 : 24);
+            x =
+              centerX +
+              diagonalX *
+                radius *
+                (0.34 + Math.random() * (isMobileViewport ? 0.38 : 0.52)) +
+              randomBell() * (isMobileViewport ? 3.3 : 5.8);
+            y =
+              centerY +
+              diagonalY *
+                radius *
+                (0.26 + Math.random() * (isMobileViewport ? 0.32 : 0.44)) +
+              randomBell() * (isMobileViewport ? 3 : 4.5);
             anchor = 0.74 + Math.random() * 0.18;
           } else {
-            const radius = 15 + Math.random() * 25;
-            x = centerX + Math.cos(angle) * radius + randomBell() * 7;
-            y = centerY + Math.sin(angle) * radius * 0.72 + randomBell() * 5.5;
+            const radius =
+              (isMobileViewport ? 8 : 15) +
+              Math.random() * (isMobileViewport ? 14 : 25);
+            x =
+              centerX +
+              Math.cos(angle) * radius +
+              randomBell() * (isMobileViewport ? 3.8 : 7);
+            y =
+              centerY +
+              Math.sin(angle) * radius * 0.72 +
+              randomBell() * (isMobileViewport ? 3.4 : 5.5);
             anchor = 0.6 + Math.random() * 0.22;
           }
 
@@ -162,7 +209,7 @@ export default function ImageSpiralCarousel({
         uniforms: {
           uTime: { value: 0 },
           uColor: { value: new THREE.Color("rgb(255, 226, 136)") },
-          uOpacity: { value: 44 / 255 },
+          uOpacity: { value: (isMobileViewport ? 58 : 44) / 255 },
           uPixelRatio: { value: Math.min(window.devicePixelRatio, 2) },
           uVortex: { value: 0 },
         },
