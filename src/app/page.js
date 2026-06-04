@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Bricolage_Grotesque } from "next/font/google";
-import { ChevronLeft, ChevronRight, Images, Type } from "lucide-react";
+import { ChevronLeft, ChevronRight, Grid3X3, Images } from "lucide-react";
 import Preloader from "../components/Preloader";
 import Carousel from "../components/Carousel";
 import ImageSpiralCarousel from "../components/ImageSpiralCarousel";
@@ -142,6 +142,7 @@ function GridNineIcon(props) {
 
 const OLIVE_CURSOR =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Ccircle cx='14' cy='14' r='5' fill='%23705208' fill-opacity='0.95'/%3E%3Ccircle cx='14' cy='14' r='10' fill='none' stroke='%23705208' stroke-opacity='0.45' stroke-width='2'/%3E%3C/svg%3E\") 14 14, auto";
+const SHOW_WORK_CAROUSEL = false;
 
 const bricolage = Bricolage_Grotesque({
   subsets: ["latin"],
@@ -200,6 +201,31 @@ function AboutOverlay({ onClose }) {
         <AboutCard />
       </div>
     </>
+  );
+}
+
+function ProjectGrid({ projects, onSelectProject }) {
+  return (
+    <section className="absolute inset-0 z-[8] overflow-y-auto bg-[#E33003] px-[15px] pb-28 pt-24 sm:pt-28">
+      <div className="grid w-full grid-cols-2 gap-[15px] lg:grid-cols-3">
+        {projects.map((project, index) => (
+          <button
+            key={project.id}
+            type="button"
+            onClick={() => onSelectProject(index)}
+            className="group block min-w-0 text-left"
+          >
+            <div className="aspect-[4/5] w-full overflow-hidden bg-[rgba(207,207,207,0.16)]">
+              <img
+                src={project.poster}
+                alt={project.title}
+                className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.025]"
+              />
+            </div>
+          </button>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -299,6 +325,7 @@ export default function Home() {
   const activeProject = PROJECTS[activeIndex];
   const isProjectExpanded = activeProject && expandedProjectId === activeProject.id;
   const isSpiralMode = displayMode === "spiral";
+  const isGridMode = displayMode === "grid";
   const showSpiralDuringPreloader =
     showPreloader && preloaderExiting && spiralIntroReady;
 
@@ -337,14 +364,20 @@ export default function Home() {
         cursor: !showPreloader ? OLIVE_CURSOR : "auto",
       }}
     >
-      {assetsReady && !isSpiralMode && (
-        <div className="animate-in fade-in duration-500">
+      {SHOW_WORK_CAROUSEL && assetsReady && displayMode === "work" && (
+        <div className="hidden">
           <Carousel
             mediaItems={PROJECTS}
             onIndexChange={handleIndexChange}
             canPlayActiveMedia={!showPreloader}
             currentIndex={activeIndex}
           />
+        </div>
+      )}
+
+      {assetsReady && isGridMode && !showPreloader && (
+        <div className="animate-in fade-in zoom-in-[0.985] duration-500">
+          <ProjectGrid projects={PROJECTS} onSelectProject={handleSelectProject} />
         </div>
       )}
 
@@ -477,19 +510,6 @@ export default function Home() {
           <div className="absolute left-1/2 top-5 z-20 flex -translate-x-1/2 items-center gap-1 rounded-full border border-[rgba(207,207,207,0.32)] bg-[rgba(112,82,8,0.24)] p-1 text-[#cfcfcf] backdrop-blur-sm sm:top-6">
             <button
               type="button"
-              onClick={() => setDisplayMode("work")}
-              className={`flex h-9 w-9 items-center justify-center rounded-full transition ${
-                !isSpiralMode
-                  ? "bg-[rgba(207,207,207,0.22)] text-[#f1ece0]"
-                  : "text-[rgba(207,207,207,0.78)] hover:bg-[rgba(207,207,207,0.12)]"
-              }`}
-              aria-label="Show work text carousel"
-              title="Work text carousel"
-            >
-              <Type className="h-4.5 w-4.5" aria-hidden="true" />
-            </button>
-            <button
-              type="button"
               onClick={() => setDisplayMode("spiral")}
               className={`flex h-9 w-9 items-center justify-center rounded-full transition ${
                 isSpiralMode
@@ -500,6 +520,19 @@ export default function Home() {
               title="Image spiral carousel"
             >
               <Images className="h-4.5 w-4.5" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setDisplayMode("grid")}
+              className={`flex h-9 w-9 items-center justify-center rounded-full transition ${
+                isGridMode
+                  ? "bg-[rgba(207,207,207,0.22)] text-[#f1ece0]"
+                  : "text-[rgba(207,207,207,0.78)] hover:bg-[rgba(207,207,207,0.12)]"
+              }`}
+              aria-label="Show image grid"
+              title="Image grid"
+            >
+              <Grid3X3 className="h-4.5 w-4.5" aria-hidden="true" />
             </button>
           </div>
 
@@ -540,7 +573,7 @@ export default function Home() {
             </div>
           )}
 
-          {!showAboutCard && activeProject && (
+          {isSpiralMode && !showAboutCard && activeProject && (
             <div className="pointer-events-none absolute inset-x-0 bottom-5 z-[14] flex justify-center px-5 sm:bottom-6">
               <div
                 className={`pointer-events-auto rounded-[24px] border border-[rgba(207,207,207,0.22)] bg-[linear-gradient(135deg,rgba(207,207,207,0.2)_0%,rgba(255,255,255,0.1)_50%,rgba(112,82,8,0.14)_100%)] text-[#f1ece0] shadow-[0_18px_40px_rgba(0,0,0,0.18)] backdrop-blur-[18px] transition-all duration-300 ${

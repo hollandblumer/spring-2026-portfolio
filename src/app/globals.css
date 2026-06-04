@@ -42,6 +42,25 @@ nextjs-portal {
   display: none !important;
 }
 
+.tech-logo-float {
+  animation: tech-logo-float var(--logo-duration, 7s) ease-in-out infinite;
+  animation-delay: var(--logo-delay, 0s);
+  transform: translate3d(0, 0, 0) rotate(var(--logo-rotation, 0deg));
+}
+
+@keyframes tech-logo-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(var(--logo-rotation, 0deg));
+  }
+
+  50% {
+    transform:
+      translate3d(var(--logo-drift-x, 6px), var(--logo-drift-y, -5px), 0)
+      rotate(var(--logo-rotation, 0deg));
+  }
+}
+
 .elastic-menu-button {
   padding: 0;
   margin: 0;

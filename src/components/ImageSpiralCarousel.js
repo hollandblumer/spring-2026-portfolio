@@ -80,30 +80,73 @@ export default function ImageSpiralCarousel({
       const sizes = new Float32Array(speckCount);
       const anchors = new Float32Array(speckCount);
       const maxSpeckSize = Math.max(1.6, window.innerWidth * 0.002);
+      const worldWidth = 88;
+      const worldHeight = 52;
+      const randomBell = () => {
+        const u = Math.max(0.0001, Math.random());
+        const v = Math.max(0.0001, Math.random());
+        return Math.sqrt(-2 * Math.log(u)) * Math.cos(Math.PI * 2 * v);
+      };
+      const fract = (value) => value - Math.floor(value);
+      const speckleSizeAt = (x, y) => {
+        const coarse =
+          fract(Math.sin(x * 12.9898 + y * 78.233) * 43758.5453) * 0.62;
+        const fine =
+          fract(Math.sin(x * 34.121 + y * 9.713) * 12641.1357) * 0.38;
+        return Math.pow(coarse + fine, 1.2);
+      };
 
       for (let i = 0; i < speckCount; i++) {
         const clusterRoll = Math.random();
-        const isClustered = clusterRoll < 0.42;
-        let x = (Math.random() - 0.5) * 84;
-        let y = (Math.random() - 0.5) * 50;
+        const cornerParticle = clusterRoll < 0.46;
+        let x = (Math.random() - 0.5) * worldWidth;
+        let y = (Math.random() - 0.5) * worldHeight;
+        let anchor = 0;
 
-        if (isClustered) {
-          const topRight = clusterRoll < 0.21;
+        if (cornerParticle) {
+          const topRight = clusterRoll < 0.23;
+          const centerX = topRight ? 27.5 : -28.5;
+          const centerY = topRight ? 15.5 : -16.5;
+          const diagonalX = topRight ? -1 : 1;
+          const diagonalY = topRight ? -1 : 1;
+          const spreadRoll = Math.random();
           const angle = Math.random() * Math.PI * 2;
-          const radius = Math.pow(Math.random(), 0.55) * 18;
-          const centerX = topRight ? 28 : -29;
-          const centerY = topRight ? 16 : -17;
 
-          x = centerX + Math.cos(angle) * radius * 1.15;
-          y = centerY + Math.sin(angle) * radius * 0.82;
+          if (spreadRoll < 0.5) {
+            const radius = Math.pow(Math.random(), 0.62) * 15;
+            x = centerX + Math.cos(angle) * radius * (0.82 + Math.random() * 0.72);
+            y = centerY + Math.sin(angle) * radius * (0.58 + Math.random() * 0.56);
+            anchor = 0.9 + Math.random() * 0.1;
+          } else if (spreadRoll < 0.82) {
+            const radius = 8 + Math.pow(Math.random(), 0.7) * 24;
+            x =
+              centerX +
+              diagonalX * radius * (0.34 + Math.random() * 0.52) +
+              randomBell() * 5.8;
+            y =
+              centerY +
+              diagonalY * radius * (0.26 + Math.random() * 0.44) +
+              randomBell() * 4.5;
+            anchor = 0.74 + Math.random() * 0.18;
+          } else {
+            const radius = 15 + Math.random() * 25;
+            x = centerX + Math.cos(angle) * radius + randomBell() * 7;
+            y = centerY + Math.sin(angle) * radius * 0.72 + randomBell() * 5.5;
+            anchor = 0.6 + Math.random() * 0.22;
+          }
+
+          x = THREE.MathUtils.clamp(x, -worldWidth * 0.52, worldWidth * 0.52);
+          y = THREE.MathUtils.clamp(y, -worldHeight * 0.52, worldHeight * 0.52);
         }
 
         positions[i * 3] = x;
         positions[i * 3 + 1] = y;
         positions[i * 3 + 2] = -8 - Math.random() * 26;
         seeds[i] = Math.random() * Math.PI * 2;
-        anchors[i] = isClustered ? 1 : 0;
-        sizes[i] = Math.random() * maxSpeckSize * (isClustered ? 1.22 : 1);
+        anchors[i] = anchor;
+        sizes[i] =
+          Math.max(0.2, speckleSizeAt(x, y) * maxSpeckSize) *
+          (cornerParticle ? 1.12 : 1);
       }
 
       geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
@@ -118,8 +161,8 @@ export default function ImageSpiralCarousel({
         blending: THREE.NormalBlending,
         uniforms: {
           uTime: { value: 0 },
-          uColor: { value: new THREE.Color(0xffe288) },
-          uOpacity: { value: 0.48 },
+          uColor: { value: new THREE.Color("rgb(255, 226, 136)") },
+          uOpacity: { value: 44 / 255 },
           uPixelRatio: { value: Math.min(window.devicePixelRatio, 2) },
           uVortex: { value: 0 },
         },
@@ -155,9 +198,9 @@ export default function ImageSpiralCarousel({
             p.y += sin(radius * 0.52 - uTime * 5.8 + aSeed) * freeVortex * 1.35 * driftScale;
             p.z += corePull * freeVortex * 7.5;
 
-            gl_PointSize = (max(1.7, aSize * 1.15) + tornadoMask * 2.6) * uPixelRatio;
+            gl_PointSize = (max(0.75, aSize * 1.18) + tornadoMask * 1.65) * uPixelRatio;
             gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
-            vAlpha = 0.68 + 0.32 * sin(aSeed + uTime * 0.21) + tornadoMask * 1.25;
+            vAlpha = 0.82 + 0.18 * sin(aSeed + uTime * 0.21) + tornadoMask * 0.72;
           }
         `,
         fragmentShader: `
@@ -168,7 +211,8 @@ export default function ImageSpiralCarousel({
           void main() {
             vec2 uv = gl_PointCoord - vec2(0.5);
             float d = length(uv);
-            float alpha = smoothstep(0.5, 0.0, d) * uOpacity * vAlpha;
+            float disc = 1.0 - smoothstep(0.46, 0.5, d);
+            float alpha = disc * uOpacity * vAlpha;
             gl_FragColor = vec4(uColor, alpha);
             #include <colorspace_fragment>
           }

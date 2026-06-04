@@ -10,6 +10,7 @@ export default function Carousel({
 }) {
   const buffersRef = useRef({
     pgText: null,
+    pgTextGreen: null,
     pgWarp: null,
     pgSpeckles: null,
   });
@@ -32,7 +33,9 @@ export default function Carousel({
 
   const BG_COLOR = [227, 48, 3];
   const TEXT_COL = [207, 207, 207];
+  const MOBILE_TEXT_COL = [112, 82, 8];
   const WORD = "WORK";
+  const MOBILE_WORK_TEXT_STYLE = "new"; // Use "committed" for the last committed mobile look.
 
   useEffect(() => {
     onIndexChange?.(stateRef.current.currentIdx + 1);
@@ -78,6 +81,7 @@ export default function Carousel({
     p5.pixelDensity(2);
 
     buffersRef.current.pgText = p5.createGraphics(p5.width, p5.height);
+    buffersRef.current.pgTextGreen = p5.createGraphics(p5.width, p5.height);
     buffersRef.current.pgWarp = p5.createGraphics(p5.width, p5.height);
     buffersRef.current.pgSpeckles = makeSpeckleLayer(p5);
 
@@ -185,25 +189,31 @@ export default function Carousel({
     ctx.restore();
   };
 
+  const prepTextBuffer = (p5, g, col) => {
+    g.clear();
+    g.fill(...col);
+    g.noStroke();
+    g.textAlign(p5.CENTER, p5.CENTER);
+    g.textFont("Impact");
+    g.textSize(p5.min(p5.width, p5.height) * 0.25);
+    g.text(WORD, p5.width / 2, p5.height / 2);
+  };
+
   const drawTextLayer = (p5) => {
-    const { pgText } = buffersRef.current;
-    pgText.clear();
-    pgText.fill(...TEXT_COL);
-    pgText.noStroke();
-    pgText.textAlign(p5.CENTER, p5.CENTER);
-    pgText.textFont("Impact");
-    pgText.textSize(p5.min(p5.width, p5.height) * 0.25);
-    pgText.text(WORD, p5.width / 2, p5.height / 2);
+    const { pgText, pgTextGreen } = buffersRef.current;
+    prepTextBuffer(p5, pgText, TEXT_COL);
+    prepTextBuffer(p5, pgTextGreen, MOBILE_TEXT_COL);
   };
 
   const draw = (p5) => {
-    const { pgText, pgWarp, pgSpeckles } = buffersRef.current;
+    const { pgText, pgTextGreen, pgWarp, pgSpeckles } = buffersRef.current;
     const media = mediaRef.current;
     const state = stateRef.current;
     const transition = transitionRef.current;
 
     if (
       !pgText ||
+      !pgTextGreen ||
       !pgWarp ||
       media.length !== mediaItems.length ||
       media.length === 0
@@ -524,15 +534,41 @@ export default function Carousel({
           leftExtra = directionalStretch;
         }
 
-        let finalW = baseW + leftExtra + rightExtra;
+        const isMobileText = p5.width < 720;
+        const mobileEdgeProgress = isMobileText
+          ? y < topBound
+            ? p5.map(y, topBound, 0, 0, 1, true)
+            : p5.map(y, bottomBound, p5.height, 0, 1, true)
+          : 0;
+        const mobileWave = isMobileText
+          ? p5.sin(mobileEdgeProgress * p5.PI * 1.55)
+          : 0;
+        const mobileBulge = isMobileText
+          ? p5.pow(Math.abs(mobileWave), 0.62)
+          : 0;
+        const useCommittedMobileText =
+          isMobileText && MOBILE_WORK_TEXT_STYLE === "committed";
+
+        // Last committed mobile WORK text:
+        // let finalW = baseW + leftExtra + rightExtra;
+        // let dx =
+        //   p5.width / 2 -
+        //   finalW / 2 +
+        //   globalSlide +
+        //   tailOffset +
+        //   centerShift;
+        // const textSource = pgText;
+        let finalW = isMobileText && !useCommittedMobileText
+          ? p5.lerp(imgW * 0.58, p5.width * 0.62, mobileBulge)
+          : baseW + leftExtra + rightExtra;
         let dx =
           p5.width / 2 -
           finalW / 2 +
           globalSlide +
-          tailOffset +
+          tailOffset *
+            (isMobileText && !useCommittedMobileText ? mobileBulge : 1) +
           centerShift;
 
-        const isMobileText = p5.width < 720;
         const textSampleSpan = isMobileText
           ? p5.min(p5.width, p5.height) * 0.11
           : 110;
@@ -553,7 +589,13 @@ export default function Carousel({
                 p5.height / 2 + textSampleSpan,
               );
 
-        pgWarp.image(pgText, dx, y, finalW, 1, 0, sy, p5.width, 1);
+        const useGreenText =
+          isMobileText &&
+          !useCommittedMobileText &&
+          (y < topBound ? mobileWave > 0.02 : mobileWave < -0.02);
+        const textSource = useGreenText ? pgTextGreen : pgText;
+
+        pgWarp.image(textSource, dx, y, finalW, 1, 0, sy, p5.width, 1);
       }
     }
     p5.image(pgWarp, 0, 0);
@@ -672,6 +714,10 @@ export default function Carousel({
       windowResized={(p5) => {
         p5.resizeCanvas(p5.windowWidth, p5.windowHeight);
         buffersRef.current.pgText = p5.createGraphics(p5.width, p5.height);
+        buffersRef.current.pgTextGreen = p5.createGraphics(
+          p5.width,
+          p5.height,
+        );
         buffersRef.current.pgWarp = p5.createGraphics(p5.width, p5.height);
         buffersRef.current.pgSpeckles = makeSpeckleLayer(p5);
         updateSideTargets(p5);
