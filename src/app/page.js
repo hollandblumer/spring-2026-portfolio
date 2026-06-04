@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Bricolage_Grotesque } from "next/font/google";
-import { ChevronLeft, ChevronRight, Grid3X3, Images } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import Preloader from "../components/Preloader";
 import Carousel from "../components/Carousel";
 import ImageSpiralCarousel from "../components/ImageSpiralCarousel";
@@ -136,6 +136,20 @@ function GridNineIcon(props) {
       ].map(([cx, cy]) => (
         <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="1.5" />
       ))}
+    </svg>
+  );
+}
+
+function HelixIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <path
+        d="M18.7 3.3C12.3 3.15 5.7 6.2 4.85 9.45C4.25 11.75 6.55 13.35 11.6 13.35C17.75 13.35 20.95 11.15 18.95 9.45C16.45 7.33 6.05 8.35 3.85 12.7C2.35 15.67 5.65 17.8 11 17.65C16.45 17.5 19.7 15.55 18.1 14.45C15.95 12.98 8.65 14.25 7.55 18.15C6.95 20.25 8.85 21.85 12.45 22.35"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.35"
+      />
     </svg>
   );
 }
@@ -519,7 +533,7 @@ export default function Home() {
               aria-label="Show image spiral carousel"
               title="Image spiral carousel"
             >
-              <Images className="h-4.5 w-4.5" aria-hidden="true" />
+              <HelixIcon className="h-4.5 w-4.5" aria-hidden="true" />
             </button>
             <button
               type="button"
@@ -532,7 +546,7 @@ export default function Home() {
               aria-label="Show image grid"
               title="Image grid"
             >
-              <Grid3X3 className="h-4.5 w-4.5" aria-hidden="true" />
+              <GridNineIcon className="h-4.5 w-4.5" aria-hidden="true" />
             </button>
           </div>
 
