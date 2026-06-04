@@ -2,8 +2,10 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Bricolage_Grotesque } from "next/font/google";
+import { ChevronLeft, ChevronRight, Images, Type } from "lucide-react";
 import Preloader from "../components/Preloader";
 import Carousel from "../components/Carousel";
+import ImageSpiralCarousel from "../components/ImageSpiralCarousel";
 import ElasticMenu from "../components/ElasticMenu";
 
 const INSTAGRAM_URL = "https://instagram.com/hollandblumer";
@@ -214,6 +216,9 @@ export default function Home() {
   const [showAboutCard, setShowAboutCard] = useState(false);
   const [expandedProjectId, setExpandedProjectId] = useState(null);
   const [showProjectPicker, setShowProjectPicker] = useState(false);
+  const [displayMode, setDisplayMode] = useState("spiral");
+  const [preloaderExiting, setPreloaderExiting] = useState(false);
+  const [spiralIntroReady, setSpiralIntroReady] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -267,6 +272,18 @@ export default function Home() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!preloaderExiting) return undefined;
+
+    const timeoutId = window.setTimeout(() => {
+      setSpiralIntroReady(true);
+    }, 420);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [preloaderExiting]);
+
   const handleIndexChange = useCallback((slideNumber) => {
     setCurrentSlide(slideNumber);
     setActiveIndex(slideNumber - 1);
@@ -281,6 +298,9 @@ export default function Home() {
   const showPreloader = !preloaderAnimationDone || !assetsReady;
   const activeProject = PROJECTS[activeIndex];
   const isProjectExpanded = activeProject && expandedProjectId === activeProject.id;
+  const isSpiralMode = displayMode === "spiral";
+  const showSpiralDuringPreloader =
+    showPreloader && preloaderExiting && spiralIntroReady;
 
   const handleOpenProject = () => {
     if (!activeProject) return;
@@ -300,18 +320,41 @@ export default function Home() {
     setCurrentSlide(index + 1);
   };
 
+  const handleStepProject = (direction) => {
+    const nextIndex =
+      (activeIndex + direction + PROJECTS.length) % PROJECTS.length;
+
+    setExpandedProjectId(null);
+    setActiveIndex(nextIndex);
+    setCurrentSlide(nextIndex + 1);
+  };
+
   return (
     <main
       className="w-screen h-screen overflow-hidden relative"
-      style={{ background: "#E33003", cursor: !showPreloader ? OLIVE_CURSOR : "auto" }}
+      style={{
+        background: "#E33003",
+        cursor: !showPreloader ? OLIVE_CURSOR : "auto",
+      }}
     >
-      {assetsReady && (
+      {assetsReady && !isSpiralMode && (
         <div className="animate-in fade-in duration-500">
           <Carousel
             mediaItems={PROJECTS}
             onIndexChange={handleIndexChange}
             canPlayActiveMedia={!showPreloader}
             currentIndex={activeIndex}
+          />
+        </div>
+      )}
+
+      {assetsReady && isSpiralMode && (!showPreloader || showSpiralDuringPreloader) && (
+        <div className="animate-in fade-in duration-500">
+          <ImageSpiralCarousel
+            mediaItems={PROJECTS}
+            currentIndex={activeIndex}
+            onIndexChange={handleIndexChange}
+            className={showSpiralDuringPreloader ? "z-[30]" : "z-[8]"}
           />
         </div>
       )}
@@ -430,6 +473,72 @@ export default function Home() {
               <LinkedInIcon className="h-5 w-5" />
             </a>
           </div>
+
+          <div className="absolute left-1/2 top-5 z-20 flex -translate-x-1/2 items-center gap-1 rounded-full border border-[rgba(207,207,207,0.32)] bg-[rgba(112,82,8,0.24)] p-1 text-[#cfcfcf] backdrop-blur-sm sm:top-6">
+            <button
+              type="button"
+              onClick={() => setDisplayMode("work")}
+              className={`flex h-9 w-9 items-center justify-center rounded-full transition ${
+                !isSpiralMode
+                  ? "bg-[rgba(207,207,207,0.22)] text-[#f1ece0]"
+                  : "text-[rgba(207,207,207,0.78)] hover:bg-[rgba(207,207,207,0.12)]"
+              }`}
+              aria-label="Show work text carousel"
+              title="Work text carousel"
+            >
+              <Type className="h-4.5 w-4.5" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setDisplayMode("spiral")}
+              className={`flex h-9 w-9 items-center justify-center rounded-full transition ${
+                isSpiralMode
+                  ? "bg-[rgba(207,207,207,0.22)] text-[#f1ece0]"
+                  : "text-[rgba(207,207,207,0.78)] hover:bg-[rgba(207,207,207,0.12)]"
+              }`}
+              aria-label="Show image spiral carousel"
+              title="Image spiral carousel"
+            >
+              <Images className="h-4.5 w-4.5" aria-hidden="true" />
+            </button>
+          </div>
+
+          {isSpiralMode && !showAboutCard && !showProjectPicker && (
+            <div className="pointer-events-none absolute inset-y-0 left-0 right-0 z-[18] flex items-center justify-between px-4 sm:px-6">
+              <button
+                type="button"
+                onPointerDown={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                }}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handleStepProject(-1);
+                }}
+                className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full border border-[rgba(112,82,8,0.18)] bg-[rgba(247,243,232,0.42)] text-[#705208] shadow-[0_12px_28px_rgba(112,82,8,0.12)] backdrop-blur-md transition hover:bg-[rgba(247,243,232,0.7)] hover:scale-105 sm:h-14 sm:w-14"
+                aria-label="Previous project"
+                title="Previous project"
+              >
+                <ChevronLeft className="h-6 w-6" aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                onPointerDown={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                }}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handleStepProject(1);
+                }}
+                className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full border border-[rgba(112,82,8,0.18)] bg-[rgba(247,243,232,0.42)] text-[#705208] shadow-[0_12px_28px_rgba(112,82,8,0.12)] backdrop-blur-md transition hover:bg-[rgba(247,243,232,0.7)] hover:scale-105 sm:h-14 sm:w-14"
+                aria-label="Next project"
+                title="Next project"
+              >
+                <ChevronRight className="h-6 w-6" aria-hidden="true" />
+              </button>
+            </div>
+          )}
 
           {!showAboutCard && activeProject && (
             <div className="pointer-events-none absolute inset-x-0 bottom-5 z-[14] flex justify-center px-5 sm:bottom-6">
@@ -607,9 +716,10 @@ export default function Home() {
       )}
 
       {showPreloader && (
-        <div className="absolute inset-0 z-10">
+        <div className={`absolute inset-0 ${preloaderExiting ? "z-[18]" : "z-[40]"}`}>
           <Preloader
             canExit={assetsReady}
+            onExitStart={() => setPreloaderExiting(true)}
             onComplete={() => setPreloaderAnimationDone(true)}
           />
         </div>

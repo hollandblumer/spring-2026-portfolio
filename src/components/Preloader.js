@@ -2,7 +2,11 @@
 import React, { useRef } from "react";
 import ClientSketch from "./ClientSketch";
 
-export default function Preloader({ onComplete, canExit = false }) {
+export default function Preloader({
+  onComplete,
+  onExitStart,
+  canExit = false,
+}) {
   const buffersRef = useRef({
     pgFront: null,
     pgBack: null,
@@ -13,6 +17,7 @@ export default function Preloader({ onComplete, canExit = false }) {
     mode: 0,
     completedBreaths: 0,
     phase: "breathing",
+    hasStartedExit: false,
     hasCompleted: false,
   });
 
@@ -125,6 +130,10 @@ export default function Preloader({ onComplete, canExit = false }) {
           animation.completedBreaths++;
           if (canExit && animation.completedBreaths >= 1) {
             animation.phase = "exit";
+            if (!animation.hasStartedExit) {
+              animation.hasStartedExit = true;
+              onExitStart?.();
+            }
           }
         }
       }
@@ -183,7 +192,10 @@ export default function Preloader({ onComplete, canExit = false }) {
       pgWarp.image(front ? pgFront : pgBack, dx, y, dw, 1, 0, sy, p5.width, 1);
     }
 
-    p5.background(...BG_COLOR);
+    p5.clear();
+    if (!inExit) {
+      p5.background(...BG_COLOR);
+    }
     p5.image(pgWarp, 0, 0);
 
     if (eraseProgress > 0) {
