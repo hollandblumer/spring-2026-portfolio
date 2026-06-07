@@ -220,6 +220,7 @@ function AboutOverlay({ onClose }) {
 
 function ProjectGridCard({ project, onSelect }) {
   const videoRef = useRef(null);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
 
   const handleMouseEnter = () => {
     const video = videoRef.current;
@@ -234,6 +235,7 @@ function ProjectGridCard({ project, onSelect }) {
     if (!video) return;
 
     video.pause();
+    setIsVideoPlaying(false);
     if (video.readyState > 0) {
       video.currentTime = 0;
     }
@@ -249,6 +251,11 @@ function ProjectGridCard({ project, onSelect }) {
       aria-label={`Open ${project.title}`}
     >
       <div className="relative aspect-[4/5] w-full overflow-hidden bg-[rgba(207,207,207,0.16)]">
+        <img
+          src={project.poster}
+          alt=""
+          className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.025]"
+        />
         {project.type === "video" ? (
           <video
             ref={videoRef}
@@ -258,16 +265,14 @@ function ProjectGridCard({ project, onSelect }) {
             loop
             playsInline
             preload="metadata"
+            onPlaying={() => setIsVideoPlaying(true)}
+            onPause={() => setIsVideoPlaying(false)}
             aria-hidden="true"
-            className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.025]"
+            className={`absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.025] ${
+              isVideoPlaying ? "opacity-100" : "opacity-0"
+            }`}
           />
-        ) : (
-          <img
-            src={project.poster}
-            alt=""
-            className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.025]"
-          />
-        )}
+        ) : null}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[rgba(25,14,3,0.78)] via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-visible:opacity-100" />
         <span
           className={`pointer-events-none absolute bottom-4 left-4 right-4 translate-y-2 text-base font-semibold leading-tight text-[#f1ece0] opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100 sm:bottom-5 sm:left-5 sm:right-5 sm:text-xl ${bricolage.className}`}
@@ -308,6 +313,7 @@ export default function Home() {
   const [showAboutCard, setShowAboutCard] = useState(false);
   const [expandedProjectId, setExpandedProjectId] = useState(null);
   const [showProjectPicker, setShowProjectPicker] = useState(false);
+  const [gridProjectIndex, setGridProjectIndex] = useState(null);
   const [displayMode, setDisplayMode] = useState("spiral");
   const [preloaderExiting, setPreloaderExiting] = useState(false);
   const [spiralIntroReady, setSpiralIntroReady] = useState(false);
@@ -389,6 +395,8 @@ export default function Home() {
     p5Ready;
   const showPreloader = !preloaderAnimationDone || !assetsReady;
   const activeProject = PROJECTS[activeIndex];
+  const gridProject =
+    gridProjectIndex === null ? null : PROJECTS[gridProjectIndex];
   const isProjectExpanded = activeProject && expandedProjectId === activeProject.id;
   const isSpiralMode = displayMode === "spiral";
   const isGridMode = displayMode === "grid";
@@ -411,6 +419,15 @@ export default function Home() {
     setExpandedProjectId(null);
     setActiveIndex(index);
     setCurrentSlide(index + 1);
+  };
+
+  const handleOpenGridProject = (index) => {
+    const project = PROJECTS[index];
+    if (!project) return;
+
+    setActiveIndex(index);
+    setCurrentSlide(index + 1);
+    setGridProjectIndex(index);
   };
 
   const handleStepProject = (direction) => {
@@ -443,7 +460,10 @@ export default function Home() {
 
       {assetsReady && isGridMode && !showPreloader && (
         <div className="animate-in fade-in zoom-in-[0.985] duration-500">
-          <ProjectGrid projects={PROJECTS} onSelectProject={handleSelectProject} />
+          <ProjectGrid
+            projects={PROJECTS}
+            onSelectProject={handleOpenGridProject}
+          />
         </div>
       )}
 
@@ -577,7 +597,10 @@ export default function Home() {
           <div className="absolute left-1/2 top-5 z-20 flex -translate-x-1/2 items-center gap-1 rounded-full border border-[rgba(207,207,207,0.32)] bg-[rgba(112,82,8,0.24)] p-1 text-[#cfcfcf] backdrop-blur-sm sm:top-6">
             <button
               type="button"
-              onClick={() => setDisplayMode("spiral")}
+              onClick={() => {
+                setGridProjectIndex(null);
+                setDisplayMode("spiral");
+              }}
               className={`flex h-9 w-9 items-center justify-center rounded-full transition ${
                 isSpiralMode
                   ? "bg-[rgba(207,207,207,0.22)] text-[#f1ece0]"
@@ -602,6 +625,59 @@ export default function Home() {
               <GridNineIcon className="h-4.5 w-4.5" aria-hidden="true" />
             </button>
           </div>
+
+          {isGridMode && gridProject && (
+            <>
+              <button
+                type="button"
+                className="slideout-backdrop"
+                aria-label="Close project details"
+                onClick={() => setGridProjectIndex(null)}
+                style={{ zIndex: 1000 }}
+              />
+              <div className="pointer-events-none fixed inset-0 z-[1001] flex items-center justify-center p-5 pt-20 sm:pt-24">
+                <div
+                  className="pointer-events-auto flex max-h-full w-full max-w-[760px] flex-col overflow-hidden rounded-[28px] border border-[rgba(207,207,207,0.24)] bg-[rgba(204,202,202,0.82)] p-5 text-[#705208] shadow-[0_24px_60px_rgba(0,0,0,0.24)] backdrop-blur-xl sm:p-6"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <div className="flex shrink-0 items-center justify-between gap-4">
+                    <p className={`text-lg uppercase tracking-[0.12em] ${bricolage.className}`}>
+                      {gridProject.title}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setGridProjectIndex(null)}
+                      className={`text-lg leading-none text-[rgba(112,82,8,0.72)] transition-opacity hover:opacity-60 ${bricolage.className}`}
+                      aria-label="Close project details"
+                    >
+                      x
+                    </button>
+                  </div>
+                  <div className="mt-5 min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1 [touch-action:pan-y]">
+                    <img
+                      src={gridProject.poster}
+                      alt={gridProject.title}
+                      className="mx-auto max-h-[48vh] w-full rounded-[18px] object-contain"
+                    />
+                    {gridProject.blurb && (
+                      <p className={`mt-5 whitespace-pre-line text-sm leading-6 sm:text-[15px] sm:leading-7 ${bricolage.className}`}>
+                        {gridProject.blurb}
+                      </p>
+                    )}
+                  </div>
+                  {gridProject.href && (
+                    <button
+                      type="button"
+                      onClick={() => router.push(gridProject.href)}
+                      className={`mt-5 shrink-0 self-start rounded-full border border-[rgba(112,82,8,0.22)] bg-[rgba(255,255,255,0.42)] px-5 py-2.5 text-xs uppercase tracking-[0.18em] transition hover:bg-[rgba(255,255,255,0.68)] ${bricolage.className}`}
+                    >
+                      open project
+                    </button>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
 
           {isSpiralMode && !showAboutCard && !showProjectPicker && (
             <div className="pointer-events-none absolute inset-y-0 left-0 right-0 z-[18] flex items-center justify-between px-4 sm:px-6">
@@ -641,28 +717,31 @@ export default function Home() {
           )}
 
           {isSpiralMode && !showAboutCard && activeProject && (
-            <div className="pointer-events-none absolute inset-x-0 bottom-5 z-[14] flex justify-center px-5 sm:bottom-6">
+            <div
+              className={`pointer-events-none absolute inset-x-0 z-[14] flex justify-center px-5 ${
+                isProjectExpanded
+                  ? "bottom-5 top-20 items-start sm:bottom-6 sm:top-24"
+                  : "bottom-5 sm:bottom-6"
+              }`}
+            >
               <div
                 className={`pointer-events-auto rounded-[24px] border border-[rgba(207,207,207,0.22)] bg-[linear-gradient(135deg,rgba(207,207,207,0.2)_0%,rgba(255,255,255,0.1)_50%,rgba(112,82,8,0.14)_100%)] text-[#f1ece0] shadow-[0_18px_40px_rgba(0,0,0,0.18)] backdrop-blur-[18px] transition-all duration-300 ${
                   isProjectExpanded
-                    ? "w-full max-w-[720px] px-5 py-5 sm:px-6"
+                    ? "flex max-h-full w-full max-w-[720px] flex-col overflow-hidden px-5 py-5 sm:px-6"
                     : "w-full max-w-[420px] px-4 py-3 sm:px-5"
                 }`}
                 onPointerDown={(event) => {
-                  event.preventDefault();
                   event.stopPropagation();
                 }}
                 onMouseDown={(event) => {
-                  event.preventDefault();
                   event.stopPropagation();
                 }}
                 onTouchStart={(event) => {
-                  event.preventDefault();
                   event.stopPropagation();
                 }}
                 onClick={(event) => event.stopPropagation()}
               >
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex shrink-0 items-start justify-between gap-4">
                   <div className="flex min-w-0 flex-1 items-center gap-3">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] border border-[rgba(241,236,224,0.18)] bg-[rgba(255,255,255,0.08)]">
                       <button
@@ -715,7 +794,7 @@ export default function Home() {
                   </div>
                 </div>
                 {isProjectExpanded && activeProject.blurb && !activeProject.href && (
-                  <p className={`mt-4 whitespace-pre-line text-sm leading-6 text-[rgba(241,236,224,0.92)] sm:text-[15px] sm:leading-7 ${bricolage.className}`}>
+                  <p className={`mt-4 min-h-0 flex-1 overflow-y-auto overscroll-contain whitespace-pre-line pr-2 text-sm leading-6 text-[rgba(241,236,224,0.92)] [touch-action:pan-y] sm:text-[15px] sm:leading-7 ${bricolage.className}`}>
                     {activeProject.blurb}
                   </p>
                 )}

@@ -398,10 +398,26 @@ export default function ImageSpiralCarousel({
         video.addEventListener("loadeddata", () => {
           videoCanvas.width = video.videoWidth;
           videoCanvas.height = video.videoHeight;
-          videoContext?.drawImage(video, 0, 0, videoCanvas.width, videoCanvas.height);
-          group.userData.videoReady = true;
-          group.userData.videoTexture.needsUpdate = true;
-          updateActiveVideoRef.current?.(focusRef.current);
+        });
+        video.addEventListener("playing", () => {
+          const revealFirstFrame = () => {
+            videoContext?.drawImage(
+              video,
+              0,
+              0,
+              videoCanvas.width,
+              videoCanvas.height,
+            );
+            group.userData.videoReady = true;
+            group.userData.videoTexture.needsUpdate = true;
+            updateActiveVideoRef.current?.(focusRef.current);
+          };
+
+          if ("requestVideoFrameCallback" in video) {
+            video.requestVideoFrameCallback(revealFirstFrame);
+          } else {
+            window.requestAnimationFrame(revealFirstFrame);
+          }
         });
 
         const videoTexture = new THREE.CanvasTexture(videoCanvas);
