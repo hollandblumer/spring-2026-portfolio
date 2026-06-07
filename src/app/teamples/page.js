@@ -222,7 +222,7 @@ export default function TemplatesPage() {
       </div>
 
       {!preloaderDone && (
-        <div className="fixed inset-0 z-[2000]">
+        <div className="fixed inset-0 z-[2000] bg-[#E33003]">
           <Preloader canExit onComplete={() => setPreloaderDone(true)} />
         </div>
       )}

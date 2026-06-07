@@ -8,6 +8,7 @@ export default function ImageSpiralCarousel({
   currentIndex = 0,
   onIndexChange,
   className = "",
+  particlesVisible = true,
 }) {
   const mountRef = useRef(null);
   const sceneRef = useRef(null);
@@ -30,16 +31,25 @@ export default function ImageSpiralCarousel({
   const triggerVortexRef = useRef(null);
   const lastMoveTimeRef = useRef(0);
   const previousIndexRef = useRef(currentIndex);
+  const updateActiveVideoRef = useRef(null);
+  const specklesRef = useRef(null);
 
   useEffect(() => {
     const previousIndex = previousIndexRef.current;
     focusRef.current = currentIndex;
     setFocusTargetRef.current?.(currentIndex);
+    updateActiveVideoRef.current?.(currentIndex);
     if (previousIndex !== currentIndex) {
       triggerVortexRef.current?.(0.62);
       previousIndexRef.current = currentIndex;
     }
   }, [currentIndex, mediaItems.length]);
+
+  useEffect(() => {
+    if (specklesRef.current) {
+      specklesRef.current.visible = particlesVisible;
+    }
+  }, [particlesVisible]);
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -273,6 +283,8 @@ export default function ImageSpiralCarousel({
     };
 
     const speckles = makeSpeckleField();
+    speckles.visible = particlesVisible;
+    specklesRef.current = speckles;
     scene.add(speckles);
 
     const makeImageMaterial = () => {
@@ -364,6 +376,44 @@ export default function ImageSpiralCarousel({
       group.userData.materials = {
         image: image.material,
       };
+      group.userData.posterTexture = null;
+      group.userData.videoTexture = null;
+      group.userData.video = null;
+      group.userData.videoReady = false;
+      group.userData.videoCanvas = null;
+      group.userData.videoContext = null;
+
+      if (item.type === "video" && item.src) {
+        const video = document.createElement("video");
+        const videoCanvas = document.createElement("canvas");
+        const videoContext = videoCanvas.getContext("2d", { alpha: false });
+        video.src = item.src;
+        video.muted = true;
+        video.loop = true;
+        video.playsInline = true;
+        video.preload = "metadata";
+        video.crossOrigin = "anonymous";
+        video.addEventListener("loadeddata", () => {
+          videoCanvas.width = video.videoWidth;
+          videoCanvas.height = video.videoHeight;
+          videoContext?.drawImage(video, 0, 0, videoCanvas.width, videoCanvas.height);
+          group.userData.videoReady = true;
+          group.userData.videoTexture.needsUpdate = true;
+          updateActiveVideoRef.current?.(focusRef.current);
+        });
+
+        const videoTexture = new THREE.CanvasTexture(videoCanvas);
+        videoTexture.colorSpace = THREE.SRGBColorSpace;
+        videoTexture.minFilter = THREE.LinearFilter;
+        videoTexture.magFilter = THREE.LinearFilter;
+        videoTexture.wrapS = THREE.ClampToEdgeWrapping;
+        videoTexture.wrapT = THREE.ClampToEdgeWrapping;
+
+        group.userData.video = video;
+        group.userData.videoTexture = videoTexture;
+        group.userData.videoCanvas = videoCanvas;
+        group.userData.videoContext = videoContext;
+      }
 
       textureLoader.load(imageSrc, (texture) => {
         texture.colorSpace = THREE.SRGBColorSpace;
@@ -378,14 +428,48 @@ export default function ImageSpiralCarousel({
         image.userData.aspect = imageAspect;
         applyImageScale(image);
 
+        group.userData.posterTexture = texture;
         image.material.uniforms.uTexture.value = texture;
         image.material.needsUpdate = true;
+        updateActiveVideoRef.current?.(focusRef.current);
       });
 
       scene.add(group);
       return group;
     });
     meshesRef.current = items;
+
+    const updateActiveVideo = (activeIndex) => {
+      meshesRef.current.forEach((poster) => {
+        const imageMaterial = poster.userData.materials.image;
+        const video = poster.userData.video;
+        const videoTexture = poster.userData.videoTexture;
+        const posterTexture = poster.userData.posterTexture;
+        const isActiveVideo =
+          poster.userData.index === activeIndex && Boolean(videoTexture);
+
+        if (isActiveVideo) {
+          imageMaterial.uniforms.uTexture.value = poster.userData.videoReady
+            ? videoTexture
+            : posterTexture || videoTexture;
+          video.currentTime ||= 0;
+          const playPromise = video.play();
+          playPromise?.catch(() => {});
+          return;
+        }
+
+        if (posterTexture) {
+          imageMaterial.uniforms.uTexture.value = posterTexture;
+        }
+
+        if (video) {
+          video.pause();
+        }
+      });
+    };
+
+    updateActiveVideoRef.current = updateActiveVideo;
+    updateActiveVideo(focusRef.current);
 
     const getRadius = () => {
       const minSide = Math.min(window.innerWidth, window.innerHeight);
@@ -451,6 +535,7 @@ export default function ImageSpiralCarousel({
       const wrapped = (nextIndex + mediaItems.length) % mediaItems.length;
       focusRef.current = wrapped;
       moveFocusTo(wrapped);
+      updateActiveVideoRef.current?.(wrapped);
       onIndexChange?.(wrapped + 1);
     };
 
@@ -594,6 +679,21 @@ export default function ImageSpiralCarousel({
 
         const depthFade = THREE.MathUtils.clamp((position.z + 18) / 34, 0.12, 1);
         const { image } = poster.userData.materials;
+        if (
+          isFocused &&
+          poster.userData.videoReady &&
+          poster.userData.videoContext &&
+          poster.userData.videoCanvas
+        ) {
+          poster.userData.videoContext.drawImage(
+            poster.userData.video,
+            0,
+            0,
+            poster.userData.videoCanvas.width,
+            poster.userData.videoCanvas.height,
+          );
+          poster.userData.videoTexture.needsUpdate = true;
+        }
         const textureReady = Boolean(image.uniforms.uTexture.value);
         image.uniforms.uTime.value = now * 0.001 + index * 0.31;
         image.uniforms.uOpacity.value =
@@ -658,16 +758,22 @@ export default function ImageSpiralCarousel({
         poster.traverse((child) => {
           if (!child.isMesh) return;
           child.geometry.dispose();
-          if (child.material.uniforms?.uTexture?.value) {
-            child.material.uniforms.uTexture.value.dispose();
-          }
           if (child.material.map) child.material.map.dispose();
           child.material.dispose();
         });
+        if (poster.userData.video) {
+          poster.userData.video.pause();
+          poster.userData.video.removeAttribute("src");
+          poster.userData.video.load();
+        }
+        poster.userData.posterTexture?.dispose();
+        poster.userData.videoTexture?.dispose();
       });
       meshesRef.current = [];
       setFocusTargetRef.current = null;
       triggerVortexRef.current = null;
+      updateActiveVideoRef.current = null;
+      specklesRef.current = null;
       scene.remove(speckles);
       speckles.geometry.dispose();
       speckles.material.dispose();

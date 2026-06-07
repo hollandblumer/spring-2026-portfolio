@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Bricolage_Grotesque } from "next/font/google";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -218,25 +218,77 @@ function AboutOverlay({ onClose }) {
   );
 }
 
+function ProjectGridCard({ project, onSelect }) {
+  const videoRef = useRef(null);
+
+  const handleMouseEnter = () => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const playPromise = video.play();
+    playPromise?.catch(() => {});
+  };
+
+  const handleMouseLeave = () => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.pause();
+    if (video.readyState > 0) {
+      video.currentTime = 0;
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      className="group block min-w-0 text-left"
+      aria-label={`Open ${project.title}`}
+    >
+      <div className="relative aspect-[4/5] w-full overflow-hidden bg-[rgba(207,207,207,0.16)]">
+        {project.type === "video" ? (
+          <video
+            ref={videoRef}
+            src={project.src}
+            poster={project.poster}
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            aria-hidden="true"
+            className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.025]"
+          />
+        ) : (
+          <img
+            src={project.poster}
+            alt=""
+            className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.025]"
+          />
+        )}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[rgba(25,14,3,0.78)] via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-visible:opacity-100" />
+        <span
+          className={`pointer-events-none absolute bottom-4 left-4 right-4 translate-y-2 text-base font-semibold leading-tight text-[#f1ece0] opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100 sm:bottom-5 sm:left-5 sm:right-5 sm:text-xl ${bricolage.className}`}
+        >
+          {project.title}
+        </span>
+      </div>
+    </button>
+  );
+}
+
 function ProjectGrid({ projects, onSelectProject }) {
   return (
     <section className="absolute inset-0 z-[8] overflow-y-auto bg-[#E33003] px-[15px] pb-28 pt-24 sm:pt-28">
       <div className="grid w-full grid-cols-2 gap-[15px] lg:grid-cols-3">
         {projects.map((project, index) => (
-          <button
+          <ProjectGridCard
             key={project.id}
-            type="button"
-            onClick={() => onSelectProject(index)}
-            className="group block min-w-0 text-left"
-          >
-            <div className="aspect-[4/5] w-full overflow-hidden bg-[rgba(207,207,207,0.16)]">
-              <img
-                src={project.poster}
-                alt={project.title}
-                className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.025]"
-              />
-            </div>
-          </button>
+            project={project}
+            onSelect={() => onSelectProject(index)}
+          />
         ))}
       </div>
     </section>
@@ -402,6 +454,7 @@ export default function Home() {
             currentIndex={activeIndex}
             onIndexChange={handleIndexChange}
             className={showSpiralDuringPreloader ? "z-[30]" : "z-[8]"}
+            particlesVisible={!showPreloader}
           />
         </div>
       )}
