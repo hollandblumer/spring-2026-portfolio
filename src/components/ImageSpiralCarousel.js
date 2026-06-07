@@ -291,6 +291,8 @@ export default function ImageSpiralCarousel({
       return new THREE.ShaderMaterial({
         side: THREE.DoubleSide,
         transparent: true,
+        depthTest: true,
+        depthWrite: false,
         uniforms: {
           uTexture: { value: null },
           uOpacity: { value: 0 },
@@ -669,6 +671,8 @@ export default function ImageSpiralCarousel({
 
         poster.position.copy(position.clone().add(drift));
         poster.position.y += float * localEase;
+        poster.userData.materials.image.renderOrder =
+          10000 + Math.round(poster.position.z * 100) + index;
         poster.lookAt(new THREE.Vector3(0, position.y * 0.28, 0));
         poster.rotateY(Math.PI);
         poster.rotateZ(
