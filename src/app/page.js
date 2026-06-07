@@ -613,7 +613,7 @@ export default function Home() {
                 }}
                 onClick={(event) => {
                   event.stopPropagation();
-                  handleStepProject(-1);
+                  handleStepProject(1);
                 }}
                 className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full border border-[rgba(112,82,8,0.18)] bg-[rgba(247,243,232,0.42)] text-[#705208] shadow-[0_12px_28px_rgba(112,82,8,0.12)] backdrop-blur-md transition hover:bg-[rgba(247,243,232,0.7)] hover:scale-105 sm:h-14 sm:w-14"
                 aria-label="Previous project"
@@ -629,7 +629,7 @@ export default function Home() {
                 }}
                 onClick={(event) => {
                   event.stopPropagation();
-                  handleStepProject(1);
+                  handleStepProject(-1);
                 }}
                 className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full border border-[rgba(112,82,8,0.18)] bg-[rgba(247,243,232,0.42)] text-[#705208] shadow-[0_12px_28px_rgba(112,82,8,0.12)] backdrop-blur-md transition hover:bg-[rgba(247,243,232,0.7)] hover:scale-105 sm:h-14 sm:w-14"
                 aria-label="Next project"
