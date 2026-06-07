@@ -149,6 +149,12 @@ nextjs-portal {
   cursor: pointer;
 }
 
+.slideout-menu .about-inline-link {
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+}
+
 .teamples-page {
   min-height: 100vh;
   background: #6a7040;

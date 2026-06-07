@@ -105,7 +105,15 @@ const PROJECTS = [
 function InstagramIcon(props) {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
-      <rect x="3.25" y="3.25" width="17.5" height="17.5" rx="5.5" stroke="currentColor" strokeWidth="1.8" />
+      <rect
+        x="3.25"
+        y="3.25"
+        width="17.5"
+        height="17.5"
+        rx="5.5"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
       <circle cx="12" cy="12" r="4.1" stroke="currentColor" strokeWidth="1.8" />
       <circle cx="17.4" cy="6.6" r="1.1" fill="currentColor" />
     </svg>
@@ -171,9 +179,20 @@ function AboutCard() {
       <p className="max-w-[30rem] text-lg leading-8 text-[rgba(112,82,8,0.88)] sm:text-[1.45rem] sm:leading-10">
         Holland Blumer is a Brooklyn-based creative technologist and computer
         scientist who builds design-driven, interactive digital experiences.
-        With a background in engineering, robotics, and full-stack
-        development, her work focuses on making online experiences feel more
-        intentional, visually distinct, and engaging.
+        With a background in engineering, design, robotics, and full-stack
+        development, she believes creativity will be needed more than ever in a
+        world shaped by AI. She cares deeply about making creative expression on
+        the internet more accessible and continues to build tools that make
+        experimentation easier. Check out her Templates feature{" "}
+        <a
+          href="https://hollandblumer.com/templates"
+          target="_blank"
+          rel="noreferrer"
+          className="about-inline-link underline underline-offset-4 transition-opacity hover:opacity-65"
+        >
+          here
+        </a>
+        .
       </p>
     </div>
   );
@@ -198,10 +217,7 @@ function AboutOverlay({ onClose }) {
         style={{ zIndex: 1000 }}
       />
       <div className="fixed left-5 top-5 z-[1003] h-11 w-11 sm:left-6 sm:top-6">
-        <ElasticMenu
-          isOpen
-          onClick={() => onClose()}
-        />
+        <ElasticMenu isOpen onClick={() => onClose()} />
       </div>
       <div
         className="slideout-menu open"
@@ -397,7 +413,8 @@ export default function Home() {
   const activeProject = PROJECTS[activeIndex];
   const gridProject =
     gridProjectIndex === null ? null : PROJECTS[gridProjectIndex];
-  const isProjectExpanded = activeProject && expandedProjectId === activeProject.id;
+  const isProjectExpanded =
+    activeProject && expandedProjectId === activeProject.id;
   const isSpiralMode = displayMode === "spiral";
   const isGridMode = displayMode === "grid";
   const showSpiralDuringPreloader =
@@ -467,17 +484,19 @@ export default function Home() {
         </div>
       )}
 
-      {assetsReady && isSpiralMode && (!showPreloader || showSpiralDuringPreloader) && (
-        <div className="animate-in fade-in duration-500">
-          <ImageSpiralCarousel
-            mediaItems={PROJECTS}
-            currentIndex={activeIndex}
-            onIndexChange={handleIndexChange}
-            className={showSpiralDuringPreloader ? "z-[30]" : "z-[8]"}
-            particlesVisible={!showPreloader}
-          />
-        </div>
-      )}
+      {assetsReady &&
+        isSpiralMode &&
+        (!showPreloader || showSpiralDuringPreloader) && (
+          <div className="animate-in fade-in duration-500">
+            <ImageSpiralCarousel
+              mediaItems={PROJECTS}
+              currentIndex={activeIndex}
+              onIndexChange={handleIndexChange}
+              className={showSpiralDuringPreloader ? "z-[30]" : "z-[8]"}
+              particlesVisible={!showPreloader}
+            />
+          </div>
+        )}
 
       {!showPreloader && (
         <>
@@ -641,7 +660,9 @@ export default function Home() {
                   onClick={(event) => event.stopPropagation()}
                 >
                   <div className="flex shrink-0 items-center justify-between gap-4">
-                    <p className={`text-lg uppercase tracking-[0.12em] ${bricolage.className}`}>
+                    <p
+                      className={`text-lg uppercase tracking-[0.12em] ${bricolage.className}`}
+                    >
                       {gridProject.title}
                     </p>
                     <button
@@ -660,7 +681,9 @@ export default function Home() {
                       className="mx-auto max-h-[48vh] w-full rounded-[18px] object-contain"
                     />
                     {gridProject.blurb && (
-                      <p className={`mt-5 whitespace-pre-line text-sm leading-6 sm:text-[15px] sm:leading-7 ${bricolage.className}`}>
+                      <p
+                        className={`mt-5 whitespace-pre-line text-sm leading-6 sm:text-[15px] sm:leading-7 ${bricolage.className}`}
+                      >
                         {gridProject.blurb}
                       </p>
                     )}
@@ -766,7 +789,9 @@ export default function Home() {
                       </button>
                     </div>
                     <div className="min-w-0 flex-1 text-center">
-                      <p className={`truncate px-1 text-center text-sm uppercase tracking-[0.1em] text-[#f3efe7] sm:text-[15px] ${bricolage.className}`}>
+                      <p
+                        className={`truncate px-1 text-center text-sm uppercase tracking-[0.1em] text-[#f3efe7] sm:text-[15px] ${bricolage.className}`}
+                      >
                         {activeProject.title}
                       </p>
                     </div>
@@ -789,15 +814,23 @@ export default function Home() {
                       onClick={handleOpenProject}
                       className={`flex h-10 min-w-10 items-center justify-center rounded-full border border-[rgba(241,236,224,0.16)] bg-[rgba(255,255,255,0.08)] px-3 text-[11px] uppercase tracking-[0.18em] text-[#f1ece0] transition hover:bg-[rgba(255,255,255,0.18)] ${bricolage.className}`}
                     >
-                      {activeProject.href ? "open" : isProjectExpanded ? "close" : "open"}
+                      {activeProject.href
+                        ? "open"
+                        : isProjectExpanded
+                          ? "close"
+                          : "open"}
                     </button>
                   </div>
                 </div>
-                {isProjectExpanded && activeProject.blurb && !activeProject.href && (
-                  <p className={`mt-4 min-h-0 flex-1 overflow-y-auto overscroll-contain whitespace-pre-line pr-2 text-sm leading-6 text-[rgba(241,236,224,0.92)] [touch-action:pan-y] sm:text-[15px] sm:leading-7 ${bricolage.className}`}>
-                    {activeProject.blurb}
-                  </p>
-                )}
+                {isProjectExpanded &&
+                  activeProject.blurb &&
+                  !activeProject.href && (
+                    <p
+                      className={`mt-4 min-h-0 flex-1 overflow-y-auto overscroll-contain whitespace-pre-line pr-2 text-sm leading-6 text-[rgba(241,236,224,0.92)] [touch-action:pan-y] sm:text-[15px] sm:leading-7 ${bricolage.className}`}
+                    >
+                      {activeProject.blurb}
+                    </p>
+                  )}
               </div>
             </div>
           )}
@@ -829,7 +862,9 @@ export default function Home() {
                   onClick={(event) => event.stopPropagation()}
                 >
                   <div className="flex items-center justify-between gap-4">
-                    <p className={`text-xs uppercase tracking-[0.22em] text-[rgba(112,82,8,0.64)] ${bricolage.className}`}>
+                    <p
+                      className={`text-xs uppercase tracking-[0.22em] text-[rgba(112,82,8,0.64)] ${bricolage.className}`}
+                    >
                       choose project
                     </p>
                     <button
@@ -847,31 +882,33 @@ export default function Home() {
                   </div>
                   <div className="mt-5 overflow-y-auto pr-1">
                     <div className="grid gap-4 sm:grid-cols-3">
-                    {PROJECTS.map((project, index) => (
-                      <button
-                        key={project.id}
-                        type="button"
-                        onPointerDown={(event) => {
-                          event.preventDefault();
-                          event.stopPropagation();
-                        }}
-                        onClick={() => handleSelectProject(index)}
-                        className="overflow-hidden rounded-[20px] border border-[rgba(112,82,8,0.16)] bg-[rgba(255,255,255,0.4)] text-left transition hover:bg-[rgba(255,255,255,0.6)]"
-                      >
-                        <div className="aspect-[1/1.3] w-full overflow-hidden bg-[rgba(112,82,8,0.08)]">
-                          <img
-                            src={project.poster}
-                            alt={project.title}
-                            className="h-full w-full object-cover"
-                          />
-                        </div>
-                        <div className="px-4 py-3">
-                          <p className={`text-sm uppercase tracking-[0.12em] text-[#705208] ${bricolage.className}`}>
-                            {project.title}
-                          </p>
-                        </div>
-                      </button>
-                    ))}
+                      {PROJECTS.map((project, index) => (
+                        <button
+                          key={project.id}
+                          type="button"
+                          onPointerDown={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                          }}
+                          onClick={() => handleSelectProject(index)}
+                          className="overflow-hidden rounded-[20px] border border-[rgba(112,82,8,0.16)] bg-[rgba(255,255,255,0.4)] text-left transition hover:bg-[rgba(255,255,255,0.6)]"
+                        >
+                          <div className="aspect-[1/1.3] w-full overflow-hidden bg-[rgba(112,82,8,0.08)]">
+                            <img
+                              src={project.poster}
+                              alt={project.title}
+                              className="h-full w-full object-cover"
+                            />
+                          </div>
+                          <div className="px-4 py-3">
+                            <p
+                              className={`text-sm uppercase tracking-[0.12em] text-[#705208] ${bricolage.className}`}
+                            >
+                              {project.title}
+                            </p>
+                          </div>
+                        </button>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -895,7 +932,9 @@ export default function Home() {
       )}
 
       {showPreloader && (
-        <div className={`absolute inset-0 ${preloaderExiting ? "z-[18]" : "z-[40]"}`}>
+        <div
+          className={`absolute inset-0 ${preloaderExiting ? "z-[18]" : "z-[40]"}`}
+        >
           <Preloader
             canExit={assetsReady}
             onExitStart={() => setPreloaderExiting(true)}
