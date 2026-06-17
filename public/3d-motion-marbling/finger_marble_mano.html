@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Finger Marble — Skeletal Orange Hand</title>
+<title>3D Motion Marbling — Skeletal Orange Hand</title>
 
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -23,6 +23,11 @@ canvas{position:absolute;inset:0;display:block}
   border:1px solid rgba(255,255,255,.38);
   box-shadow:0 12px 35px rgba(0,0,0,.28);
   transform:scaleX(-1);
+  visibility:hidden;
+}
+
+#video.is-active{
+  visibility:visible;
 }
 
 #ui{
@@ -56,7 +61,7 @@ canvas{position:absolute;inset:0;display:block}
   justify-content:center;
   width:100%;
   min-width:0;
-  min-height:72px;
+  min-height:68px;
   margin:0 0 .55rem;
   padding:0 .55rem;
   border:0;
@@ -68,10 +73,12 @@ canvas{position:absolute;inset:0;display:block}
 
 .template-controls-title span{
   display:block;
-  max-width:calc(100% - .65rem);
-  font-size:clamp(1.45rem,2.2vw,1.75rem);
+  max-width:100%;
+  font-size:clamp(.88rem,4.8vw,1.08rem);
   font-weight:700;
   letter-spacing:.03em;
+  line-height:1.05;
+  text-align:center;
   white-space:nowrap;
 }
 
@@ -79,17 +86,6 @@ canvas{position:absolute;inset:0;display:block}
   position:relative;
   z-index:2;
   color:#fff;
-  transform:translateX(-.15rem);
-}
-
-.template-controls-title .top::after{
-  content:"i";
-  position:absolute;
-  top:0;
-  margin-left:.32rem;
-  font-family:"Times New Roman",Times,serif;
-  font-size:.9rem;
-  font-style:italic;
 }
 
 .template-step{
@@ -232,6 +228,54 @@ input[type="range"]{
   text-transform:uppercase;
 }
 
+#cameraPrompt{
+  position:fixed;
+  inset:0;
+  z-index:50;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:1rem;
+  background:rgba(20,22,12,.28);
+  backdrop-filter:blur(4px);
+  -webkit-backdrop-filter:blur(4px);
+}
+
+#cameraPrompt.is-hidden{
+  display:none;
+}
+
+.camera-prompt-card{
+  width:min(320px,calc(100vw - 32px));
+  background:var(--template-olive,#697040);
+  color:#fff;
+  padding:1.35rem;
+  font-family:"Times New Roman",Times,serif;
+  text-transform:uppercase;
+}
+
+.camera-prompt-card h2{
+  margin:0 0 .65rem;
+  font-size:1.2rem;
+  line-height:1.05;
+  letter-spacing:.03em;
+}
+
+.camera-prompt-card p{
+  margin:0 0 1rem;
+  color:rgba(255,255,255,.82);
+  font-family:Arial,sans-serif;
+  font-size:.62rem;
+  font-weight:700;
+  line-height:1.35;
+  letter-spacing:.03em;
+}
+
+.camera-prompt-actions{
+  display:grid;
+  gap:.5rem;
+}
+
 @media (max-width:720px){
   #ui{
     top:12px;
@@ -252,14 +296,43 @@ input[type="range"]{
 <canvas id="scene"></canvas>
 <video id="video" playsinline autoplay muted></video>
 
+<div id="cameraPrompt" role="dialog" aria-modal="true" aria-labelledby="cameraPromptTitle">
+  <div class="camera-prompt-card">
+    <h2 id="cameraPromptTitle">Camera Controls</h2>
+    <p>Start the MANO camera stream to rake the marbling bath with your hand.</p>
+    <div class="camera-prompt-actions">
+      <button class="template-button" onclick="acceptCameraPrompt()">Start Camera</button>
+      <button class="template-button" onclick="dismissCameraPrompt()">Not Now</button>
+    </div>
+  </div>
+</div>
+
 <div id="ui">
   <div class="template-controls">
 
     <div class="template-controls-title">
-      <span class="top">Finger Marble</span>
+      <span class="top">3D Motion Marbling</span>
     </div>
 
     <details class="template-step" open>
+      <summary class="template-step-title">Camera</summary>
+      <p class="template-panel-description">A glowing skeletal hand rakes the paint.</p>
+      <div class="template-row">
+        <label class="template-control">
+          <div class="template-label-row">
+            <span class="template-label">Distortion</span>
+            <span class="template-value" id="distVal">42</span>
+          </div>
+          <input type="range" min="5" max="150" value="42"
+          oninput="settings.dist=+this.value;distVal.textContent=this.value">
+        </label>
+
+        <button class="template-button" onclick="startCamera()" id="camBtn">Start Camera</button>
+        <button class="template-button" onclick="calibrateHand()" id="calBtn">Calibrate Hand</button>
+      </div>
+    </details>
+
+    <details class="template-step">
       <summary class="template-step-title">Paint</summary>
       <p class="template-panel-description">Drop pigment onto the bath.</p>
       <div class="template-row">
@@ -282,24 +355,6 @@ input[type="range"]{
         </label>
 
         <button class="template-button" onclick="paintDrops()">Paint New Drops</button>
-      </div>
-    </details>
-
-    <details class="template-step" open>
-      <summary class="template-step-title">Camera</summary>
-      <p class="template-panel-description">A glowing skeletal hand rakes the paint.</p>
-      <div class="template-row">
-        <label class="template-control">
-          <div class="template-label-row">
-            <span class="template-label">Distortion</span>
-            <span class="template-value" id="distVal">42</span>
-          </div>
-          <input type="range" min="5" max="150" value="42"
-          oninput="settings.dist=+this.value;distVal.textContent=this.value">
-        </label>
-
-        <button class="template-button" onclick="startCamera()" id="camBtn">Start Camera</button>
-        <button class="template-button" onclick="calibrateHand()" id="calBtn">Calibrate Hand</button>
       </div>
     </details>
 
@@ -328,7 +383,7 @@ const mctx=marbleCanvas.getContext("2d",{willReadFrequently:true});
 const octx=sceneCanvas.getContext("2d");
 
 let w,h,off,offctx;
-let hands,handCamera,cameraRunning=false,handPollTimer=null;
+let hands,handCamera,cameraRunning=false,handPollTimer=null,previewStream=null;
 let lastFingerPositions=null;
 let frameCount=0;
 
@@ -1282,15 +1337,44 @@ function drawHandOverlay(landmarks, projectedVertices){
 
 /* CAMERA */
 
+async function startCameraPreview(){
+  if(previewStream) return true;
+
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    setStatus("Camera preview is not available in this browser.");
+    return false;
+  }
+
+  try{
+    previewStream=await navigator.mediaDevices.getUserMedia({
+      video:{
+        facingMode:"user",
+        width:{ideal:640},
+        height:{ideal:480}
+      },
+      audio:false
+    });
+    video.srcObject=previewStream;
+    video.classList.add("is-active");
+    await video.play();
+    return true;
+  }catch(err){
+    setStatus("Camera permission was not granted: "+err.message);
+    return false;
+  }
+}
+
 async function startCamera(){
   if(cameraRunning){
     setStatus("MANO stream already running.");
     return;
   }
 
-  setStatus("Connecting to MANO stream...");
+  setStatus("Starting camera preview...");
   camBtn.textContent="Starting...";
+  await startCameraPreview();
 
+  setStatus("Connecting to MANO stream...");
   cameraRunning=true;
   camBtn.textContent="MANO Active ✓";
   setStatus("Move your calibrated orange MANO mesh hand through the paint.");
@@ -1364,6 +1448,16 @@ function savePNG(){
   a.download="finger-marble.png";
   a.href=exportCanvas.toDataURL("image/png");
   a.click();
+}
+
+function dismissCameraPrompt(){
+  document.getElementById("cameraPrompt").classList.add("is-hidden");
+  setStatus("Camera controls are ready when you are.");
+}
+
+async function acceptCameraPrompt(){
+  dismissCameraPrompt();
+  await startCamera();
 }
 
 resize();
