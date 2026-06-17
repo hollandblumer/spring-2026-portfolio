@@ -6,8 +6,8 @@
 
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{width:100%;height:100%;overflow:hidden;background:#f4ecd2;font-family:Arial,sans-serif}
-canvas{position:absolute;inset:0;display:block}
+html,body{width:100vw;height:100dvh;min-width:100vw;min-height:100dvh;overflow:hidden;background:#f4ecd2;font-family:Arial,sans-serif}
+canvas{position:fixed;inset:0;width:100vw;height:100dvh;display:block}
 #marbleCanvas{z-index:1}
 #scene{z-index:6;pointer-events:none}
 #video{
@@ -42,6 +42,7 @@ canvas{position:absolute;inset:0;display:block}
   --template-light-gray:#cfcfcf;
   --template-olive:#697040;
   --template-forest:#3d4224;
+  position:relative;
   display:flex;
   flex-direction:column;
   gap:.28rem;
@@ -52,6 +53,28 @@ canvas{position:absolute;inset:0;display:block}
   box-shadow:none;
   perspective:1200px;
   overflow:hidden;
+}
+
+.template-close{
+  position:absolute;
+  top:.45rem;
+  left:.45rem;
+  z-index:3;
+  width:1.75rem;
+  height:1.75rem;
+  border:1px solid rgba(207,207,207,.38);
+  background:rgba(207,207,207,.88);
+  color:#111;
+  cursor:pointer;
+  font-family:Arial,sans-serif;
+  font-size:1rem;
+  font-weight:700;
+  line-height:1;
+}
+
+.template-close:hover{
+  background:#fff;
+  border-color:rgba(255,255,255,.82);
 }
 
 .template-controls-title{
@@ -309,6 +332,7 @@ input[type="range"]{
 
 <div id="ui">
   <div class="template-controls">
+    <button class="template-close" type="button" aria-label="Close controls" onclick="closeControls()">x</button>
 
     <div class="template-controls-title">
       <span class="top">3D Motion Marbling</span>
@@ -383,7 +407,7 @@ const mctx=marbleCanvas.getContext("2d",{willReadFrequently:true});
 const octx=sceneCanvas.getContext("2d");
 
 let w,h,off,offctx;
-let hands,handCamera,cameraRunning=false,handPollTimer=null,previewStream=null;
+let hands,handCamera,cameraRunning=false,handPollTimer=null;
 let lastFingerPositions=null;
 let frameCount=0;
 
@@ -423,7 +447,7 @@ let smoothedMeshPoints=null;
 let handCalibration=null;
 let handDepthBaseline=null;
 let handDepthScale=1;
-const mirrorManoDisplay=false;
+const mirrorManoDisplay=true;
 const invertManoDepth=true;
 const rotateManoDisplay180=false;
 const flipManoIntoCameraX=false;
@@ -813,10 +837,10 @@ function applyScreenDepthPerspective(points,landmarks){
   return points.map(p=>{
     const depth=(p.z-.5);
     const signedDepth=flipManoIntoCameraX ? -depth : depth;
-    const scale=1-signedDepth*.22;
+    const scale=1-signedDepth*.08;
     return {
       x:center.x+(p.x-center.x)*scale,
-      y:center.y+(p.y-center.y)*(1-signedDepth*.08),
+      y:center.y+(p.y-center.y)*(1-signedDepth*.03),
       z:p.z
     };
   });
@@ -1337,50 +1361,22 @@ function drawHandOverlay(landmarks, projectedVertices){
 
 /* CAMERA */
 
-async function startCameraPreview(){
-  if(previewStream) return true;
-
-  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-    setStatus("Camera preview is not available in this browser.");
-    return false;
-  }
-
-  try{
-    previewStream=await navigator.mediaDevices.getUserMedia({
-      video:{
-        facingMode:"user",
-        width:{ideal:640},
-        height:{ideal:480}
-      },
-      audio:false
-    });
-    video.srcObject=previewStream;
-    video.classList.add("is-active");
-    await video.play();
-    return true;
-  }catch(err){
-    setStatus("Camera permission was not granted: "+err.message);
-    return false;
-  }
-}
-
 async function startCamera(){
   if(cameraRunning){
-    setStatus("MANO stream already running.");
+    setStatus("MANO controls are already running.");
     return;
   }
 
-  setStatus("Starting camera preview...");
-  camBtn.textContent="Starting...";
-  await startCameraPreview();
-
   setStatus("Connecting to MANO stream...");
+  camBtn.textContent="Starting...";
+
   cameraRunning=true;
-  camBtn.textContent="MANO Active ✓";
-  setStatus("Move your calibrated orange MANO mesh hand through the paint.");
+  camBtn.textContent="MANO Active";
 
   const tick=async()=>{
+    if(!cameraRunning) return;
     try{
+      frameCount++;
       const res=await fetch(`${dataUrl("current_hand_state.json")}?t=${Date.now()}`,{cache:"no-store"});
       if(!res.ok) throw new Error("Start the MANO Python runner first.");
       const state=await res.json();
@@ -1400,9 +1396,11 @@ async function startCamera(){
         drawHandOverlay(displayLandmarks, state.projectedVertices);
         applyFingerComb(tips,lastFingerPositions);
         lastFingerPositions=tips;
+        setStatus("Move your calibrated MANO hand through the paint.");
       }else{
         octx.clearRect(0,0,w,h);
         lastFingerPositions=null;
+        setStatus("MANO stream is live. Show your hand to the camera.");
       }
     }catch(err){
       setStatus("Waiting for MANO stream: "+err.message);
@@ -1458,6 +1456,10 @@ function dismissCameraPrompt(){
 async function acceptCameraPrompt(){
   dismissCameraPrompt();
   await startCamera();
+}
+
+function closeControls(){
+  document.getElementById("ui").style.display="none";
 }
 
 resize();
