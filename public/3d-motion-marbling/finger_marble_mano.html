@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Finger Marble — Skeletal Orange Hand</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:#f4ecd2;font-family:Arial,sans-serif}
+canvas{position:absolute;inset:0;display:block}
+#marbleCanvas{z-index:1}
+#scene{z-index:6;pointer-events:none}
+#video{
+  position:fixed;
+  right:14px;
+  bottom:14px;
+  width:220px;
+  aspect-ratio:4/3;
+  object-fit:cover;
+  opacity:.72;
+  pointer-events:none;
+  z-index:28;
+  border:1px solid rgba(255,255,255,.38);
+  box-shadow:0 12px 35px rgba(0,0,0,.28);
+  transform:scaleX(-1);
+}
+
+#ui{
+  position:fixed;
+  top:14px;
+  left:14px;
+  width:250px;
+  z-index:30;
+}
+
+.template-controls{
+  --tolive:#4a4f2a;
+  --tforest:#252815;
+  display:flex;
+  flex-direction:column;
+  gap:.32rem;
+  padding:1rem;
+  background:var(--tolive);
+  box-shadow:0 0 0 2px rgba(255,255,255,.18);
+}
+
+.template-controls-title{
+  min-height:76px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  background:rgba(0,0,0,.12);
+  border:1px solid rgba(255,255,255,.16);
+  font-family:"Times New Roman",Times,serif;
+  text-transform:uppercase;
+}
+
+.template-controls-title span{
+  display:block;
+  font-size:1.55rem;
+  font-weight:700;
+  letter-spacing:.03em;
+}
+
+.template-controls-title .top{color:#fff}
+.template-controls-title .bottom{color:rgba(255,255,255,.22);transform:rotate(180deg)}
+
+.template-step{
+  border:1px solid rgba(255,255,255,.14);
+  background:linear-gradient(to bottom,var(--tolive),var(--tforest));
+}
+
+.template-step-title{
+  min-height:44px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:0 .85rem;
+  color:#fff;
+  font-family:"Times New Roman",Times,serif;
+  font-size:1rem;
+  font-weight:700;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+  cursor:pointer;
+  list-style:none;
+}
+
+.template-step-title::-webkit-details-marker{display:none}
+.template-step-title::after{content:"↯";font-size:1.25rem}
+
+.template-panel-description{
+  padding:0 .85rem .65rem;
+  color:rgba(255,255,255,.78);
+  font-size:.6rem;
+  font-weight:700;
+  line-height:1.3;
+  text-transform:uppercase;
+}
+
+.template-row{
+  display:grid;
+  gap:.65rem;
+  padding:.65rem .85rem .9rem;
+  background:rgba(0,0,0,.18);
+}
+
+.template-control{display:grid;gap:.24rem}
+
+.template-label-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.template-label,.template-value{
+  color:#fff;
+  font-size:.62rem;
+  font-weight:700;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+}
+
+.template-value{color:#dedbd0}
+
+input[type="range"]{
+  width:100%;
+  accent-color:#f26a00;
+}
+
+.template-button{
+  border:1px solid rgba(255,255,255,.32);
+  background:linear-gradient(#f4f0e6,#c9c6b8);
+  color:#33351d;
+  cursor:pointer;
+  font-family:"Times New Roman",Times,serif;
+  font-size:.72rem;
+  font-weight:700;
+  letter-spacing:.06em;
+  padding:.55rem;
+  text-transform:uppercase;
+}
+
+.template-button:hover{background:#fff}
+
+#status{
+  padding:.5rem .2rem .2rem;
+  color:#ffb347;
+  font-size:.62rem;
+  font-weight:700;
+  line-height:1.35;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="marbleCanvas"></canvas>
+<canvas id="scene"></canvas>
+<video id="video" playsinline autoplay muted></video>
+
+<div id="ui">
+  <div class="template-controls">
+
+    <div class="template-controls-title">
+      <span class="top">Finger Marble</span>
+      <span class="bottom">Finger Marble</span>
+    </div>
+
+    <details class="template-step" open>
+      <summary class="template-step-title">Paint</summary>
+      <p class="template-panel-description">Drop pigment onto the bath.</p>
+      <div class="template-row">
+        <label class="template-control">
+          <div class="template-label-row">
+            <span class="template-label">Drop Density</span>
+            <span class="template-value" id="dropVal">95</span>
+          </div>
+          <input type="range" min="20" max="220" value="95"
+          oninput="settings.drops=+this.value;dropVal.textContent=this.value">
+        </label>
+
+        <label class="template-control">
+          <div class="template-label-row">
+            <span class="template-label">Drop Size</span>
+            <span class="template-value" id="sizeVal">32</span>
+          </div>
+          <input type="range" min="8" max="80" value="32"
+          oninput="settings.size=+this.value;sizeVal.textContent=this.value">
+        </label>
+
+        <button class="template-button" onclick="paintDrops()">Paint New Drops</button>
+      </div>
+    </details>
+
+    <details class="template-step" open>
+      <summary class="template-step-title">Camera</summary>
+      <p class="template-panel-description">A glowing skeletal hand rakes the paint.</p>
+      <div class="template-row">
+        <label class="template-control">
+          <div class="template-label-row">
+            <span class="template-label">Distortion</span>
+            <span class="template-value" id="distVal">42</span>
+          </div>
+          <input type="range" min="5" max="150" value="42"
+          oninput="settings.dist=+this.value;distVal.textContent=this.value">
+        </label>
+
+        <button class="template-button" onclick="startCamera()" id="camBtn">Start Camera</button>
+        <button class="template-button" onclick="calibrateHand()" id="calBtn">Calibrate Hand</button>
+      </div>
+    </details>
+
+    <details class="template-step">
+      <summary class="template-step-title">Finish</summary>
+      <p class="template-panel-description">Apply grain or export the image.</p>
+      <div class="template-row">
+        <button class="template-button" onclick="finishPrint()">Apply Print Effect</button>
+        <button class="template-button" onclick="savePNG()">Save PNG</button>
+        <button class="template-button" onclick="restart()">Restart</button>
+      </div>
+    </details>
+
+    <div id="status">Ready. Paint is loaded.</div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+
+<script>
+const marbleCanvas=document.getElementById("marbleCanvas");
+const sceneCanvas=document.getElementById("scene");
+const video=document.getElementById("video");
+const mctx=marbleCanvas.getContext("2d",{willReadFrequently:true});
+const octx=sceneCanvas.getContext("2d");
+
+let w,h,off,offctx;
+let hands,handCamera,cameraRunning=false,handPollTimer=null;
+let lastFingerPositions=null;
+let frameCount=0;
+
+const settings={drops:95,size:32,dist:42};
+const apiParam=new URLSearchParams(window.location.search).get("api");
+const localApiBase=["localhost","127.0.0.1","::1"].includes(window.location.hostname)
+  ? "http://127.0.0.1:8000"
+  : "";
+const API_BASE=(apiParam || localApiBase).replace(/\/$/,"");
+function dataUrl(path){
+  return API_BASE ? `${API_BASE}/${path}` : path;
+}
+
+const palette=[
+  [255,255,255],[255,235,59],[255,193,7],
+  [255,111,0],[255,87,34],[244,67,54],
+  [0,150,136],[0,121,191],[33,80,180],
+  [76,175,80],[0,105,70],[156,39,176],
+  [233,30,99],[35,35,35]
+];
+
+const TIP_INDICES=[4,8,12,16,20];
+const MANO_TIP_VERTICES=[745,317,445,556,673];
+
+const BONES=[
+ [0,1],[1,2],[2,3],[3,4],
+ [0,5],[5,6],[6,7],[7,8],
+ [0,9],[9,10],[10,11],[11,12],
+ [0,13],[13,14],[14,15],[15,16],
+ [0,17],[17,18],[18,19],[19,20],
+ [5,9],[9,13],[13,17]
+];
+
+let manoMesh=null;
+let manoMeshLoadedAt=0;
+let smoothedMeshPoints=null;
+let handCalibration=null;
+let handDepthBaseline=null;
+let handDepthScale=1;
+const mirrorManoDisplay=false;
+const invertManoDepth=true;
+const rotateManoDisplay180=false;
+const flipManoIntoCameraX=false;
+const tiltManoIntoScreenY=false;
+const lockManoFingerDirection=false;
+const manoFingerTargetAngle=-Math.PI/2.15;
+const forceManoIntoPage=false;
+const useLandmarkDrivenHand=false;
+
+const MANO_VERTEX_REGIONS=[
+  {name:"thumb", chain:[1,2,3,4], anchor:4},
+  {name:"index", chain:[5,6,7,8], anchor:8},
+  {name:"middle", chain:[9,10,11,12], anchor:12},
+  {name:"ring", chain:[13,14,15,16], anchor:16},
+  {name:"pinky", chain:[17,18,19,20], anchor:20},
+];
+
+function rand(a,b){return a+Math.random()*(b-a)}
+function pick(arr){return arr[Math.floor(Math.random()*arr.length)]}
+function setStatus(t){document.getElementById("status").textContent=t}
+
+function resize(){
+  w=innerWidth;
+  h=innerHeight;
+
+  marbleCanvas.width=w;
+  marbleCanvas.height=h;
+  sceneCanvas.width=w;
+  sceneCanvas.height=h;
+
+  off=document.createElement("canvas");
+  off.width=Math.floor(w*.78);
+  off.height=Math.floor(h*.78);
+  offctx=off.getContext("2d",{willReadFrequently:true});
+
+  paintDrops();
+}
+
+window.addEventListener("resize",resize);
+
+function clearBath(){
+  offctx.fillStyle="#fff8e9";
+  offctx.fillRect(0,0,off.width,off.height);
+}
+
+function paintDrops(){
+  clearBath();
+
+  for(let i=0;i<settings.drops;i++){
+    const x=rand(0,off.width);
+    const y=rand(0,off.height);
+    const r=rand(settings.size*.75,settings.size*5.3);
+    const c=pick(palette);
+
+    const g=offctx.createRadialGradient(x,y,0,x,y,r);
+    g.addColorStop(0,`rgba(${c[0]},${c[1]},${c[2]},.98)`);
+    g.addColorStop(.55,`rgba(${c[0]},${c[1]},${c[2]},.88)`);
+    g.addColorStop(1,`rgba(${c[0]},${c[1]},${c[2]},0)`);
+
+    offctx.fillStyle=g;
+    offctx.beginPath();
+    offctx.arc(x,y,r,0,Math.PI*2);
+    offctx.fill();
+  }
+
+  soften(1);
+  drawScreen();
+}
+
+function soften(times){
+  for(let i=0;i<times;i++){
+    offctx.globalAlpha=.15;
+    offctx.drawImage(off,-1,0);
+    offctx.drawImage(off,1,0);
+    offctx.drawImage(off,0,-1);
+    offctx.drawImage(off,0,1);
+    offctx.globalAlpha=1;
+  }
+}
+
+function drawScreen(){
+  mctx.clearRect(0,0,w,h);
+  mctx.fillStyle="#f4ecd2";
+  mctx.fillRect(0,0,w,h);
+  mctx.drawImage(off,0,0,w,h);
+}
+
+function pullPaint(cx,cy,dx,dy,radius){
+  const W=off.width,H=off.height;
+  const scaleX=W/w,scaleY=H/h;
+  const x0=cx*scaleX,y0=cy*scaleY;
+
+  const src=offctx.getImageData(0,0,W,H);
+  const dst=offctx.createImageData(W,H);
+  const s=src.data,d=dst.data;
+
+  for(let y=0;y<H;y++){
+    for(let x=0;x<W;x++){
+      const px=x-x0,py=y-y0;
+      const dist=Math.sqrt(px*px+py*py);
+      const force=Math.exp(-(dist*dist)/(2*radius*radius));
+
+      const sx=Math.max(0,Math.min(W-1,Math.round(x-dx*scaleX*force)));
+      const sy=Math.max(0,Math.min(H-1,Math.round(y-dy*scaleY*force)));
+
+      const si=(sy*W+sx)*4;
+      const di=(y*W+x)*4;
+
+      d[di]=s[si];
+      d[di+1]=s[si+1];
+      d[di+2]=s[si+2];
+      d[di+3]=255;
+    }
+  }
+
+  offctx.putImageData(dst,0,0);
+}
+
+function applyFingerComb(fingerTips,prevTips){
+  if(!prevTips || fingerTips.length===0)return;
+
+  const W=off.width,H=off.height;
+  const scaleX=W/w,scaleY=H/h;
+
+  let totalDx=0,totalDy=0,count=0;
+
+  for(let i=0;i<Math.min(fingerTips.length,prevTips.length);i++){
+    totalDx+=fingerTips[i].x-prevTips[i].x;
+    totalDy+=fingerTips[i].y-prevTips[i].y;
+    count++;
+  }
+
+  const dx=totalDx/count;
+  const dy=totalDy/count;
+  const movement=Math.sqrt(dx*dx+dy*dy);
+
+  if(movement<3)return;
+
+  const nx=dx/movement;
+  const ny=dy/movement;
+
+  const src=offctx.getImageData(0,0,W,H);
+  const dst=offctx.createImageData(W,H);
+  const s=src.data,d=dst.data;
+
+  for(let y=0;y<H;y++){
+    for(let x=0;x<W;x++){
+      const sxScreen=x/scaleX;
+      const syScreen=y/scaleY;
+
+      let totalForce=0;
+
+      for(let fi=0;fi<fingerTips.length;fi++){
+        const ft=fingerTips[fi];
+        const diffX=sxScreen-ft.x;
+        const diffY=syScreen-ft.y;
+
+        const perp=diffX*(-ny)+diffY*nx;
+        const along=diffX*nx+diffY*ny;
+
+        totalForce+=
+          Math.exp(-(perp*perp)/(2*30*30)) *
+          Math.exp(-(along*along)/(2*115*115));
+      }
+
+      const wave=Math.sin((x+y)*.018+frameCount*.04)*4;
+      const srcX=Math.max(0,Math.min(W-1,Math.round(x+nx*totalForce*settings.dist*scaleX+wave*totalForce)));
+      const srcY=Math.max(0,Math.min(H-1,Math.round(y+ny*totalForce*settings.dist*scaleY)));
+
+      const si=(srcY*W+srcX)*4;
+      const di=(y*W+x)*4;
+
+      d[di]=s[si];
+      d[di+1]=s[si+1];
+      d[di+2]=s[si+2];
+      d[di+3]=255;
+    }
+  }
+
+  offctx.putImageData(dst,0,0);
+  soften(1);
+  drawScreen();
+}
+
+/* ── LIVE MANO OBJ WIREFRAME HAND ── */
+
+function parseObjMesh(text){
+  const vertices=[];
+  const edges=new Set();
+
+  for(const line of text.split("\n")){
+    const parts=line.trim().split(/\s+/);
+    if(parts[0]==="v" && parts.length>=4){
+      vertices.push({
+        x:Number(parts[1]),
+        y:Number(parts[2]),
+        z:Number(parts[3])
+      });
+    }else if(parts[0]==="f" && parts.length>=4){
+      const ids=parts.slice(1).map(part=>Number(part.split("/")[0])-1);
+      for(let i=1;i<ids.length-1;i++){
+        const tri=[ids[0],ids[i],ids[i+1]];
+        for(const [a,b] of [[tri[0],tri[1]],[tri[1],tri[2]],[tri[2],tri[0]]]){
+          const lo=Math.min(a,b), hi=Math.max(a,b);
+          edges.add(`${lo},${hi}`);
+        }
+      }
+    }
+  }
+
+  if(!vertices.length || !edges.size) return null;
+
+  const bounds=vertices.reduce((acc,v)=>({
+    minX:Math.min(acc.minX,v.x),
+    maxX:Math.max(acc.maxX,v.x),
+    minY:Math.min(acc.minY,v.y),
+    maxY:Math.max(acc.maxY,v.y),
+    minZ:Math.min(acc.minZ,v.z),
+    maxZ:Math.max(acc.maxZ,v.z)
+  }),{minX:Infinity,maxX:-Infinity,minY:Infinity,maxY:-Infinity,minZ:Infinity,maxZ:-Infinity});
+
+  return {
+    vertices,
+    edges:[...edges].map(edge=>edge.split(",").map(Number)),
+    bounds,
+    regions:buildManoRegions(vertices,bounds)
+  };
+}
+
+function buildManoRegions(vertices,bounds){
+  const width=Math.max(1,bounds.maxX-bounds.minX);
+  const height=Math.max(1,bounds.maxY-bounds.minY);
+  const palmY=bounds.minY+height*.42;
+
+  return vertices.map(v=>{
+    const nx=(v.x-bounds.minX)/width;
+    const ny=(v.y-bounds.minY)/height;
+    let region=2;
+
+    if(ny<.56){
+      if(nx<.22) region=0;
+      else if(nx<.42) region=1;
+      else if(nx<.62) region=2;
+      else if(nx<.82) region=3;
+      else region=4;
+    }
+
+    const fingerBaseY=bounds.minY+height*.3;
+    const t=Math.max(0,Math.min(1,(v.y-fingerBaseY)/(bounds.maxY-fingerBaseY || 1)));
+    const offset=(nx-(region+.5)/5)*width*.22;
+    return {region,t,offset,isPalm:v.y<palmY};
+  });
+}
+
+async function refreshManoMesh(){
+  const now=performance.now();
+  if(now-manoMeshLoadedAt<280) return;
+  manoMeshLoadedAt=now;
+
+  try{
+    const res=await fetch(`${dataUrl("current_hand_mesh.obj")}?t=${Date.now()}`,{cache:"no-store"});
+    if(!res.ok) return;
+    const mesh=parseObjMesh(await res.text());
+    if(mesh) manoMesh=mesh;
+  }catch(_err){}
+}
+
+function landmarkBounds(landmarks){
+  let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+  for(const lm of landmarks){
+    minX=Math.min(minX,lm.x*w);
+    maxX=Math.max(maxX,lm.x*w);
+    minY=Math.min(minY,lm.y*h);
+    maxY=Math.max(maxY,lm.y*h);
+  }
+  return {
+    x:(minX+maxX)/2,
+    y:(minY+maxY)/2,
+    width:Math.max(1,maxX-minX),
+    height:Math.max(1,maxY-minY)
+  };
+}
+
+function drawMeshFallback(landmarks){
+  octx.strokeStyle='rgba(255,120,0,0.75)';
+  octx.lineWidth=3;
+  for(const [a,b] of BONES){
+    const la=landmarks[a], lb=landmarks[b];
+    octx.beginPath();
+    octx.moveTo(la.x*w, la.y*h);
+    octx.lineTo(lb.x*w, lb.y*h);
+    octx.stroke();
+  }
+}
+
+function smoothProjectedPoints(points){
+  if(!points || !points.length){
+    smoothedMeshPoints=null;
+    return null;
+  }
+
+  if(!smoothedMeshPoints || smoothedMeshPoints.length!==points.length){
+    smoothedMeshPoints=points.map(p=>({x:p[0],y:p[1],z:p[2]||0}));
+    return smoothedMeshPoints;
+  }
+
+  const alpha=.28;
+  for(let i=0;i<points.length;i++){
+    smoothedMeshPoints[i].x+=((points[i][0])-smoothedMeshPoints[i].x)*alpha;
+    smoothedMeshPoints[i].y+=((points[i][1])-smoothedMeshPoints[i].y)*alpha;
+    smoothedMeshPoints[i].z+=(((points[i][2]||0))-smoothedMeshPoints[i].z)*alpha;
+  }
+  return smoothedMeshPoints;
+}
+
+function solveSimilarityTransform(source,target){
+  if(!source.length || source.length!==target.length) return null;
+
+  const srcMean=source.reduce((acc,p)=>({x:acc.x+p.x,y:acc.y+p.y}),{x:0,y:0});
+  const tgtMean=target.reduce((acc,p)=>({x:acc.x+p.x,y:acc.y+p.y}),{x:0,y:0});
+  srcMean.x/=source.length; srcMean.y/=source.length;
+  tgtMean.x/=target.length; tgtMean.y/=target.length;
+
+  let a=0,b=0,den=0;
+  for(let i=0;i<source.length;i++){
+    const sx=source[i].x-srcMean.x;
+    const sy=source[i].y-srcMean.y;
+    const tx=target[i].x-tgtMean.x;
+    const ty=target[i].y-tgtMean.y;
+    a+=sx*tx+sy*ty;
+    b+=sx*ty-sy*tx;
+    den+=sx*sx+sy*sy;
+  }
+
+  if(den<1e-6) return null;
+  const scale=Math.min(2.8,Math.max(.35,Math.hypot(a,b)/den));
+  const angle=Math.atan2(b,a);
+  return {scale,cos:Math.cos(angle),sin:Math.sin(angle),srcMean,tgtMean};
+}
+
+function applySimilarity(point,transform){
+  if(!transform) return point;
+  const x=point.x-transform.srcMean.x;
+  const y=point.y-transform.srcMean.y;
+  return {
+    x:transform.tgtMean.x+transform.scale*(x*transform.cos-y*transform.sin),
+    y:transform.tgtMean.y+transform.scale*(x*transform.sin+y*transform.cos),
+    z:point.z
+  };
+}
+
+function handSpan(landmarks){
+  const pts=landmarks.map(pointAt);
+  return Math.max(
+    1,
+    Math.hypot(pts[9].x-pts[0].x,pts[9].y-pts[0].y),
+    Math.hypot(pts[5].x-pts[17].x,pts[5].y-pts[17].y),
+    Math.hypot(pts[4].x-pts[20].x,pts[4].y-pts[20].y)
+  );
+}
+
+function palmCenterFromLandmarks(landmarks){
+  const pts=landmarks.map(pointAt);
+  return {
+    x:(pts[0].x+pts[5].x+pts[9].x+pts[13].x+pts[17].x)/5,
+    y:(pts[0].y+pts[5].y+pts[9].y+pts[13].y+pts[17].y)/5
+  };
+}
+
+function applyDepthScale(points,landmarks){
+  const span=handSpan(landmarks);
+  if(!handDepthBaseline) handDepthBaseline=span;
+
+  const rawScale=Math.max(.72,Math.min(1.42,span/handDepthBaseline));
+  handDepthScale+=((rawScale)-handDepthScale)*.18;
+
+  const center=palmCenterFromLandmarks(landmarks);
+  return points.map(p=>({
+    x:center.x+(p.x-center.x)*handDepthScale,
+    y:center.y+(p.y-center.y)*handDepthScale,
+    z:p.z
+  }));
+}
+
+function applyScreenDepthPerspective(points,landmarks){
+  const center=palmCenterFromLandmarks(landmarks);
+  return points.map(p=>{
+    const depth=(p.z-.5);
+    const signedDepth=flipManoIntoCameraX ? -depth : depth;
+    const scale=1-signedDepth*.22;
+    return {
+      x:center.x+(p.x-center.x)*scale,
+      y:center.y+(p.y-center.y)*(1-signedDepth*.08),
+      z:p.z
+    };
+  });
+}
+
+function applyYIntoScreenTilt(points,landmarks){
+  if(!tiltManoIntoScreenY) return points;
+  const center=palmCenterFromLandmarks(landmarks);
+  const span=handSpan(landmarks);
+
+  return points.map(p=>{
+    const upAmount=Math.max(-.65,Math.min(1.2,(center.y-p.y)/span));
+    const scale=1-upAmount*.26;
+    const yPull=1-upAmount*.1;
+    return {
+      x:center.x+(p.x-center.x)*scale,
+      y:center.y+(p.y-center.y)*yPull,
+      z:p.z
+    };
+  });
+}
+
+function rotatePointsToFingerDirection(points,landmarks){
+  if(!lockManoFingerDirection) return points;
+  const center=palmCenterFromLandmarks(landmarks);
+  const middleTip=pointAt(landmarks[12]);
+  const currentAngle=Math.atan2(middleTip.y-center.y,middleTip.x-center.x);
+  const delta=manoFingerTargetAngle-currentAngle;
+  const cos=Math.cos(delta);
+  const sin=Math.sin(delta);
+
+  return points.map(p=>{
+    const x=p.x-center.x;
+    const y=p.y-center.y;
+    return {
+      x:center.x+x*cos-y*sin,
+      y:center.y+x*sin+y*cos,
+      z:p.z
+    };
+  });
+}
+
+function applyIntoPagePerspective(points,landmarks){
+  if(!forceManoIntoPage) return points;
+
+  const center=palmCenterFromLandmarks(landmarks);
+  const middleTip=pointAt(landmarks[12]);
+  const span=handSpan(landmarks);
+  let dx=middleTip.x-center.x;
+  let dy=middleTip.y-center.y;
+  const len=Math.hypot(dx,dy) || 1;
+  dx/=len;
+  dy/=len;
+
+  const vanishingPoint={
+    x:center.x+dx*span*2.4,
+    y:center.y+dy*span*2.4
+  };
+
+  return points.map(p=>{
+    const vx=p.x-center.x;
+    const vy=p.y-center.y;
+    const along=(vx*dx+vy*dy)/span;
+    const depth=Math.max(0,Math.min(1.15,along));
+    const pull=depth*.34;
+    const shrink=1-depth*.28;
+
+    const towardVanish={
+      x:p.x+(vanishingPoint.x-p.x)*pull,
+      y:p.y+(vanishingPoint.y-p.y)*pull
+    };
+
+    return {
+      x:center.x+(towardVanish.x-center.x)*shrink,
+      y:center.y+(towardVanish.y-center.y)*shrink,
+      z:p.z
+    };
+  });
+}
+
+function rotatePoints180(points,landmarks){
+  if(!rotateManoDisplay180) return points;
+  const center=palmCenterFromLandmarks(landmarks);
+  return points.map(p=>({
+    x:center.x-(p.x-center.x),
+    y:center.y-(p.y-center.y),
+    z:p.z
+  }));
+}
+
+function updateHandCalibration(sourcePoints,landmarks){
+  if(!sourcePoints || sourcePoints.length<=Math.max(...MANO_TIP_VERTICES)) return null;
+  const source=MANO_TIP_VERTICES.map(i=>sourcePoints[i]);
+  const target=TIP_INDICES.map(i=>({x:landmarks[i].x*w,y:landmarks[i].y*h,z:landmarks[i].z||0}));
+  const next=solveSimilarityTransform(source,target);
+  if(!next) return handCalibration;
+
+  if(!handCalibration){
+    handCalibration=next;
+  }else{
+    const alpha=.22;
+    handCalibration={
+      scale:handCalibration.scale+(next.scale-handCalibration.scale)*alpha,
+      cos:handCalibration.cos+(next.cos-handCalibration.cos)*alpha,
+      sin:handCalibration.sin+(next.sin-handCalibration.sin)*alpha,
+      srcMean:{
+        x:handCalibration.srcMean.x+(next.srcMean.x-handCalibration.srcMean.x)*alpha,
+        y:handCalibration.srcMean.y+(next.srcMean.y-handCalibration.srcMean.y)*alpha
+      },
+      tgtMean:{
+        x:handCalibration.tgtMean.x+(next.tgtMean.x-handCalibration.tgtMean.x)*alpha,
+        y:handCalibration.tgtMean.y+(next.tgtMean.y-handCalibration.tgtMean.y)*alpha
+      }
+    };
+  }
+  return handCalibration;
+}
+
+function calibrateHand(){
+  handCalibration=null;
+  smoothedMeshPoints=null;
+  handDepthBaseline=null;
+  handDepthScale=1;
+  setStatus("Hand calibration reset. Hold your hand open in frame.");
+}
+
+function drawProjectedMano(projectedVertices, landmarks){
+  if(!manoMesh || !projectedVertices || !projectedVertices.length) return false;
+
+  const rawPts=smoothProjectedPoints(projectedVertices).map(p=>({
+    x:(mirrorManoDisplay ? 1-p.x : p.x)*w,
+    y:p.y*h,
+    z:invertManoDepth ? 1-p.z : p.z
+  }));
+  const calibration=updateHandCalibration(rawPts,landmarks);
+  const pts=rotatePoints180(
+    applyIntoPagePerspective(
+      rotatePointsToFingerDirection(
+        applyYIntoScreenTilt(
+          applyScreenDepthPerspective(
+            applyDepthScale(rawPts.map(p=>applySimilarity(p,calibration)),landmarks),
+            landmarks
+          ),
+          landmarks
+        ),
+        landmarks
+      ),
+      landmarks
+    ),
+    landmarks
+  );
+
+  octx.save();
+  octx.globalCompositeOperation="lighter";
+  octx.lineCap="round";
+  octx.lineJoin="round";
+
+  for(const [a,b] of manoMesh.edges){
+    const pa=pts[a], pb=pts[b];
+    if(!pa||!pb) continue;
+    if(pa.x<-w || pa.x>2*w || pa.y<-h || pa.y>2*h || pb.x<-w || pb.x>2*w || pb.y<-h || pb.y>2*h) continue;
+    const depth=(pa.z+pb.z)/2;
+    octx.strokeStyle=`rgba(255,95,0,${0.14+depth*.2})`;
+    octx.lineWidth=5.4;
+    octx.beginPath();
+    octx.moveTo(pa.x,pa.y);
+    octx.lineTo(pb.x,pb.y);
+    octx.stroke();
+  }
+
+  for(const [a,b] of manoMesh.edges){
+    const pa=pts[a], pb=pts[b];
+    if(!pa||!pb) continue;
+    if(pa.x<-w || pa.x>2*w || pa.y<-h || pa.y>2*h || pb.x<-w || pb.x>2*w || pb.y<-h || pb.y>2*h) continue;
+    const depth=(pa.z+pb.z)/2;
+    octx.strokeStyle=`rgba(255,150,0,${0.64+depth*.28})`;
+    octx.lineWidth=1.05;
+    octx.beginPath();
+    octx.moveTo(pa.x,pa.y);
+    octx.lineTo(pb.x,pb.y);
+    octx.stroke();
+  }
+
+  drawFingertipGlow(landmarks);
+  octx.restore();
+  return true;
+}
+
+function drawFingertipGlow(landmarks){
+  return;
+}
+
+function pointAt(lm){
+  return {x:lm.x*w,y:lm.y*h,z:lm.z||0};
+}
+
+function lerpPoint(a,b,t){
+  return {
+    x:a.x+(b.x-a.x)*t,
+    y:a.y+(b.y-a.y)*t,
+    z:a.z+(b.z-a.z)*t
+  };
+}
+
+function drawWireSegment(a,b,widthA,widthB,rings=6,columns=8){
+  const dx=b.x-a.x;
+  const dy=b.y-a.y;
+  const len=Math.hypot(dx,dy);
+  if(len<1) return;
+
+  const nx=-dy/len;
+  const ny=dx/len;
+  const ringPoints=[];
+
+  for(let r=0;r<=rings;r++){
+    const t=r/rings;
+    const center=lerpPoint(a,b,t);
+    const width=widthA+(widthB-widthA)*t;
+    const depthPulse=Math.sin(t*Math.PI)*0.18;
+    const pts=[];
+
+    for(let c=0;c<columns;c++){
+      const angle=(c/columns)*Math.PI*2;
+      const side=Math.cos(angle);
+      const bulge=0.72+Math.sin(angle)*depthPulse;
+      pts.push({
+        x:center.x+nx*side*width*bulge,
+        y:center.y+ny*side*width*bulge
+      });
+    }
+    ringPoints.push(pts);
+  }
+
+  octx.save();
+  octx.globalCompositeOperation="lighter";
+  octx.lineCap="round";
+  octx.lineJoin="round";
+
+  octx.strokeStyle="rgba(255,105,0,0.18)";
+  octx.lineWidth=5;
+  for(const pts of ringPoints){
+    octx.beginPath();
+    pts.forEach((p,i)=>i?octx.lineTo(p.x,p.y):octx.moveTo(p.x,p.y));
+    octx.closePath();
+    octx.stroke();
+  }
+  for(let c=0;c<columns;c++){
+    octx.beginPath();
+    ringPoints.forEach((pts,r)=>r?octx.lineTo(pts[c].x,pts[c].y):octx.moveTo(pts[c].x,pts[c].y));
+    octx.stroke();
+  }
+
+  octx.strokeStyle="rgba(255,150,0,0.9)";
+  octx.lineWidth=1.05;
+  for(const pts of ringPoints){
+    octx.beginPath();
+    pts.forEach((p,i)=>i?octx.lineTo(p.x,p.y):octx.moveTo(p.x,p.y));
+    octx.closePath();
+    octx.stroke();
+  }
+  for(let c=0;c<columns;c+=2){
+    octx.beginPath();
+    ringPoints.forEach((pts,r)=>r?octx.lineTo(pts[c].x,pts[c].y):octx.moveTo(pts[c].x,pts[c].y));
+    octx.stroke();
+  }
+
+  octx.restore();
+}
+
+function drawLandmarkDrivenHand(landmarks){
+  const p=landmarks.map(pointAt);
+  const palmCenter={
+    x:(p[0].x+p[5].x+p[9].x+p[13].x+p[17].x)/5,
+    y:(p[0].y+p[5].y+p[9].y+p[13].y+p[17].y)/5,
+    z:0
+  };
+  const handScale=Math.max(
+    18,
+    Math.hypot(p[9].x-p[0].x,p[9].y-p[0].y),
+    Math.hypot(p[5].x-p[17].x,p[5].y-p[17].y)
+  );
+
+  const palmEdges=[
+    [0,5],[0,9],[0,13],[0,17],
+    [5,9],[9,13],[13,17],[5,17]
+  ];
+
+  octx.save();
+  octx.globalCompositeOperation="lighter";
+  for(const [a,b] of palmEdges){
+    octx.strokeStyle="rgba(255,105,0,0.2)";
+    octx.lineWidth=7;
+    octx.beginPath();
+    octx.moveTo(p[a].x,p[a].y);
+    octx.lineTo(p[b].x,p[b].y);
+    octx.stroke();
+
+    octx.strokeStyle="rgba(255,150,0,0.78)";
+    octx.lineWidth=1.2;
+    octx.beginPath();
+    octx.moveTo(p[a].x,p[a].y);
+    octx.lineTo(p[b].x,p[b].y);
+    octx.stroke();
+  }
+
+  const palmRings=[
+    [0,5,9,13,17],
+    [5,9,13,17],
+    [0,5,13,17]
+  ];
+  for(const ring of palmRings){
+    octx.strokeStyle="rgba(255,150,0,0.52)";
+    octx.lineWidth=1;
+    octx.beginPath();
+    ring.forEach((idx,i)=>i?octx.lineTo(p[idx].x,p[idx].y):octx.moveTo(p[idx].x,p[idx].y));
+    octx.closePath();
+    octx.stroke();
+  }
+  octx.restore();
+
+  const fingers=[
+    [1,2,3,4,.165],
+    [5,6,7,8,.14],
+    [9,10,11,12,.145],
+    [13,14,15,16,.135],
+    [17,18,19,20,.12]
+  ];
+
+  for(const finger of fingers){
+    const widthBase=handScale*finger[4];
+    for(let i=0;i<3;i++){
+      const a=p[finger[i]];
+      const b=p[finger[i+1]];
+      const taperA=widthBase*(1-i*.17);
+      const taperB=widthBase*(.88-i*.2);
+      drawWireSegment(a,b,taperA,taperB,5,8);
+    }
+  }
+
+  drawWireSegment(palmCenter,p[0],handScale*.22,handScale*.28,4,8);
+  drawFingertipGlow(landmarks);
+}
+
+function closestPointOnSegment(a,b,p){
+  const dx=b.x-a.x;
+  const dy=b.y-a.y;
+  const lenSq=dx*dx+dy*dy;
+  if(lenSq<1) return {point:a,t:0};
+  const t=Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.y-a.y)*dy)/lenSq));
+  return {point:{x:a.x+dx*t,y:a.y+dy*t,z:0},t};
+}
+
+function pointOnChain(points,chain,t){
+  const segs=[];
+  let total=0;
+  for(let i=0;i<chain.length-1;i++){
+    const a=points[chain[i]];
+    const b=points[chain[i+1]];
+    const len=Math.max(1,Math.hypot(b.x-a.x,b.y-a.y));
+    segs.push({a,b,len});
+    total+=len;
+  }
+
+  let target=t*total;
+  for(const seg of segs){
+    if(target<=seg.len){
+      const local=target/seg.len;
+      return {
+        x:seg.a.x+(seg.b.x-seg.a.x)*local,
+        y:seg.a.y+(seg.b.y-seg.a.y)*local,
+        angle:Math.atan2(seg.b.y-seg.a.y,seg.b.x-seg.a.x)
+      };
+    }
+    target-=seg.len;
+  }
+
+  const last=segs[segs.length-1];
+  return {x:last.b.x,y:last.b.y,angle:Math.atan2(last.b.y-last.a.y,last.b.x-last.a.x)};
+}
+
+function drawLandmarkWarpedMano(landmarks){
+  if(!manoMesh || !manoMesh.regions) return false;
+
+  const points=landmarks.map(pointAt);
+  const palmCenter={
+    x:(points[0].x+points[5].x+points[9].x+points[13].x+points[17].x)/5,
+    y:(points[0].y+points[5].y+points[9].y+points[13].y+points[17].y)/5,
+    z:0
+  };
+  const handScale=Math.max(
+    18,
+    Math.hypot(points[9].x-points[0].x,points[9].y-points[0].y),
+    Math.hypot(points[5].x-points[17].x,points[5].y-points[17].y)
+  );
+
+  const warped=manoMesh.vertices.map((v,i)=>{
+    const meta=manoMesh.regions[i];
+    if(meta.isPalm){
+      const target=landmarks[meta.region===0?1:MANO_VERTEX_REGIONS[meta.region].chain[0]];
+      const targetPt=pointAt(target);
+      return {
+        x:palmCenter.x+(targetPt.x-palmCenter.x)*.55+meta.offset*.45,
+        y:palmCenter.y+(targetPt.y-palmCenter.y)*.55,
+        z:0
+      };
+    }
+
+    const region=MANO_VERTEX_REGIONS[meta.region];
+    const center=pointOnChain(points,region.chain,meta.t);
+    const nx=-Math.sin(center.angle);
+    const ny=Math.cos(center.angle);
+    return {
+      x:center.x+nx*meta.offset*(handScale/155),
+      y:center.y+ny*meta.offset*(handScale/155),
+      z:meta.t
+    };
+  });
+
+  octx.save();
+  octx.globalCompositeOperation="lighter";
+  octx.lineCap="round";
+  octx.lineJoin="round";
+
+  for(const [a,b] of manoMesh.edges){
+    const pa=warped[a], pb=warped[b];
+    if(!pa||!pb) continue;
+    if(Math.hypot(pa.x-pb.x,pa.y-pb.y)>handScale*.55) continue;
+    octx.strokeStyle="rgba(255,95,0,0.16)";
+    octx.lineWidth=5.2;
+    octx.beginPath();
+    octx.moveTo(pa.x,pa.y);
+    octx.lineTo(pb.x,pb.y);
+    octx.stroke();
+  }
+
+  for(const [a,b] of manoMesh.edges){
+    const pa=warped[a], pb=warped[b];
+    if(!pa||!pb) continue;
+    if(Math.hypot(pa.x-pb.x,pa.y-pb.y)>handScale*.55) continue;
+    octx.strokeStyle="rgba(255,150,0,0.78)";
+    octx.lineWidth=1;
+    octx.beginPath();
+    octx.moveTo(pa.x,pa.y);
+    octx.lineTo(pb.x,pb.y);
+    octx.stroke();
+  }
+
+  drawFingertipGlow(landmarks);
+  octx.restore();
+  return true;
+}
+
+function drawHandOverlay(landmarks, projectedVertices){
+  octx.clearRect(0,0,w,h);
+  if(!landmarks||!landmarks.length) return;
+
+  if(useLandmarkDrivenHand){
+    if(!drawLandmarkWarpedMano(landmarks)) drawLandmarkDrivenHand(landmarks);
+    return;
+  }
+
+  if(drawProjectedMano(projectedVertices, landmarks)) return;
+
+  if(!manoMesh){
+    drawMeshFallback(landmarks);
+    return;
+  }
+
+  const target=landmarkBounds(landmarks);
+  const b=manoMesh.bounds;
+  const meshW=Math.max(1,b.maxX-b.minX);
+  const meshH=Math.max(1,b.maxY-b.minY);
+  const meshCx=(b.minX+b.maxX)/2;
+  const meshCy=(b.minY+b.maxY)/2;
+  const scale=Math.max(target.width/meshW,target.height/meshH)*1.18;
+
+  const pts=manoMesh.vertices.map(v=>({
+    x:target.x+(mirrorManoDisplay ? -1 : 1)*(v.x-meshCx)*scale,
+    y:target.y-(v.y-meshCy)*scale,
+    z:(v.z-b.minZ)/Math.max(1,b.maxZ-b.minZ)
+  }));
+
+  octx.save();
+  octx.globalCompositeOperation="lighter";
+  octx.lineCap="round";
+  octx.lineJoin="round";
+
+  for(const [a,b] of manoMesh.edges){
+    const pa=pts[a], pb=pts[b];
+    if(!pa||!pb) continue;
+    if(pa.x<-w || pa.x>2*w || pa.y<-h || pa.y>2*h || pb.x<-w || pb.x>2*w || pb.y<-h || pb.y>2*h) continue;
+    const depth=(pa.z+pb.z)/2;
+    octx.strokeStyle=`rgba(255,105,0,${0.16+depth*.18})`;
+    octx.lineWidth=5;
+    octx.beginPath();
+    octx.moveTo(pa.x,pa.y);
+    octx.lineTo(pb.x,pb.y);
+    octx.stroke();
+  }
+
+  for(const [a,b] of manoMesh.edges){
+    const pa=pts[a], pb=pts[b];
+    if(!pa||!pb) continue;
+    if(pa.x<-w || pa.x>2*w || pa.y<-h || pa.y>2*h || pb.x<-w || pb.x>2*w || pb.y<-h || pb.y>2*h) continue;
+    const depth=(pa.z+pb.z)/2;
+    octx.strokeStyle=`rgba(255,145,0,${0.62+depth*.3})`;
+    octx.lineWidth=1.05;
+    octx.beginPath();
+    octx.moveTo(pa.x,pa.y);
+    octx.lineTo(pb.x,pb.y);
+    octx.stroke();
+  }
+
+  drawFingertipGlow(landmarks);
+
+  octx.restore();
+}
+
+/* CAMERA */
+
+async function startCamera(){
+  if(cameraRunning){
+    setStatus("MANO stream already running.");
+    return;
+  }
+
+  setStatus("Connecting to MANO stream...");
+  camBtn.textContent="Starting...";
+
+  cameraRunning=true;
+  camBtn.textContent="MANO Active ✓";
+  setStatus("Move your calibrated orange MANO mesh hand through the paint.");
+
+  const tick=async()=>{
+    try{
+      const res=await fetch(`${dataUrl("current_hand_state.json")}?t=${Date.now()}`,{cache:"no-store"});
+      if(!res.ok) throw new Error("Start the MANO Python runner first.");
+      const state=await res.json();
+
+      if(state.hasHand && state.landmarks && state.landmarks.length){
+        const motionLandmarks=state.landmarks;
+        const displayLandmarks=mirrorManoDisplay
+          ? motionLandmarks.map(lm=>({x:1-lm.x,y:lm.y,z:lm.z}))
+          : motionLandmarks;
+
+        const tips=TIP_INDICES.map(i=>({
+          x:motionLandmarks[i].x*w,
+          y:motionLandmarks[i].y*h
+        }));
+
+        await refreshManoMesh();
+        drawHandOverlay(displayLandmarks, state.projectedVertices);
+        applyFingerComb(tips,lastFingerPositions);
+        lastFingerPositions=tips;
+      }else{
+        octx.clearRect(0,0,w,h);
+        lastFingerPositions=null;
+      }
+    }catch(err){
+      setStatus("Waiting for MANO stream: "+err.message);
+      octx.clearRect(0,0,w,h);
+      lastFingerPositions=null;
+    }
+  };
+
+  await tick();
+  handPollTimer=setInterval(tick,45);
+}
+
+function finishPrint(){
+  const img=offctx.getImageData(0,0,off.width,off.height);
+  const d=img.data;
+
+  for(let i=0;i<d.length;i+=4){
+    const grain=rand(-10,10);
+    d[i]=d[i]*.9+grain;
+    d[i+1]=d[i+1]*.9+grain;
+    d[i+2]=d[i+2]*.9+grain;
+  }
+
+  offctx.putImageData(img,0,0);
+  drawScreen();
+  setStatus("Print effect applied.");
+}
+
+function restart(){
+  clearBath();
+  lastFingerPositions=null;
+  paintDrops();
+}
+
+function savePNG(){
+  const exportCanvas=document.createElement("canvas");
+  exportCanvas.width=w;
+  exportCanvas.height=h;
+  const ectx=exportCanvas.getContext("2d");
+  ectx.drawImage(marbleCanvas,0,0);
+  ectx.drawImage(sceneCanvas,0,0);
+  const a=document.createElement("a");
+  a.download="finger-marble.png";
+  a.href=exportCanvas.toDataURL("image/png");
+  a.click();
+}
+
+resize();
+</script>
+</body>
+</html>

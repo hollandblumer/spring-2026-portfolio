@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1500" role="img" aria-labelledby="title desc">
+  <title id="title">3D Motion Marbling preview</title>
+  <desc id="desc">A colorful marbling bath with an orange wireframe hand moving across it.</desc>
+  <defs>
+    <radialGradient id="bathA" cx="24%" cy="22%" r="48%">
+      <stop offset="0" stop-color="#fff7df"/>
+      <stop offset=".44" stop-color="#ffd93b"/>
+      <stop offset=".72" stop-color="#ff6f00"/>
+      <stop offset="1" stop-color="#ff6f00" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="bathB" cx="72%" cy="26%" r="42%">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset=".5" stop-color="#009688"/>
+      <stop offset="1" stop-color="#009688" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="bathC" cx="52%" cy="62%" r="58%">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset=".36" stop-color="#e91e63"/>
+      <stop offset=".7" stop-color="#2150b4"/>
+      <stop offset="1" stop-color="#2150b4" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="soften">
+      <feGaussianBlur stdDeviation="18"/>
+      <feColorMatrix type="saturate" values="1.2"/>
+    </filter>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="1200" height="1500" fill="#f4ecd2"/>
+  <g filter="url(#soften)" opacity=".95">
+    <rect width="1200" height="1500" fill="url(#bathA)"/>
+    <rect width="1200" height="1500" fill="url(#bathB)"/>
+    <rect width="1200" height="1500" fill="url(#bathC)"/>
+    <circle cx="178" cy="970" r="265" fill="#4caf50" opacity=".72"/>
+    <circle cx="1004" cy="944" r="310" fill="#f44336" opacity=".68"/>
+    <circle cx="890" cy="1230" r="260" fill="#232323" opacity=".28"/>
+    <circle cx="300" cy="1202" r="210" fill="#ffeb3b" opacity=".75"/>
+  </g>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)" transform="translate(246 365) rotate(-9 360 370)">
+    <path d="M310 640 C260 548 256 462 306 402 C342 358 408 350 462 382 C522 416 552 486 546 566 C540 638 492 690 420 704 C374 712 336 696 310 640Z" stroke="#ff5f00" stroke-width="30" opacity=".28"/>
+    <path d="M310 640 C260 548 256 462 306 402 C342 358 408 350 462 382 C522 416 552 486 546 566 C540 638 492 690 420 704 C374 712 336 696 310 640Z" stroke="#ffb000" stroke-width="6" opacity=".88"/>
+    <g stroke="#ff5f00" stroke-width="25" opacity=".22">
+      <path d="M336 402 C286 294 245 180 226 72"/>
+      <path d="M398 374 C388 250 378 140 372 36"/>
+      <path d="M462 394 C508 274 554 166 612 60"/>
+      <path d="M512 454 C604 360 684 276 774 204"/>
+      <path d="M526 536 C636 496 734 458 846 420"/>
+    </g>
+    <g stroke="#ffad00" stroke-width="5" opacity=".9">
+      <path d="M336 402 C286 294 245 180 226 72"/>
+      <path d="M398 374 C388 250 378 140 372 36"/>
+      <path d="M462 394 C508 274 554 166 612 60"/>
+      <path d="M512 454 C604 360 684 276 774 204"/>
+      <path d="M526 536 C636 496 734 458 846 420"/>
+      <path d="M292 506 L542 488"/>
+      <path d="M322 596 L526 568"/>
+      <path d="M226 72 L372 36 L612 60 L774 204 L846 420"/>
+    </g>
+    <g stroke="#ffca3a" stroke-width="3" opacity=".82">
+      <path d="M274 264 C316 292 350 290 386 252"/>
+      <path d="M414 250 C464 278 510 270 554 222"/>
+      <path d="M564 336 C612 350 656 336 700 292"/>
+      <path d="M604 468 C658 486 706 482 760 448"/>
+    </g>
+  </g>
+  <text x="74" y="1346" fill="#fff8e9" font-family="Arial, Helvetica, sans-serif" font-size="58" font-weight="700" letter-spacing="8">3D MOTION</text>
+  <text x="74" y="1418" fill="#fff8e9" font-family="Arial, Helvetica, sans-serif" font-size="58" font-weight="700" letter-spacing="8">MARBLING</text>
+</svg>

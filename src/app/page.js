@@ -39,6 +39,14 @@ const PROJECTS = [
       "Lately I have been experimenting with type as something more fluid than fixed, stretching, blurring, contouring, and melting words until they start to feel almost alive. A lot of this came from building custom SVG filters and layering blur with thresholding to create those hollow, glowing contours, then pushing that into different directions. In some cases it turned into a drawing tool where shapes merge like metaballs, in others into these percentage counters where each number is constantly forming and breaking apart, and in others into words that feel like they're rising and pulling themselves out of a kind of molten base.\n\nI kept playing with timing, too, letting things pulse, stagger, or drift so nothing locks into a perfectly clean state. It was less about a final system and more about seeing how far I could push distortion, motion, and interaction while still keeping just enough of the original word there.",
   },
   {
+    id: "3d-motion-marbling",
+    title: "3D Motion Marbling",
+    type: "image",
+    src: "/projects/3d-motion-marbling.svg",
+    poster: "/projects/3d-motion-marbling.svg",
+    href: "/3d-motion-marbling/",
+  },
+  {
     id: "templates",
     title: "Templates",
     type: "video",
