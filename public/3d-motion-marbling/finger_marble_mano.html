@@ -1599,9 +1599,9 @@
           const pa = warped[a],
             pb = warped[b];
           if (!pa || !pb) continue;
-          if (Math.hypot(pa.x - pb.x, pa.y - pb.y) > handScale * 0.55) continue;
-          octx.strokeStyle = "rgba(255,95,0,0.16)";
-          octx.lineWidth = 5.2;
+          const depth = (pa.z + pb.z) / 2;
+          octx.strokeStyle = `rgba(255,95,0,${0.1 + depth * 0.12})`;
+          octx.lineWidth = 3.6;
           octx.beginPath();
           octx.moveTo(pa.x, pa.y);
           octx.lineTo(pb.x, pb.y);
@@ -1613,9 +1613,9 @@
           const pa = warped[a],
             pb = warped[b];
           if (!pa || !pb) continue;
-          if (Math.hypot(pa.x - pb.x, pa.y - pb.y) > handScale * 0.55) continue;
-          octx.strokeStyle = "rgba(255,150,0,0.78)";
-          octx.lineWidth = 1;
+          const depth = (pa.z + pb.z) / 2;
+          octx.strokeStyle = `rgba(255,150,0,${0.52 + depth * 0.26})`;
+          octx.lineWidth = 0.78;
           octx.beginPath();
           octx.moveTo(pa.x, pa.y);
           octx.lineTo(pb.x, pb.y);
@@ -1780,7 +1780,11 @@
                 lastPaintWarpAt = now;
               }
               lastFingerPositions = tips;
-              setStatus(`Tracking MANO hand: ${motionLandmarks.length} points.`);
+              setStatus(
+                manoMesh
+                  ? `Tracking full MANO mesh: ${manoMesh.vertices.length} vertices.`
+                  : `Tracking MANO hand: ${motionLandmarks.length} points.`,
+              );
             } else {
               octx.clearRect(0, 0, w, h);
               lastFingerPositions = null;
