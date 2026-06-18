@@ -1,5 +1,6 @@
 import json
 import os
+import traceback
 from pathlib import Path
 
 from fastapi import FastAPI, Header, HTTPException, Request
@@ -350,6 +351,8 @@ async def health():
 
     return {
         "ok": not model_error,
+        "runtimeMode": "browser-landmarks-python-mano",
+        "activeFitters": len(LIVE_FITTERS),
         "dataDir": str(data_dir),
         "uploadDir": str(upload_dir),
         "hasState": get_file_path("current_hand_state.json").exists(),
@@ -370,18 +373,30 @@ async def health():
 
 @app.post("/fit_landmarks")
 async def fit_landmarks(request: Request):
-    payload = await request.json()
-    landmarks = payload.get("landmarks", [])
-    session_id = payload.get("sessionId", "default")
-    hand_side = payload.get("handSide", "left")
+    try:
+        payload = await request.json()
+        landmarks = payload.get("landmarks", [])
+        session_id = payload.get("sessionId", "default")
+        hand_side = payload.get("handSide", "left")
 
-    if hand_side not in {"left", "right"}:
-        raise HTTPException(status_code=400, detail="handSide must be left or right.")
-    if not isinstance(landmarks, list):
-        raise HTTPException(status_code=400, detail="Missing landmarks.")
+        if hand_side not in {"left", "right"}:
+            raise HTTPException(
+                status_code=400,
+                detail="handSide must be left or right.",
+            )
+        if not isinstance(landmarks, list):
+            raise HTTPException(status_code=400, detail="Missing landmarks.")
 
-    fitter = get_live_fitter(session_id, hand_side)
-    return fitter.fit_landmarks(landmarks)
+        fitter = get_live_fitter(session_id, hand_side)
+        return fitter.fit_landmarks(landmarks)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        print(traceback.format_exc(), flush=True)
+        raise HTTPException(
+            status_code=503,
+            detail=f"MANO landmark fit failed: {type(exc).__name__}: {exc}",
+        ) from exc
 
 
 @app.post("/fit_frame")
