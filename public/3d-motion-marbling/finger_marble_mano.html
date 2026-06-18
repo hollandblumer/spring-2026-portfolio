@@ -800,6 +800,7 @@
 
       function parseObjMesh(text) {
         const vertices = [];
+        const faces = [];
         const edges = new Set();
 
         for (const line of text.split("\n")) {
@@ -816,6 +817,7 @@
               .map((part) => Number(part.split("/")[0]) - 1);
             for (let i = 1; i < ids.length - 1; i++) {
               const tri = [ids[0], ids[i], ids[i + 1]];
+              faces.push(tri);
               for (const [a, b] of [
                 [tri[0], tri[1]],
                 [tri[1], tri[2]],
@@ -852,6 +854,7 @@
 
         return {
           vertices,
+          faces,
           edges: [...edges].map((edge) => edge.split(",").map(Number)),
           bounds,
           regions: buildManoRegions(vertices, bounds),
@@ -1594,6 +1597,32 @@
         octx.lineCap = "round";
         octx.lineJoin = "round";
         let drawnEdges = 0;
+
+        const sortedFaces = manoMesh.faces
+          .map((face) => ({
+            face,
+            depth:
+              face.reduce((sum, idx) => sum + (warped[idx]?.z || 0), 0) /
+              face.length,
+          }))
+          .sort((a, b) => a.depth - b.depth);
+
+        for (const { face, depth } of sortedFaces) {
+          const pts = face.map((idx) => warped[idx]);
+          if (pts.some((p) => !p)) continue;
+
+          octx.fillStyle = `rgba(255,112,16,${0.1 + depth * 0.16})`;
+          octx.strokeStyle = `rgba(255,214,80,${0.1 + depth * 0.1})`;
+          octx.lineWidth = 0.35;
+          octx.beginPath();
+          octx.moveTo(pts[0].x, pts[0].y);
+          for (let i = 1; i < pts.length; i++) {
+            octx.lineTo(pts[i].x, pts[i].y);
+          }
+          octx.closePath();
+          octx.fill();
+          octx.stroke();
+        }
 
         for (const [a, b] of manoMesh.edges) {
           const pa = warped[a],
