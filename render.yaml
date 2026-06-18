@@ -21,6 +21,8 @@ services:
     envVars:
       - key: ALLOWED_ORIGINS
         value: https://hollandblumer.com,https://www.hollandblumer.com,https://hollandblumer.github.io
+      - key: PYTHON_VERSION
+        value: 3.11.9
       - key: GOOGLE_APPLICATION_CREDENTIALS
         value: /etc/secrets/gcp-service-account.json
       - key: GCS_MANO_BUCKET
