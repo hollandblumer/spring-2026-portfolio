@@ -21,7 +21,11 @@ services:
     envVars:
       - key: ALLOWED_ORIGINS
         value: https://hollandblumer.com,https://www.hollandblumer.com,https://hollandblumer.github.io
+      - key: GOOGLE_APPLICATION_CREDENTIALS
+        value: /etc/secrets/gcp-service-account.json
+      - key: GCS_MANO_BUCKET
+        sync: false
       - key: MANO_MODEL_DIR
-        value: /opt/render/project/src/backend/3d-motion-marbling/models
+        value: /tmp/mano-models
       - key: MANO_UPLOAD_TOKEN
         sync: false

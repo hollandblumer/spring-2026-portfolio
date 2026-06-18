@@ -6,4 +6,5 @@ opencv-python-headless
 mediapipe==0.10.21
 smplx
 chumpy
+google-cloud-storage
 git+https://github.com/hassony2/manopth.git

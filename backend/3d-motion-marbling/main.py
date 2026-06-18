@@ -12,11 +12,13 @@ REPO_ROOT = BASE_DIR.parents[1]
 DEFAULT_DATA_DIR = REPO_ROOT / "public" / "3d-motion-marbling"
 DEFAULT_UPLOAD_DIR = Path(os.getenv("MANO_UPLOAD_DIR", "/tmp/3d-motion-marbling"))
 DEFAULT_MANO_ROOT = Path(os.getenv("MANO_MODEL_DIR", BASE_DIR / "models"))
+MANO_MODEL_FILES = ("MANO_LEFT.pkl", "MANO_RIGHT.pkl")
 DATA_FILES = {
     "current_hand_state.json": "application/json",
     "current_hand_mesh.obj": "text/plain",
 }
 LIVE_FITTERS = {}
+MODELS_READY = False
 
 DEFAULT_ALLOWED_ORIGINS = [
     "http://localhost:3000",
@@ -76,6 +78,48 @@ def serve_data_file(filename, media_type):
         media_type=media_type,
         headers={"Cache-Control": "no-store"},
     )
+
+
+def get_mano_root():
+    return Path(os.getenv("MANO_MODEL_DIR", DEFAULT_MANO_ROOT)).expanduser().resolve()
+
+
+def ensure_mano_models():
+    global MODELS_READY
+    mano_root = get_mano_root()
+    if all((mano_root / filename).exists() for filename in MANO_MODEL_FILES):
+        MODELS_READY = True
+        return mano_root
+
+    bucket_name = os.getenv("GCS_MANO_BUCKET", "")
+    if not bucket_name:
+        return mano_root
+
+    try:
+        from google.cloud import storage
+    except Exception as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Google Cloud Storage dependency is unavailable: {exc}",
+        ) from exc
+
+    mano_root.mkdir(parents=True, exist_ok=True)
+    try:
+        client = storage.Client()
+        bucket = client.bucket(bucket_name)
+        for filename in MANO_MODEL_FILES:
+            target_path = mano_root / filename
+            if target_path.exists():
+                continue
+            bucket.blob(filename).download_to_filename(target_path)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Could not download MANO models from GCS bucket {bucket_name}: {exc}",
+        ) from exc
+
+    MODELS_READY = all((mano_root / filename).exists() for filename in MANO_MODEL_FILES)
+    return mano_root
 
 
 def lazy_import_mano_runtime():
@@ -144,7 +188,7 @@ class LiveManoFitter:
         self.iterations = int(os.getenv("MANO_ITERATIONS", "8"))
         self.hand_side = hand_side
 
-        mano_root = Path(os.getenv("MANO_MODEL_DIR", DEFAULT_MANO_ROOT)).expanduser()
+        mano_root = ensure_mano_models()
         expected_file = "MANO_RIGHT.pkl" if hand_side == "right" else "MANO_LEFT.pkl"
         if not (mano_root / expected_file).exists():
             raise HTTPException(
@@ -247,6 +291,7 @@ app.add_middleware(
 async def health():
     data_dir = get_data_dir()
     upload_dir = get_upload_dir()
+    mano_root = ensure_mano_models()
     return {
         "ok": True,
         "dataDir": str(data_dir),
@@ -256,9 +301,11 @@ async def health():
         "hasUploadedState": (upload_dir / "current_hand_state.json").exists(),
         "hasUploadedMesh": (upload_dir / "current_hand_mesh.obj").exists(),
         "hasManoModels": {
-            "left": (DEFAULT_MANO_ROOT / "MANO_LEFT.pkl").exists(),
-            "right": (DEFAULT_MANO_ROOT / "MANO_RIGHT.pkl").exists(),
+            "left": (mano_root / "MANO_LEFT.pkl").exists(),
+            "right": (mano_root / "MANO_RIGHT.pkl").exists(),
         },
+        "manoModelDir": str(mano_root),
+        "gcsManoBucket": os.getenv("GCS_MANO_BUCKET", ""),
         "allowedOrigins": get_allowed_origins(),
     }
 

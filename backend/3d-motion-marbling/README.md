@@ -107,6 +107,44 @@ The folder must contain:
 Do not commit these files to the public portfolio repo; they are licensed
 separately.
 
+### Loading MANO files from Google Cloud Storage on Render
+
+Store the model files in a private GCS bucket:
+
+- `MANO_LEFT.pkl`
+- `MANO_RIGHT.pkl`
+
+Create a Google service account with `Storage Object Viewer` access to that
+bucket. In Render, add the service account JSON as a Secret File named:
+
+```bash
+gcp-service-account.json
+```
+
+Render exposes that file at:
+
+```bash
+/etc/secrets/gcp-service-account.json
+```
+
+Set these Render environment variables on the backend service:
+
+```bash
+GOOGLE_APPLICATION_CREDENTIALS=/etc/secrets/gcp-service-account.json
+GCS_MANO_BUCKET=your-private-bucket-name
+MANO_MODEL_DIR=/tmp/mano-models
+```
+
+On startup/lazy MANO initialization, the backend downloads the two `.pkl` files
+from GCS into `MANO_MODEL_DIR`. Check `/health` after deploy; it should report:
+
+```json
+"hasManoModels": {
+  "left": true,
+  "right": true
+}
+```
+
 ## Production Setup
 
 Deploy this folder as its own Python web service.
@@ -128,6 +166,8 @@ Optional environment variables:
 ```bash
 MANO_DATA_DIR=/path/to/live/hand/files
 MANO_MODEL_DIR=/path/to/folder/with/mano/files
+GCS_MANO_BUCKET=your-private-bucket-name
+GOOGLE_APPLICATION_CREDENTIALS=/etc/secrets/gcp-service-account.json
 MANO_UPLOAD_TOKEN=make-a-long-random-secret
 ALLOWED_ORIGINS=https://hollandblumer.com,https://www.hollandblumer.com,https://hollandblumer.github.io
 ```
