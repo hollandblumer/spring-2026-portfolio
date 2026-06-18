@@ -573,7 +573,7 @@
       const lockManoFingerDirection = false;
       const manoFingerTargetAngle = -Math.PI / 2.15;
       const forceManoIntoPage = false;
-      const useLandmarkDrivenHand = !API_BASE;
+      const useLandmarkDrivenHand = false;
 
       const MANO_VERTEX_REGIONS = [
         { name: "thumb", chain: [1, 2, 3, 4], anchor: 4 },
@@ -1218,6 +1218,39 @@
         setStatus("Hand calibration reset. Hold your hand open in frame.");
       }
 
+      function drawManoSurface(points) {
+        const sortedFaces = manoMesh.faces
+          .map((face) => ({
+            face,
+            depth:
+              face.reduce((sum, idx) => sum + (points[idx]?.z || 0), 0) /
+              face.length,
+          }))
+          .sort((a, b) => a.depth - b.depth);
+
+        for (const { face, depth } of sortedFaces) {
+          const tri = face.map((idx) => points[idx]);
+          if (tri.some((p) => !p)) continue;
+          if (
+            tri.some(
+              (p) => p.x < -w || p.x > 2 * w || p.y < -h || p.y > 2 * h,
+            )
+          )
+            continue;
+
+          octx.fillStyle = `rgba(255,112,16,${0.12 + depth * 0.18})`;
+          octx.strokeStyle = `rgba(255,214,80,${0.1 + depth * 0.12})`;
+          octx.lineWidth = 0.35;
+          octx.beginPath();
+          octx.moveTo(tri[0].x, tri[0].y);
+          octx.lineTo(tri[1].x, tri[1].y);
+          octx.lineTo(tri[2].x, tri[2].y);
+          octx.closePath();
+          octx.fill();
+          octx.stroke();
+        }
+      }
+
       function drawProjectedMano(projectedVertices, landmarks) {
         if (!manoMesh || !projectedVertices || !projectedVertices.length)
           return false;
@@ -1252,6 +1285,8 @@
         octx.globalCompositeOperation = "lighter";
         octx.lineCap = "round";
         octx.lineJoin = "round";
+
+        drawManoSurface(pts);
 
         for (const [a, b] of manoMesh.edges) {
           const pa = pts[a],
@@ -1692,6 +1727,8 @@
         octx.globalCompositeOperation = "lighter";
         octx.lineCap = "round";
         octx.lineJoin = "round";
+
+        drawManoSurface(pts);
 
         for (const [a, b] of manoMesh.edges) {
           const pa = pts[a],
