@@ -1,2 +1,9 @@
 fastapi==0.124.2
 uvicorn[standard]==0.38.0
+numpy
+torch
+opencv-python-headless
+mediapipe==0.10.21
+smplx
+chumpy
+git+https://github.com/hassony2/manopth.git

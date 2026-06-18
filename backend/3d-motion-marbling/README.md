@@ -84,6 +84,29 @@ For a hosted Python stream, pass the Render API URL:
 /3d-motion-marbling/finger_marble_mano.html?api=https://your-api.example.com
 ```
 
+For accurate visitor-webcam MANO fitting, pass `fit=1`. This asks the visitor
+for webcam access, sends small JPEG frames to the Python backend, and renders the
+returned MANO `projectedVertices`:
+
+```bash
+/3d-motion-marbling/finger_marble_mano.html?api=https://your-api.example.com&fit=1
+```
+
+This mode requires the backend service to have the licensed MANO model files
+available on disk:
+
+```bash
+MANO_MODEL_DIR=/path/to/folder/with/mano/files
+```
+
+The folder must contain:
+
+- `MANO_LEFT.pkl`
+- `MANO_RIGHT.pkl`
+
+Do not commit these files to the public portfolio repo; they are licensed
+separately.
+
 ## Production Setup
 
 Deploy this folder as its own Python web service.
@@ -104,6 +127,7 @@ Optional environment variables:
 
 ```bash
 MANO_DATA_DIR=/path/to/live/hand/files
+MANO_MODEL_DIR=/path/to/folder/with/mano/files
 MANO_UPLOAD_TOKEN=make-a-long-random-secret
 ALLOWED_ORIGINS=https://hollandblumer.com,https://www.hollandblumer.com,https://hollandblumer.github.io
 ```

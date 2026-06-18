@@ -21,5 +21,7 @@ services:
     envVars:
       - key: ALLOWED_ORIGINS
         value: https://hollandblumer.com,https://www.hollandblumer.com,https://hollandblumer.github.io
+      - key: MANO_MODEL_DIR
+        value: /opt/render/project/src/backend/3d-motion-marbling/models
       - key: MANO_UPLOAD_TOKEN
         sync: false

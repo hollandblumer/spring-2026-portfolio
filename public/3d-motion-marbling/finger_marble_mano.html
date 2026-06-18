@@ -281,6 +281,23 @@
         text-transform: uppercase;
       }
 
+      #debug {
+        position: fixed;
+        right: 14px;
+        top: 14px;
+        z-index: 45;
+        max-width: min(360px, calc(100vw - 28px));
+        padding: 0.7rem 0.8rem;
+        background: rgba(20, 22, 12, 0.72);
+        color: #fff;
+        font-family: Arial, sans-serif;
+        font-size: 0.72rem;
+        font-weight: 700;
+        line-height: 1.35;
+        pointer-events: none;
+        text-transform: uppercase;
+      }
+
       #cameraPrompt {
         position: fixed;
         inset: 0;
@@ -347,6 +364,7 @@
     <canvas id="marbleCanvas"></canvas>
     <canvas id="scene"></canvas>
     <video id="video" playsinline autoplay muted></video>
+    <div id="debug">Booting marbling.</div>
 
     <div
       id="cameraPrompt"
@@ -505,10 +523,21 @@
       let lastFingerPositions = null;
       let frameCount = 0;
       let lastPaintWarpAt = 0;
+      const debugState = {
+        mesh: "not loaded",
+        camera: "off",
+        frames: 0,
+        landmarks: 0,
+        draw: "none",
+      };
 
       const settings = { drops: 95, size: 32, dist: 42 };
-      const apiParam = new URLSearchParams(window.location.search).get("api");
+      const urlParams = new URLSearchParams(window.location.search);
+      const apiParam = urlParams.get("api");
       const API_BASE = (apiParam || "").replace(/\/$/, "");
+      const SERVER_FIT = urlParams.get("fit") === "1";
+      const SESSION_ID =
+        crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`;
       function dataUrl(path) {
         return API_BASE ? `${API_BASE}/${path}` : path;
       }
@@ -591,6 +620,19 @@
       }
       function setStatus(t) {
         document.getElementById("status").textContent = t;
+      }
+
+      function updateDebug(extra = "") {
+        document.getElementById("debug").textContent = [
+          `mesh: ${debugState.mesh}`,
+          `camera: ${debugState.camera}`,
+          `frames: ${debugState.frames}`,
+          `landmarks: ${debugState.landmarks}`,
+          `draw: ${debugState.draw}`,
+          extra,
+        ]
+          .filter(Boolean)
+          .join(" | ");
       }
 
       function waitForVideoReady() {
@@ -899,10 +941,24 @@
             `${dataUrl("current_hand_mesh.obj")}?t=${Date.now()}`,
             { cache: "no-store" },
           );
-          if (!res.ok) return;
+          if (!res.ok) {
+            debugState.mesh = `failed ${res.status}`;
+            updateDebug();
+            return;
+          }
           const mesh = parseObjMesh(await res.text());
-          if (mesh) manoMesh = mesh;
-        } catch (_err) {}
+          if (mesh) {
+            manoMesh = mesh;
+            debugState.mesh = `${mesh.vertices.length}v ${mesh.faces.length}f`;
+            updateDebug();
+          } else {
+            debugState.mesh = "parse failed";
+            updateDebug();
+          }
+        } catch (err) {
+          debugState.mesh = `error ${err.message}`;
+          updateDebug();
+        }
       }
 
       function landmarkBounds(landmarks) {
@@ -1781,6 +1837,46 @@
         drawFingertipGlow(landmarks);
 
         octx.restore();
+        debugState.draw = "preserved MANO mesh";
+        updateDebug();
+      }
+
+      function drawDefaultManoMesh() {
+        if (!manoMesh) return;
+
+        const b = manoMesh.bounds;
+        const meshW = Math.max(1, b.maxX - b.minX);
+        const meshH = Math.max(1, b.maxY - b.minY);
+        const meshCx = (b.minX + b.maxX) / 2;
+        const meshCy = (b.minY + b.maxY) / 2;
+        const scale = Math.min(w / meshW, h / meshH) * 0.42;
+        const pts = manoMesh.vertices.map((v) => ({
+          x: w * 0.58 + (v.x - meshCx) * scale,
+          y: h * 0.52 - (v.y - meshCy) * scale,
+          z: (v.z - b.minZ) / Math.max(1, b.maxZ - b.minZ),
+        }));
+
+        octx.clearRect(0, 0, w, h);
+        octx.save();
+        octx.globalCompositeOperation = "lighter";
+        octx.lineCap = "round";
+        octx.lineJoin = "round";
+        drawManoSurface(pts);
+        for (const [a, b] of manoMesh.edges) {
+          const pa = pts[a],
+            pb = pts[b];
+          if (!pa || !pb) continue;
+          const depth = (pa.z + pb.z) / 2;
+          octx.strokeStyle = `rgba(255,145,0,${0.62 + depth * 0.3})`;
+          octx.lineWidth = 1.05;
+          octx.beginPath();
+          octx.moveTo(pa.x, pa.y);
+          octx.lineTo(pb.x, pb.y);
+          octx.stroke();
+        }
+        octx.restore();
+        debugState.draw = "default MANO mesh";
+        updateDebug();
       }
 
       /* CAMERA */
@@ -1792,6 +1888,10 @@
         }
 
         if (API_BASE) {
+          if (SERVER_FIT) {
+            await startServerManoCamera();
+            return;
+          }
           startApiManoStream();
           return;
         }
@@ -1806,6 +1906,7 @@
 
         try {
           await refreshManoMesh();
+          drawDefaultManoMesh();
 
           hands = new Hands({
             locateFile: (file) =>
@@ -1822,9 +1923,11 @@
           hands.onResults(async (results) => {
             if (!cameraRunning) return;
             frameCount++;
+            debugState.frames = frameCount;
 
             const motionLandmarks = results.multiHandLandmarks?.[0];
             if (motionLandmarks && motionLandmarks.length) {
+              debugState.landmarks = motionLandmarks.length;
               const displayLandmarks = mirrorManoDisplay
                 ? motionLandmarks.map((lm) => ({
                     x: 1 - lm.x,
@@ -1854,6 +1957,9 @@
             } else {
               octx.clearRect(0, 0, w, h);
               lastFingerPositions = null;
+              debugState.landmarks = 0;
+              debugState.draw = "no landmarks";
+              updateDebug();
               setStatus("Camera is live. Show your hand to build the MANO mesh.");
             }
           });
@@ -1861,6 +1967,8 @@
           cameraRunning = true;
           camBtn.textContent = "Camera Active";
           video.classList.add("is-active");
+          debugState.camera = "requesting";
+          updateDebug();
           browserCameraStream = await navigator.mediaDevices.getUserMedia({
             video: {
               facingMode: "user",
@@ -1872,6 +1980,8 @@
           video.srcObject = browserCameraStream;
           await video.play();
           await waitForVideoReady();
+          debugState.camera = `${video.videoWidth}x${video.videoHeight}`;
+          updateDebug();
 
           const sendFrame = async () => {
             if (!cameraRunning) return;
@@ -1886,6 +1996,138 @@
           octx.clearRect(0, 0, w, h);
           lastFingerPositions = null;
           setStatus("Camera could not start: " + err.message);
+        }
+      }
+
+      async function startServerManoCamera() {
+        if (!navigator.mediaDevices?.getUserMedia) {
+          setStatus("Camera access is unavailable in this browser.");
+          return;
+        }
+
+        setStatus("Starting accurate Python MANO backend...");
+        camBtn.textContent = "Starting...";
+
+        try {
+          await refreshManoMesh();
+          drawDefaultManoMesh();
+
+          cameraRunning = true;
+          camBtn.textContent = "MANO Active";
+          video.classList.add("is-active");
+          debugState.camera = "requesting";
+          updateDebug("server fit");
+
+          browserCameraStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: "user",
+              width: { ideal: 640 },
+              height: { ideal: 480 },
+            },
+            audio: false,
+          });
+          video.srcObject = browserCameraStream;
+          await video.play();
+          await waitForVideoReady();
+          debugState.camera = `${video.videoWidth}x${video.videoHeight}`;
+          updateDebug("server fit");
+
+          const uploadCanvas = document.createElement("canvas");
+          uploadCanvas.width = 320;
+          uploadCanvas.height = 240;
+          const uploadCtx = uploadCanvas.getContext("2d");
+          let pending = false;
+          let lastFitAt = 0;
+
+          const sendFrame = async () => {
+            if (!cameraRunning) return;
+            const now = performance.now();
+
+            if (!pending && video.readyState >= 2 && now - lastFitAt > 130) {
+              pending = true;
+              lastFitAt = now;
+              frameCount++;
+              debugState.frames = frameCount;
+
+              try {
+                uploadCtx.save();
+                uploadCtx.scale(-1, 1);
+                uploadCtx.drawImage(
+                  video,
+                  -uploadCanvas.width,
+                  0,
+                  uploadCanvas.width,
+                  uploadCanvas.height,
+                );
+                uploadCtx.restore();
+
+                const image = uploadCanvas.toDataURL("image/jpeg", 0.68);
+                const res = await fetch(`${API_BASE}/fit_frame`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    image,
+                    sessionId: SESSION_ID,
+                    handSide: "left",
+                  }),
+                });
+                if (!res.ok) {
+                  throw new Error(`backend ${res.status}`);
+                }
+                const state = await res.json();
+
+                if (state.hasHand && state.landmarks?.length) {
+                  const displayLandmarks = mirrorManoDisplay
+                    ? state.landmarks.map((lm) => ({
+                        x: 1 - lm.x,
+                        y: lm.y,
+                        z: lm.z,
+                      }))
+                    : state.landmarks;
+                  const tips = TIP_INDICES.map((i) => ({
+                    x: state.landmarks[i].x * w,
+                    y: state.landmarks[i].y * h,
+                  }));
+
+                  drawHandOverlay(displayLandmarks, state.projectedVertices);
+                  const warpNow = performance.now();
+                  if (warpNow - lastPaintWarpAt > 110) {
+                    applyFingerComb(tips, lastFingerPositions);
+                    lastPaintWarpAt = warpNow;
+                  }
+                  lastFingerPositions = tips;
+                  debugState.landmarks = state.landmarks.length;
+                  debugState.draw = "accurate Python MANO";
+                  updateDebug("server fit");
+                  setStatus("Tracking accurate Python MANO hand.");
+                } else {
+                  lastFingerPositions = null;
+                  debugState.landmarks = 0;
+                  debugState.draw = "backend no hand";
+                  updateDebug("server fit");
+                  setStatus("Backend is live. Show your hand to the camera.");
+                }
+              } catch (err) {
+                debugState.draw = `backend error ${err.message}`;
+                updateDebug("server fit");
+                setStatus("MANO backend error: " + err.message);
+              } finally {
+                pending = false;
+              }
+            }
+
+            browserCameraFrame = requestAnimationFrame(sendFrame);
+          };
+
+          browserCameraFrame = requestAnimationFrame(sendFrame);
+        } catch (err) {
+          cameraRunning = false;
+          camBtn.textContent = "Start Camera";
+          octx.clearRect(0, 0, w, h);
+          lastFingerPositions = null;
+          debugState.camera = "error";
+          updateDebug(err.message);
+          setStatus("Camera/backend could not start: " + err.message);
         }
       }
 

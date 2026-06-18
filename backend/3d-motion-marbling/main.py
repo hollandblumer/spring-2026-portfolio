@@ -1,3 +1,4 @@
+import base64
 import os
 from pathlib import Path
 
@@ -10,10 +11,12 @@ BASE_DIR = Path(__file__).resolve().parent
 REPO_ROOT = BASE_DIR.parents[1]
 DEFAULT_DATA_DIR = REPO_ROOT / "public" / "3d-motion-marbling"
 DEFAULT_UPLOAD_DIR = Path(os.getenv("MANO_UPLOAD_DIR", "/tmp/3d-motion-marbling"))
+DEFAULT_MANO_ROOT = Path(os.getenv("MANO_MODEL_DIR", BASE_DIR / "models"))
 DATA_FILES = {
     "current_hand_state.json": "application/json",
     "current_hand_mesh.obj": "text/plain",
 }
+LIVE_FITTERS = {}
 
 DEFAULT_ALLOWED_ORIGINS = [
     "http://localhost:3000",
@@ -75,12 +78,167 @@ def serve_data_file(filename, media_type):
     )
 
 
+def lazy_import_mano_runtime():
+    try:
+        import cv2
+        import mediapipe as mp
+        import numpy as np
+        import torch
+        from manopth.manolayer import ManoLayer
+    except Exception as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"MANO runtime dependencies are unavailable: {exc}",
+        ) from exc
+
+    return cv2, mp, np, torch, ManoLayer
+
+
+def mediapipe_to_fit_target(landmarks, torch, device):
+    pts = []
+    for lm in landmarks.landmark:
+        pts.append([lm.x, -lm.y, -lm.z])
+    pts = torch.tensor(pts, dtype=torch.float32, device=device)
+    root = pts[0].clone()
+    scale = (pts - root).norm(dim=1).mean() + 1e-8
+    target = (pts - root) / scale
+    return target, root, scale
+
+
+def mano_joints_to_mediapipe_order(joints):
+    j = joints[0, :21, :]
+    j = j - j[0]
+    j = j / (j.norm(dim=1).mean() + 1e-8)
+    return j
+
+
+def landmarks_to_json(landmarks):
+    return [{"x": lm.x, "y": lm.y, "z": lm.z} for lm in landmarks.landmark]
+
+
+def project_mano_vertices(verts, joints, trans, mp_root, mp_scale):
+    mano_root = joints[0, 0, :]
+    mano_scale = (joints[0, :21, :] - mano_root).norm(dim=1).mean() + 1e-8
+    fitted = ((verts[0] - mano_root) / mano_scale) + trans[0]
+    image_points = fitted * mp_scale + mp_root
+    image_points = image_points.detach().cpu()
+
+    z = image_points[:, 2]
+    z_min = z.min()
+    z_range = (z.max() - z_min).clamp_min(1e-8)
+    z_norm = (z - z_min) / z_range
+
+    return [
+        [float(x), float(-y), float(depth)]
+        for (x, y, _), depth in zip(image_points.tolist(), z_norm.tolist())
+    ]
+
+
+class LiveManoFitter:
+    def __init__(self, hand_side):
+        cv2, mp, np, torch, ManoLayer = lazy_import_mano_runtime()
+        self.cv2 = cv2
+        self.np = np
+        self.torch = torch
+        self.device = torch.device(os.getenv("MANO_DEVICE", "cpu"))
+        self.iterations = int(os.getenv("MANO_ITERATIONS", "8"))
+        self.hand_side = hand_side
+
+        mano_root = Path(os.getenv("MANO_MODEL_DIR", DEFAULT_MANO_ROOT)).expanduser()
+        expected_file = "MANO_RIGHT.pkl" if hand_side == "right" else "MANO_LEFT.pkl"
+        if not (mano_root / expected_file).exists():
+            raise HTTPException(
+                status_code=503,
+                detail=f"Missing MANO model file: {mano_root / expected_file}",
+            )
+
+        self.mano_layer = ManoLayer(
+            mano_root=str(mano_root),
+            use_pca=True,
+            ncomps=45,
+            flat_hand_mean=False,
+            side=hand_side,
+        ).to(self.device)
+        self.pose = torch.zeros(1, 48, device=self.device, requires_grad=True)
+        self.shape = torch.zeros(1, 10, device=self.device, requires_grad=True)
+        self.trans = torch.zeros(1, 3, device=self.device, requires_grad=True)
+        self.optimizer = torch.optim.Adam([self.pose, self.shape, self.trans], lr=0.01)
+        self.mp_hands = mp.solutions.hands.Hands(
+            static_image_mode=False,
+            max_num_hands=1,
+            model_complexity=1,
+            min_detection_confidence=0.65,
+            min_tracking_confidence=0.65,
+        )
+
+    def fit(self, image_bytes):
+        image_arr = self.np.frombuffer(image_bytes, dtype=self.np.uint8)
+        frame = self.cv2.imdecode(image_arr, self.cv2.IMREAD_COLOR)
+        if frame is None:
+            raise HTTPException(status_code=400, detail="Could not decode frame.")
+
+        rgb = self.cv2.cvtColor(frame, self.cv2.COLOR_BGR2RGB)
+        result = self.mp_hands.process(rgb)
+        if not result.multi_hand_landmarks:
+            return {"hasHand": False, "landmarks": [], "projectedVertices": []}
+
+        hand_landmarks = result.multi_hand_landmarks[0]
+        target, mp_root, mp_scale = mediapipe_to_fit_target(
+            hand_landmarks,
+            self.torch,
+            self.device,
+        )
+
+        frame_pose = self.pose.detach().clone()
+        frame_shape = self.shape.detach().clone()
+        frame_trans = self.trans.detach().clone()
+
+        for _ in range(self.iterations):
+            self.optimizer.zero_grad()
+            verts, joints = self.mano_layer(self.pose, self.shape)
+            pred = mano_joints_to_mediapipe_order(joints) + self.trans
+
+            loss = ((pred - target) ** 2).mean()
+            loss = loss + 0.0005 * (self.pose ** 2).mean()
+            loss = loss + 0.001 * (self.shape ** 2).mean()
+            loss = loss + 0.0008 * ((self.pose - frame_pose) ** 2).mean()
+            loss = loss + 0.0008 * ((self.trans - frame_trans) ** 2).mean()
+
+            loss.backward()
+            self.optimizer.step()
+
+        with self.torch.no_grad():
+            self.pose.mul_(0.92).add_(frame_pose, alpha=0.08)
+            self.shape.mul_(0.98).add_(frame_shape, alpha=0.02)
+            self.trans.mul_(0.82).add_(frame_trans, alpha=0.18)
+
+        verts, joints = self.mano_layer(self.pose, self.shape)
+        return {
+            "hasHand": True,
+            "landmarks": landmarks_to_json(hand_landmarks),
+            "projectedVertices": project_mano_vertices(
+                verts,
+                joints,
+                self.trans,
+                mp_root,
+                mp_scale,
+            ),
+        }
+
+
+def get_live_fitter(session_id, hand_side):
+    key = f"{session_id}:{hand_side}"
+    if key not in LIVE_FITTERS:
+        LIVE_FITTERS[key] = LiveManoFitter(hand_side)
+    return LIVE_FITTERS[key]
+
+
 app = FastAPI(title="3D Motion Marbling API")
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=get_allowed_origins(),
-    allow_methods=["GET", "HEAD", "PUT"],
+    allow_methods=["GET", "HEAD", "PUT", "POST"],
     allow_headers=["*"],
 )
 
@@ -97,8 +255,35 @@ async def health():
         "hasMesh": get_file_path("current_hand_mesh.obj").exists(),
         "hasUploadedState": (upload_dir / "current_hand_state.json").exists(),
         "hasUploadedMesh": (upload_dir / "current_hand_mesh.obj").exists(),
+        "hasManoModels": {
+            "left": (DEFAULT_MANO_ROOT / "MANO_LEFT.pkl").exists(),
+            "right": (DEFAULT_MANO_ROOT / "MANO_RIGHT.pkl").exists(),
+        },
         "allowedOrigins": get_allowed_origins(),
     }
+
+
+@app.post("/fit_frame")
+async def fit_frame(request: Request):
+    payload = await request.json()
+    image = payload.get("image", "")
+    session_id = payload.get("sessionId", "default")
+    hand_side = payload.get("handSide", "left")
+
+    if hand_side not in {"left", "right"}:
+        raise HTTPException(status_code=400, detail="handSide must be left or right.")
+    if not image:
+        raise HTTPException(status_code=400, detail="Missing image.")
+
+    if "," in image:
+        image = image.split(",", 1)[1]
+    try:
+        image_bytes = base64.b64decode(image)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail="Invalid image data.") from exc
+
+    fitter = get_live_fitter(session_id, hand_side)
+    return fitter.fit(image_bytes)
 
 
 def verify_upload_token(upload_token):
