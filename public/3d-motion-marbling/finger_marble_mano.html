@@ -502,6 +502,7 @@
         handPollTimer = null;
       let lastFingerPositions = null;
       let frameCount = 0;
+      let lastPaintWarpAt = 0;
 
       const settings = { drops: 95, size: 32, dist: 42 };
       const apiParam = new URLSearchParams(window.location.search).get("api");
@@ -1582,6 +1583,7 @@
         octx.globalCompositeOperation = "lighter";
         octx.lineCap = "round";
         octx.lineJoin = "round";
+        let drawnEdges = 0;
 
         for (const [a, b] of manoMesh.edges) {
           const pa = warped[a],
@@ -1594,6 +1596,7 @@
           octx.moveTo(pa.x, pa.y);
           octx.lineTo(pb.x, pb.y);
           octx.stroke();
+          drawnEdges++;
         }
 
         for (const [a, b] of manoMesh.edges) {
@@ -1611,7 +1614,7 @@
 
         drawFingertipGlow(landmarks);
         octx.restore();
-        return true;
+        return drawnEdges > 0;
       }
 
       function drawHandOverlay(landmarks, projectedVertices) {
@@ -1758,9 +1761,13 @@
                 y: displayLandmarks[i].y * h,
               }));
 
-              await refreshManoMesh();
+              if (!manoMesh) await refreshManoMesh();
               drawHandOverlay(displayLandmarks, null);
-              applyFingerComb(tips, lastFingerPositions);
+              const now = performance.now();
+              if (now - lastPaintWarpAt > 110) {
+                applyFingerComb(tips, lastFingerPositions);
+                lastPaintWarpAt = now;
+              }
               lastFingerPositions = tips;
               setStatus("Move your MANO hand through the paint.");
             } else {
@@ -1781,6 +1788,7 @@
           cameraRunning = true;
           camBtn.textContent = "Camera Active";
           await handCamera.start();
+          video.classList.add("is-active");
           setStatus("Camera is live. Show your hand to build the MANO mesh.");
         } catch (err) {
           cameraRunning = false;
