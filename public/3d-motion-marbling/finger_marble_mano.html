@@ -500,6 +500,8 @@
         handCamera,
         cameraRunning = false,
         handPollTimer = null;
+      let browserCameraStream = null;
+      let browserCameraFrame = null;
       let lastFingerPositions = null;
       let frameCount = 0;
       let lastPaintWarpAt = 0;
@@ -589,6 +591,14 @@
       }
       function setStatus(t) {
         document.getElementById("status").textContent = t;
+      }
+
+      function waitForVideoReady() {
+        if (video.readyState >= 2) return Promise.resolve();
+
+        return new Promise((resolve) => {
+          video.onloadedmetadata = () => resolve();
+        });
       }
 
       function resize() {
@@ -1720,7 +1730,7 @@
           return;
         }
 
-        if (!window.Hands || !window.Camera) {
+        if (!window.Hands || !navigator.mediaDevices?.getUserMedia) {
           setStatus("MANO camera tracking libraries are still loading.");
           return;
         }
@@ -1737,9 +1747,10 @@
           });
           hands.setOptions({
             maxNumHands: 1,
-            modelComplexity: 1,
-            minDetectionConfidence: 0.65,
-            minTrackingConfidence: 0.6,
+            modelComplexity: 0,
+            selfieMode: true,
+            minDetectionConfidence: 0.45,
+            minTrackingConfidence: 0.45,
           });
 
           hands.onResults(async (results) => {
@@ -1769,7 +1780,7 @@
                 lastPaintWarpAt = now;
               }
               lastFingerPositions = tips;
-              setStatus("Move your MANO hand through the paint.");
+              setStatus(`Tracking MANO hand: ${motionLandmarks.length} points.`);
             } else {
               octx.clearRect(0, 0, w, h);
               lastFingerPositions = null;
@@ -1777,18 +1788,27 @@
             }
           });
 
-          handCamera = new Camera(video, {
-            onFrame: async () => {
-              await hands.send({ image: video });
-            },
-            width: 640,
-            height: 480,
-          });
-
           cameraRunning = true;
           camBtn.textContent = "Camera Active";
-          await handCamera.start();
           video.classList.add("is-active");
+          browserCameraStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: "user",
+              width: { ideal: 640 },
+              height: { ideal: 480 },
+            },
+            audio: false,
+          });
+          video.srcObject = browserCameraStream;
+          await video.play();
+          await waitForVideoReady();
+
+          const sendFrame = async () => {
+            if (!cameraRunning) return;
+            if (video.readyState >= 2) await hands.send({ image: video });
+            browserCameraFrame = requestAnimationFrame(sendFrame);
+          };
+          browserCameraFrame = requestAnimationFrame(sendFrame);
           setStatus("Camera is live. Show your hand to build the MANO mesh.");
         } catch (err) {
           cameraRunning = false;
