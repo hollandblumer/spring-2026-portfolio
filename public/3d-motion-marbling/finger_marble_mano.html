@@ -2000,7 +2000,7 @@
       }
 
       async function startServerManoCamera() {
-        if (!navigator.mediaDevices?.getUserMedia) {
+        if (!window.Hands || !navigator.mediaDevices?.getUserMedia) {
           setStatus("Camera access is unavailable in this browser.");
           return;
         }
@@ -2032,90 +2032,93 @@
           debugState.camera = `${video.videoWidth}x${video.videoHeight}`;
           updateDebug("server fit");
 
-          const uploadCanvas = document.createElement("canvas");
-          uploadCanvas.width = 320;
-          uploadCanvas.height = 240;
-          const uploadCtx = uploadCanvas.getContext("2d");
+          hands = new Hands({
+            locateFile: (file) =>
+              `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
+          });
+          hands.setOptions({
+            maxNumHands: 1,
+            modelComplexity: 0,
+            selfieMode: true,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5,
+          });
+
           let pending = false;
           let lastFitAt = 0;
 
-          const sendFrame = async () => {
+          hands.onResults(async (results) => {
             if (!cameraRunning) return;
-            const now = performance.now();
+            frameCount++;
+            debugState.frames = frameCount;
 
-            if (!pending && video.readyState >= 2 && now - lastFitAt > 130) {
-              pending = true;
-              lastFitAt = now;
-              frameCount++;
-              debugState.frames = frameCount;
-
-              try {
-                uploadCtx.save();
-                uploadCtx.scale(-1, 1);
-                uploadCtx.drawImage(
-                  video,
-                  -uploadCanvas.width,
-                  0,
-                  uploadCanvas.width,
-                  uploadCanvas.height,
-                );
-                uploadCtx.restore();
-
-                const image = uploadCanvas.toDataURL("image/jpeg", 0.68);
-                const res = await fetch(`${API_BASE}/fit_frame`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    image,
-                    sessionId: SESSION_ID,
-                    handSide: "left",
-                  }),
-                });
-                if (!res.ok) {
-                  throw new Error(`backend ${res.status}`);
-                }
-                const state = await res.json();
-
-                if (state.hasHand && state.landmarks?.length) {
-                  const displayLandmarks = mirrorManoDisplay
-                    ? state.landmarks.map((lm) => ({
-                        x: 1 - lm.x,
-                        y: lm.y,
-                        z: lm.z,
-                      }))
-                    : state.landmarks;
-                  const tips = TIP_INDICES.map((i) => ({
-                    x: state.landmarks[i].x * w,
-                    y: state.landmarks[i].y * h,
-                  }));
-
-                  drawHandOverlay(displayLandmarks, state.projectedVertices);
-                  const warpNow = performance.now();
-                  if (warpNow - lastPaintWarpAt > 110) {
-                    applyFingerComb(tips, lastFingerPositions);
-                    lastPaintWarpAt = warpNow;
-                  }
-                  lastFingerPositions = tips;
-                  debugState.landmarks = state.landmarks.length;
-                  debugState.draw = "accurate Python MANO";
-                  updateDebug("server fit");
-                  setStatus("Tracking accurate Python MANO hand.");
-                } else {
-                  lastFingerPositions = null;
-                  debugState.landmarks = 0;
-                  debugState.draw = "backend no hand";
-                  updateDebug("server fit");
-                  setStatus("Backend is live. Show your hand to the camera.");
-                }
-              } catch (err) {
-                debugState.draw = `backend error ${err.message}`;
-                updateDebug("server fit");
-                setStatus("MANO backend error: " + err.message);
-              } finally {
-                pending = false;
-              }
+            const motionLandmarks = results.multiHandLandmarks?.[0];
+            if (!motionLandmarks || !motionLandmarks.length) {
+              lastFingerPositions = null;
+              debugState.landmarks = 0;
+              debugState.draw = "browser no hand";
+              updateDebug("browser landmarks");
+              setStatus("Camera is live. Show your hand to the camera.");
+              return;
             }
 
+            const now = performance.now();
+            if (pending || now - lastFitAt <= 130) return;
+            pending = true;
+            lastFitAt = now;
+
+            try {
+              const res = await fetch(`${API_BASE}/fit_landmarks`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  landmarks: motionLandmarks,
+                  sessionId: SESSION_ID,
+                  handSide: "left",
+                }),
+              });
+              if (!res.ok) {
+                throw new Error(`backend ${res.status}`);
+              }
+              const state = await res.json();
+
+              if (state.hasHand && state.landmarks?.length) {
+                const displayLandmarks = mirrorManoDisplay
+                  ? state.landmarks.map((lm) => ({
+                      x: 1 - lm.x,
+                      y: lm.y,
+                      z: lm.z,
+                    }))
+                  : state.landmarks;
+                const tips = TIP_INDICES.map((i) => ({
+                  x: state.landmarks[i].x * w,
+                  y: state.landmarks[i].y * h,
+                }));
+
+                drawHandOverlay(displayLandmarks, state.projectedVertices);
+                const warpNow = performance.now();
+                if (warpNow - lastPaintWarpAt > 110) {
+                  applyFingerComb(tips, lastFingerPositions);
+                  lastPaintWarpAt = warpNow;
+                }
+                lastFingerPositions = tips;
+                debugState.landmarks = state.landmarks.length;
+                debugState.draw = "Python MANO from landmarks";
+                updateDebug("landmark fit");
+                setStatus("Tracking Python MANO hand.");
+              }
+            } catch (err) {
+              debugState.draw = `backend error ${err.message}`;
+              updateDebug("landmark fit");
+              setStatus("MANO backend error: " + err.message);
+            } finally {
+              pending = false;
+            }
+          });
+
+          const sendFrame = async () => {
+            if (!cameraRunning) return;
+            if (video.readyState >= 2) await hands.send({ image: video });
             browserCameraFrame = requestAnimationFrame(sendFrame);
           };
 

@@ -31,6 +31,12 @@ services:
         sync: false
       - key: MANO_MODEL_DIR
         value: /tmp/mano-models
+      - key: MANO_ITERATIONS
+        value: 5
+      - key: MANO_MAX_FITTERS
+        value: 2
+      - key: MANO_TORCH_THREADS
+        value: 1
       - key: MPLCONFIGDIR
         value: /tmp/matplotlib
       - key: MANO_UPLOAD_TOKEN

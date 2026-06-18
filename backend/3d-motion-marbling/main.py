@@ -1,4 +1,3 @@
-import base64
 import json
 import os
 from pathlib import Path
@@ -161,8 +160,6 @@ def ensure_mano_models():
 def lazy_import_mano_runtime():
     try:
         import inspect
-        import cv2
-        import mediapipe as mp
         import numpy as np
         import torch
 
@@ -187,13 +184,19 @@ def lazy_import_mano_runtime():
             detail=f"MANO runtime dependencies are unavailable: {exc}",
         ) from exc
 
-    return cv2, mp, np, torch, ManoLayer
+    return np, torch, ManoLayer
 
 
-def mediapipe_to_fit_target(landmarks, torch, device):
+def landmarks_to_fit_target(landmarks, torch, device):
     pts = []
-    for lm in landmarks.landmark:
-        pts.append([lm.x, -lm.y, -lm.z])
+    for lm in landmarks:
+        pts.append(
+            [
+                float(lm.get("x", 0)),
+                -float(lm.get("y", 0)),
+                -float(lm.get("z", 0)),
+            ]
+        )
     pts = torch.tensor(pts, dtype=torch.float32, device=device)
     root = pts[0].clone()
     scale = (pts - root).norm(dim=1).mean() + 1e-8
@@ -209,7 +212,14 @@ def mano_joints_to_mediapipe_order(joints):
 
 
 def landmarks_to_json(landmarks):
-    return [{"x": lm.x, "y": lm.y, "z": lm.z} for lm in landmarks.landmark]
+    return [
+        {
+            "x": float(lm.get("x", 0)),
+            "y": float(lm.get("y", 0)),
+            "z": float(lm.get("z", 0)),
+        }
+        for lm in landmarks
+    ]
 
 
 def project_mano_vertices(verts, joints, trans, mp_root, mp_scale):
@@ -232,12 +242,12 @@ def project_mano_vertices(verts, joints, trans, mp_root, mp_scale):
 
 class LiveManoFitter:
     def __init__(self, hand_side):
-        cv2, mp, np, torch, ManoLayer = lazy_import_mano_runtime()
-        self.cv2 = cv2
+        np, torch, ManoLayer = lazy_import_mano_runtime()
         self.np = np
         self.torch = torch
+        torch.set_num_threads(int(os.getenv("MANO_TORCH_THREADS", "1")))
         self.device = torch.device(os.getenv("MANO_DEVICE", "cpu"))
-        self.iterations = int(os.getenv("MANO_ITERATIONS", "8"))
+        self.iterations = int(os.getenv("MANO_ITERATIONS", "5"))
         self.hand_side = hand_side
 
         mano_root = ensure_mano_models()
@@ -259,28 +269,13 @@ class LiveManoFitter:
         self.shape = torch.zeros(1, 10, device=self.device, requires_grad=True)
         self.trans = torch.zeros(1, 3, device=self.device, requires_grad=True)
         self.optimizer = torch.optim.Adam([self.pose, self.shape, self.trans], lr=0.01)
-        self.mp_hands = mp.solutions.hands.Hands(
-            static_image_mode=False,
-            max_num_hands=1,
-            model_complexity=1,
-            min_detection_confidence=0.65,
-            min_tracking_confidence=0.65,
-        )
 
-    def fit(self, image_bytes):
-        image_arr = self.np.frombuffer(image_bytes, dtype=self.np.uint8)
-        frame = self.cv2.imdecode(image_arr, self.cv2.IMREAD_COLOR)
-        if frame is None:
-            raise HTTPException(status_code=400, detail="Could not decode frame.")
+    def fit_landmarks(self, landmarks):
+        if len(landmarks) < 21:
+            raise HTTPException(status_code=400, detail="Expected 21 hand landmarks.")
 
-        rgb = self.cv2.cvtColor(frame, self.cv2.COLOR_BGR2RGB)
-        result = self.mp_hands.process(rgb)
-        if not result.multi_hand_landmarks:
-            return {"hasHand": False, "landmarks": [], "projectedVertices": []}
-
-        hand_landmarks = result.multi_hand_landmarks[0]
-        target, mp_root, mp_scale = mediapipe_to_fit_target(
-            hand_landmarks,
+        target, mp_root, mp_scale = landmarks_to_fit_target(
+            landmarks[:21],
             self.torch,
             self.device,
         )
@@ -311,7 +306,7 @@ class LiveManoFitter:
         verts, joints = self.mano_layer(self.pose, self.shape)
         return {
             "hasHand": True,
-            "landmarks": landmarks_to_json(hand_landmarks),
+            "landmarks": landmarks_to_json(landmarks[:21]),
             "projectedVertices": project_mano_vertices(
                 verts,
                 joints,
@@ -325,6 +320,9 @@ class LiveManoFitter:
 def get_live_fitter(session_id, hand_side):
     key = f"{session_id}:{hand_side}"
     if key not in LIVE_FITTERS:
+        max_fitters = int(os.getenv("MANO_MAX_FITTERS", "2"))
+        while len(LIVE_FITTERS) >= max_fitters:
+            LIVE_FITTERS.pop(next(iter(LIVE_FITTERS)))
         LIVE_FITTERS[key] = LiveManoFitter(hand_side)
     return LIVE_FITTERS[key]
 
@@ -370,27 +368,28 @@ async def health():
     }
 
 
-@app.post("/fit_frame")
-async def fit_frame(request: Request):
+@app.post("/fit_landmarks")
+async def fit_landmarks(request: Request):
     payload = await request.json()
-    image = payload.get("image", "")
+    landmarks = payload.get("landmarks", [])
     session_id = payload.get("sessionId", "default")
     hand_side = payload.get("handSide", "left")
 
     if hand_side not in {"left", "right"}:
         raise HTTPException(status_code=400, detail="handSide must be left or right.")
-    if not image:
-        raise HTTPException(status_code=400, detail="Missing image.")
-
-    if "," in image:
-        image = image.split(",", 1)[1]
-    try:
-        image_bytes = base64.b64decode(image)
-    except Exception as exc:
-        raise HTTPException(status_code=400, detail="Invalid image data.") from exc
+    if not isinstance(landmarks, list):
+        raise HTTPException(status_code=400, detail="Missing landmarks.")
 
     fitter = get_live_fitter(session_id, hand_side)
-    return fitter.fit(image_bytes)
+    return fitter.fit_landmarks(landmarks)
+
+
+@app.post("/fit_frame")
+async def fit_frame():
+    raise HTTPException(
+        status_code=410,
+        detail="fit_frame was replaced by browser landmark fitting at /fit_landmarks.",
+    )
 
 
 def verify_upload_token(upload_token):

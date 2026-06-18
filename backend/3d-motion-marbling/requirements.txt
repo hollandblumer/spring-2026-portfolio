@@ -2,8 +2,6 @@ fastapi==0.124.2
 uvicorn[standard]==0.38.0
 numpy<2
 torch
-opencv-python-headless
-mediapipe==0.10.21
 chumpy==0.70
 google-cloud-storage
 git+https://github.com/hassony2/manopth.git
