@@ -542,6 +542,14 @@
         return API_BASE ? `${API_BASE}/${path}` : path;
       }
 
+      function getDetectedHandSide(results) {
+        const label =
+          results.multiHandedness?.[0]?.label ||
+          results.multiHandedness?.[0]?.classification?.[0]?.label ||
+          "";
+        return label.toLowerCase() === "right" ? "right" : "left";
+      }
+
       const palette = [
         [255, 255, 255],
         [255, 235, 59],
@@ -2053,6 +2061,7 @@
             debugState.frames = frameCount;
 
             const motionLandmarks = results.multiHandLandmarks?.[0];
+            const handSide = getDetectedHandSide(results);
             if (!motionLandmarks || !motionLandmarks.length) {
               lastFingerPositions = null;
               debugState.landmarks = 0;
@@ -2074,7 +2083,7 @@
                 body: JSON.stringify({
                   landmarks: motionLandmarks,
                   sessionId: SESSION_ID,
-                  handSide: "left",
+                  handSide,
                 }),
               });
               if (!res.ok) {
@@ -2108,9 +2117,9 @@
                 }
                 lastFingerPositions = tips;
                 debugState.landmarks = state.landmarks.length;
-                debugState.draw = "Python MANO from landmarks";
+                debugState.draw = `Python MANO ${handSide} hand`;
                 updateDebug("landmark fit");
-                setStatus("Tracking Python MANO hand.");
+                setStatus(`Tracking Python MANO ${handSide} hand.`);
               }
             } catch (err) {
               debugState.draw = `backend error ${err.message}`;
