@@ -15,7 +15,7 @@ services:
     name: 3d-motion-marbling-api
     env: python
     rootDir: backend/3d-motion-marbling
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install wheel setuptools && pip install --no-build-isolation -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
@@ -29,5 +29,7 @@ services:
         sync: false
       - key: MANO_MODEL_DIR
         value: /tmp/mano-models
+      - key: MPLCONFIGDIR
+        value: /tmp/matplotlib
       - key: MANO_UPLOAD_TOKEN
         sync: false

@@ -124,10 +124,26 @@ def ensure_mano_models():
 
 def lazy_import_mano_runtime():
     try:
+        import inspect
         import cv2
         import mediapipe as mp
         import numpy as np
         import torch
+
+        if not hasattr(inspect, "getargspec"):
+            inspect.getargspec = inspect.getfullargspec
+        for alias, value in {
+            "bool": bool,
+            "int": int,
+            "float": float,
+            "complex": complex,
+            "object": object,
+            "str": str,
+            "unicode": str,
+        }.items():
+            if alias not in np.__dict__:
+                setattr(np, alias, value)
+
         from manopth.manolayer import ManoLayer
     except Exception as exc:
         raise HTTPException(
