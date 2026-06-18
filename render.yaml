@@ -25,6 +25,8 @@ services:
         value: 3.11.9
       - key: GOOGLE_APPLICATION_CREDENTIALS
         value: /etc/secrets/gcp-service-account.json
+      - key: GCP_SERVICE_ACCOUNT_JSON
+        sync: false
       - key: GCS_MANO_BUCKET
         sync: false
       - key: MANO_MODEL_DIR

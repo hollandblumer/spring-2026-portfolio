@@ -1,4 +1,5 @@
 import base64
+import json
 import os
 from pathlib import Path
 
@@ -84,6 +85,41 @@ def get_mano_root():
     return Path(os.getenv("MANO_MODEL_DIR", DEFAULT_MANO_ROOT)).expanduser().resolve()
 
 
+def get_credentials_status():
+    credentials_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "")
+    return {
+        "googleApplicationCredentials": credentials_path,
+        "credentialsFileExists": bool(
+            credentials_path and Path(credentials_path).exists()
+        ),
+        "secretsDirExists": Path("/etc/secrets").exists(),
+        "gcpServiceAccountJsonEnvPresent": bool(
+            os.getenv("GCP_SERVICE_ACCOUNT_JSON", "").strip()
+        ),
+    }
+
+
+def get_storage_client(storage):
+    service_account_json = os.getenv("GCP_SERVICE_ACCOUNT_JSON", "").strip()
+    credentials_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "").strip()
+    if not service_account_json and credentials_path.startswith("{"):
+        service_account_json = credentials_path
+
+    if service_account_json:
+        from google.oauth2 import service_account
+
+        service_account_info = json.loads(service_account_json)
+        credentials = service_account.Credentials.from_service_account_info(
+            service_account_info
+        )
+        return storage.Client(
+            credentials=credentials,
+            project=service_account_info.get("project_id"),
+        )
+
+    return storage.Client()
+
+
 def ensure_mano_models():
     global MODELS_READY
     mano_root = get_mano_root()
@@ -105,7 +141,7 @@ def ensure_mano_models():
 
     mano_root.mkdir(parents=True, exist_ok=True)
     try:
-        client = storage.Client()
+        client = get_storage_client(storage)
         bucket = client.bucket(bucket_name)
         for filename in MANO_MODEL_FILES:
             target_path = mano_root / filename
@@ -307,9 +343,15 @@ app.add_middleware(
 async def health():
     data_dir = get_data_dir()
     upload_dir = get_upload_dir()
-    mano_root = ensure_mano_models()
+    model_error = ""
+    try:
+        mano_root = ensure_mano_models()
+    except HTTPException as exc:
+        mano_root = get_mano_root()
+        model_error = str(exc.detail)
+
     return {
-        "ok": True,
+        "ok": not model_error,
         "dataDir": str(data_dir),
         "uploadDir": str(upload_dir),
         "hasState": get_file_path("current_hand_state.json").exists(),
@@ -321,7 +363,9 @@ async def health():
             "right": (mano_root / "MANO_RIGHT.pkl").exists(),
         },
         "manoModelDir": str(mano_root),
+        "manoModelError": model_error,
         "gcsManoBucket": os.getenv("GCS_MANO_BUCKET", ""),
+        "gcpCredentials": get_credentials_status(),
         "allowedOrigins": get_allowed_origins(),
     }
 
