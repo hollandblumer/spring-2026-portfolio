@@ -15,6 +15,7 @@
 __pycache__/
 *.py[cod]
 venv/
+backend/3d-motion-marbling/models/
 
 # next.js
 /.next/
