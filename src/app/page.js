@@ -92,7 +92,7 @@ const PROJECTS = [
   },
   {
     id: "chargepoint",
-    title: "ChargePoint",
+    title: "Charge Point",
     type: "image",
     src: "/projects/chargepoint.png",
     poster: "/projects/chargepoint.png",
