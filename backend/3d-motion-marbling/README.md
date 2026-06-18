@@ -35,17 +35,50 @@ curl http://127.0.0.1:8000/current_hand_state.json
 curl -I http://127.0.0.1:8000/current_hand_mesh.obj
 ```
 
-## Frontend Behavior
+## Live Website MANO Uploads
 
-When the portfolio runs on `localhost` or `127.0.0.1`, the marbling sketch automatically polls:
+Render cannot access your laptop webcam directly. To use the Python MANO mesh on
+the public website, run the webcam MANO process locally and upload its generated
+files to the hosted Render API.
+
+Set this Render environment variable on the backend service:
 
 ```bash
-http://127.0.0.1:8000
+MANO_UPLOAD_TOKEN=make-a-long-random-secret
 ```
 
-On production domains, it falls back to the static files in `public/3d-motion-marbling`, so the page can still deploy without a live backend.
+While `webcam_mano.py` is running and writing files into
+`/Users/hollandblumer/Desktop/hand`, run this in another terminal:
 
-You can override the API base with a query string:
+```bash
+cd backend/3d-motion-marbling
+python3 upload_mano_files.py \
+  --api https://spring-2026-portfolio.onrender.com \
+  --token "make-a-long-random-secret" \
+  --data-dir "/Users/hollandblumer/Desktop/hand"
+```
+
+The uploader sends:
+
+- `current_hand_state.json`
+- `current_hand_mesh.obj`
+
+to Render, and the public portfolio page polls those uploaded files.
+
+## Frontend Behavior
+
+By default, the public portfolio runs fully in the visitor's browser: it asks for
+their webcam, tracks their hand with MediaPipe, and draws the bundled MANO mesh
+asset from `public/3d-motion-marbling`.
+
+The Python backend is optional. Use it only when you explicitly want to drive the
+page from generated MANO files:
+
+```bash
+/3d-motion-marbling/finger_marble_mano.html?api=http://127.0.0.1:8000
+```
+
+For a hosted Python stream, pass the Render API URL:
 
 ```bash
 /3d-motion-marbling/finger_marble_mano.html?api=https://your-api.example.com
@@ -71,5 +104,6 @@ Optional environment variables:
 
 ```bash
 MANO_DATA_DIR=/path/to/live/hand/files
+MANO_UPLOAD_TOKEN=make-a-long-random-secret
 ALLOWED_ORIGINS=https://hollandblumer.com,https://www.hollandblumer.com,https://hollandblumer.github.io
 ```

@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response
 
@@ -9,6 +9,11 @@ from fastapi.responses import FileResponse, Response
 BASE_DIR = Path(__file__).resolve().parent
 REPO_ROOT = BASE_DIR.parents[1]
 DEFAULT_DATA_DIR = REPO_ROOT / "public" / "3d-motion-marbling"
+DEFAULT_UPLOAD_DIR = Path(os.getenv("MANO_UPLOAD_DIR", "/tmp/3d-motion-marbling"))
+DATA_FILES = {
+    "current_hand_state.json": "application/json",
+    "current_hand_mesh.obj": "text/plain",
+}
 
 DEFAULT_ALLOWED_ORIGINS = [
     "http://localhost:3000",
@@ -43,12 +48,24 @@ def get_data_dir():
     return DEFAULT_DATA_DIR.resolve()
 
 
+def get_upload_dir():
+    return DEFAULT_UPLOAD_DIR.expanduser().resolve()
+
+
+def get_file_path(filename):
+    upload_path = get_upload_dir() / filename
+    if upload_path.exists():
+        return upload_path
+
+    return get_data_dir() / filename
+
+
 def serve_data_file(filename, media_type):
-    path = get_data_dir() / filename
+    path = get_file_path(filename)
     if not path.exists():
         raise HTTPException(
             status_code=404,
-            detail=f"{filename} was not found in {get_data_dir()}",
+            detail=f"{filename} was not found in {get_upload_dir()} or {get_data_dir()}",
         )
 
     return FileResponse(
@@ -63,7 +80,7 @@ app = FastAPI(title="3D Motion Marbling API")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=get_allowed_origins(),
-    allow_methods=["GET", "HEAD"],
+    allow_methods=["GET", "HEAD", "PUT"],
     allow_headers=["*"],
 )
 
@@ -71,13 +88,53 @@ app.add_middleware(
 @app.get("/health")
 async def health():
     data_dir = get_data_dir()
+    upload_dir = get_upload_dir()
     return {
         "ok": True,
         "dataDir": str(data_dir),
-        "hasState": (data_dir / "current_hand_state.json").exists(),
-        "hasMesh": (data_dir / "current_hand_mesh.obj").exists(),
+        "uploadDir": str(upload_dir),
+        "hasState": get_file_path("current_hand_state.json").exists(),
+        "hasMesh": get_file_path("current_hand_mesh.obj").exists(),
+        "hasUploadedState": (upload_dir / "current_hand_state.json").exists(),
+        "hasUploadedMesh": (upload_dir / "current_hand_mesh.obj").exists(),
         "allowedOrigins": get_allowed_origins(),
     }
+
+
+def verify_upload_token(upload_token):
+    expected_token = os.getenv("MANO_UPLOAD_TOKEN", "")
+    if not expected_token:
+        raise HTTPException(
+            status_code=503,
+            detail="MANO_UPLOAD_TOKEN is not configured.",
+        )
+    if upload_token != expected_token:
+        raise HTTPException(status_code=401, detail="Invalid upload token.")
+
+
+@app.put("/upload/{filename}")
+async def upload_data_file(
+    filename: str,
+    request: Request,
+    x_mano_upload_token: str = Header(default=""),
+):
+    if filename not in DATA_FILES:
+        raise HTTPException(status_code=404, detail="Unsupported upload file.")
+
+    verify_upload_token(x_mano_upload_token)
+
+    body = await request.body()
+    if not body:
+        raise HTTPException(status_code=400, detail="Upload body is empty.")
+
+    upload_dir = get_upload_dir()
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    final_path = upload_dir / filename
+    temp_path = upload_dir / f".{filename}.tmp"
+    temp_path.write_bytes(body)
+    temp_path.replace(final_path)
+
+    return {"ok": True, "filename": filename, "bytes": len(body)}
 
 
 @app.get("/current_hand_state.json")
@@ -87,7 +144,7 @@ async def current_hand_state():
 
 @app.head("/current_hand_state.json")
 async def current_hand_state_head():
-    path = get_data_dir() / "current_hand_state.json"
+    path = get_file_path("current_hand_state.json")
     if not path.exists():
         raise HTTPException(status_code=404)
 
@@ -101,7 +158,7 @@ async def current_hand_mesh():
 
 @app.head("/current_hand_mesh.obj")
 async def current_hand_mesh_head():
-    path = get_data_dir() / "current_hand_mesh.obj"
+    path = get_file_path("current_hand_mesh.obj")
     if not path.exists():
         raise HTTPException(status_code=404)
 

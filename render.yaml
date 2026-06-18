@@ -11,3 +11,15 @@ services:
         sync: false
       - key: ALLOWED_ORIGINS
         value: https://hollandblumer.com,https://www.hollandblumer.com,https://hollandblumer.github.io
+  - type: web
+    name: 3d-motion-marbling-api
+    env: python
+    rootDir: backend/3d-motion-marbling
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: ALLOWED_ORIGINS
+        value: https://hollandblumer.com,https://www.hollandblumer.com,https://hollandblumer.github.io
+      - key: MANO_UPLOAD_TOKEN
+        sync: false
