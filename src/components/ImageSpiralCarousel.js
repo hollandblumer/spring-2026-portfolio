@@ -660,12 +660,13 @@ export default function ImageSpiralCarousel({
         );
         const localEase = 1 - Math.pow(1 - localIntro, 3);
         const introWrap = 1 - localEase;
+        const helixWrapCount = window.innerWidth < 720 ? count + 1.2 : count + 2;
         const u =
-          ((0.25 + relativeIndex / count + introWrap * (0.82 + index * 0.025)) +
+          ((0.25 + relativeIndex / helixWrapCount + introWrap * (0.82 + index * 0.025)) +
             1) %
           1;
         const position = getCylinderPoint(u, 0.5);
-        const finalY = relativeIndex * (window.innerWidth < 720 ? 4.2 : 5.1);
+        const finalY = relativeIndex * (window.innerWidth < 720 ? 3.95 : 4.55);
         const introLift = introWrap * (window.innerWidth < 720 ? 28 : 38);
         position.y = finalY - introLift;
         const angle = u * Math.PI * 2;
