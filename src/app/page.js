@@ -42,8 +42,8 @@ const PROJECTS = [
     id: "3d-motion-marbling",
     title: "3D Motion Marbling",
     type: "image",
-    src: "/projects/3d-motion-marbling.png",
-    poster: "/projects/3d-motion-marbling.png",
+    src: "/projects/3d-motion-marbling.svg",
+    poster: "/projects/3d-motion-marbling.svg",
     href: "/3d-motion-marbling/",
   },
   {
