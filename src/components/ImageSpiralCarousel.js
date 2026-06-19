@@ -396,21 +396,37 @@ export default function ImageSpiralCarousel({
         video.preload = "metadata";
         video.crossOrigin = "anonymous";
         video.addEventListener("loadeddata", () => {
-          videoCanvas.width = video.videoWidth;
-          videoCanvas.height = video.videoHeight;
+          if (video.videoWidth && video.videoHeight) {
+            videoCanvas.width = video.videoWidth;
+            videoCanvas.height = video.videoHeight;
+          }
         });
         video.addEventListener("playing", () => {
           const revealFirstFrame = () => {
-            videoContext?.drawImage(
-              video,
-              0,
-              0,
-              videoCanvas.width,
-              videoCanvas.height,
-            );
-            group.userData.videoReady = true;
-            group.userData.videoTexture.needsUpdate = true;
-            updateActiveVideoRef.current?.(focusRef.current);
+            if (!video.videoWidth || !video.videoHeight || !videoContext) {
+              group.userData.videoReady = false;
+              return;
+            }
+
+            if (!videoCanvas.width || !videoCanvas.height) {
+              videoCanvas.width = video.videoWidth;
+              videoCanvas.height = video.videoHeight;
+            }
+
+            try {
+              videoContext.drawImage(
+                video,
+                0,
+                0,
+                videoCanvas.width,
+                videoCanvas.height,
+              );
+              group.userData.videoReady = true;
+              group.userData.videoTexture.needsUpdate = true;
+              updateActiveVideoRef.current?.(focusRef.current);
+            } catch (_err) {
+              group.userData.videoReady = false;
+            }
           };
 
           if ("requestVideoFrameCallback" in video) {
@@ -703,16 +719,24 @@ export default function ImageSpiralCarousel({
           isFocused &&
           poster.userData.videoReady &&
           poster.userData.videoContext &&
-          poster.userData.videoCanvas
+          poster.userData.videoCanvas?.width &&
+          poster.userData.videoCanvas?.height
         ) {
-          poster.userData.videoContext.drawImage(
-            poster.userData.video,
-            0,
-            0,
-            poster.userData.videoCanvas.width,
-            poster.userData.videoCanvas.height,
-          );
-          poster.userData.videoTexture.needsUpdate = true;
+          try {
+            poster.userData.videoContext.drawImage(
+              poster.userData.video,
+              0,
+              0,
+              poster.userData.videoCanvas.width,
+              poster.userData.videoCanvas.height,
+            );
+            poster.userData.videoTexture.needsUpdate = true;
+          } catch (_err) {
+            poster.userData.videoReady = false;
+            if (poster.userData.posterTexture) {
+              image.uniforms.uTexture.value = poster.userData.posterTexture;
+            }
+          }
         }
         const textureReady = Boolean(image.uniforms.uTexture.value);
         image.uniforms.uTime.value = now * 0.001 + index * 0.31;
