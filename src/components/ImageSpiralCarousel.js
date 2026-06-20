@@ -385,7 +385,7 @@ export default function ImageSpiralCarousel({
       group.userData.videoCanvas = null;
       group.userData.videoContext = null;
 
-      if (item.type === "video" && item.src) {
+      if (item.type === "video" && item.src && !item.disableSpiralVideo) {
         const video = document.createElement("video");
         const videoCanvas = document.createElement("canvas");
         const videoContext = videoCanvas.getContext("2d", { alpha: false });
