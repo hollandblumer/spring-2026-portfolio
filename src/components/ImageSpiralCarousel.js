@@ -761,10 +761,10 @@ export default function ImageSpiralCarousel({
 
       if (focusMesh) {
         const worldPos = focusMesh.position.clone();
-        const cameraDistance = window.innerWidth < 720 ? 26 : 33;
+        const cameraDistance = window.innerWidth < 768 ? 26 : 36;
         const targetCamPos = new THREE.Vector3(
           0,
-          window.innerWidth < 720 ? 0.2 : 0.45,
+          window.innerWidth < 768 ? 0.2 : 0.45,
           cameraDistance,
         );
         const targetLookAt = new THREE.Vector3(

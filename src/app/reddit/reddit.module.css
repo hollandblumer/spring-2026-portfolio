@@ -1,0 +1,310 @@
+.page {
+  min-height: 100vh;
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(249, 230, 160, 0.38), transparent 24rem),
+    radial-gradient(circle at 78% 8%, rgba(248, 101, 40, 0.38), transparent 26rem),
+    linear-gradient(180deg, #e33003 0%, #cd2a05 48%, #6a7040 100%);
+  color: #f4edd4;
+}
+
+.hero {
+  position: relative;
+  min-height: 72vh;
+  display: grid;
+  align-items: end;
+  padding: 5rem clamp(1rem, 4vw, 4rem) 4rem;
+  isolation: isolate;
+}
+
+.wordStage {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  background:
+    linear-gradient(rgba(255, 247, 211, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 247, 211, 0.08) 1px, transparent 1px);
+  background-size: 68px 68px;
+}
+
+.wordStage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(227, 48, 3, 0.05) 0%, rgba(227, 48, 3, 0.62) 78%),
+    radial-gradient(circle at 50% 20%, transparent 0 17rem, rgba(38, 22, 9, 0.18) 36rem);
+  pointer-events: none;
+}
+
+.floatWord {
+  --top: calc(9% + (var(--rank) * 2.2%));
+  position: absolute;
+  left: var(--x);
+  top: min(74%, var(--top));
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.2rem;
+  padding: 0.34rem 0.72rem 0.4rem;
+  border: 1px solid rgba(247, 235, 185, calc(0.22 + var(--heat) * 0.42));
+  border-radius: 999px;
+  background: rgba(247, 235, 185, calc(0.12 + var(--heat) * 0.3));
+  color: #fff7d4;
+  font-size: var(--size);
+  font-weight: 800;
+  line-height: 1;
+  text-transform: lowercase;
+  box-shadow: 0 16px 36px rgba(76, 24, 2, 0.24);
+  transform: translate3d(-50%, 0, 0) rotate(calc((var(--rank) - 8) * 0.9deg));
+  animation: wordDrift 5.8s ease-in-out infinite;
+  animation-delay: var(--delay);
+  white-space: nowrap;
+}
+
+.floatWord[data-type="dish"] {
+  background: rgba(244, 237, 212, calc(0.28 + var(--heat) * 0.38));
+  color: #5f4311;
+}
+
+.floatWord[data-type="ingredient"] {
+  border-color: rgba(106, 112, 64, 0.58);
+  background: rgba(106, 112, 64, calc(0.28 + var(--heat) * 0.22));
+}
+
+.heroCopy {
+  width: min(740px, 100%);
+  display: grid;
+  gap: 1rem;
+}
+
+.homeLink {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: rgba(244, 237, 212, 0.82);
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.eyebrow,
+.kicker {
+  margin: 0;
+  color: rgba(247, 235, 185, 0.76);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.heroCopy h1 {
+  max-width: 11ch;
+  margin: 0;
+  color: #f7ebba;
+  font-size: clamp(4rem, 12vw, 10.5rem);
+  font-weight: 800;
+  line-height: 0.83;
+  letter-spacing: 0;
+}
+
+.deck {
+  max-width: 42rem;
+  margin: 0;
+  color: rgba(255, 247, 216, 0.86);
+  font-size: clamp(1.05rem, 2vw, 1.35rem);
+  line-height: 1.55;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(320px, 0.75fr);
+  gap: clamp(1rem, 2.8vw, 2rem);
+  padding: 0 clamp(1rem, 4vw, 4rem) 4rem;
+}
+
+.feedPanel,
+.resultsPanel {
+  position: relative;
+  min-width: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 249, 228, 0.96), rgba(224, 214, 185, 0.95)),
+    #f4edd4;
+  color: #3b310d;
+  box-shadow:
+    0 24px 50px rgba(47, 20, 2, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  clip-path: polygon(0.6% 0, 100% 0, 99.3% 95%, 92% 98.5%, 61% 100%, 0 98.5%, 0 7%);
+}
+
+.feedPanel {
+  min-height: 36rem;
+}
+
+.resultsPanel {
+  align-self: start;
+}
+
+.panelHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.25rem 1rem;
+  border-bottom: 1px solid rgba(59, 49, 13, 0.16);
+}
+
+.panelHeader h2 {
+  margin: 0.15rem 0 0;
+  color: #382f0e;
+  font-size: clamp(1.55rem, 3vw, 2.6rem);
+  font-weight: 800;
+  line-height: 0.95;
+}
+
+.panelHeader .kicker {
+  color: rgba(59, 49, 13, 0.58);
+}
+
+.iconButton {
+  width: 2.7rem;
+  height: 2.7rem;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid rgba(59, 49, 13, 0.18);
+  border-radius: 999px;
+  background: rgba(106, 112, 64, 0.11);
+  color: #3b310d;
+  cursor: pointer;
+}
+
+.feedInput {
+  width: 100%;
+  min-height: 30rem;
+  display: block;
+  resize: vertical;
+  border: 0;
+  outline: 0;
+  padding: 1.2rem 1.3rem 1.6rem;
+  background: transparent;
+  color: #2d2508;
+  font: inherit;
+  font-size: 1.03rem;
+  line-height: 1.58;
+}
+
+.topGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.72rem;
+  padding: 1.2rem;
+}
+
+.wordCard {
+  min-height: 7rem;
+  display: grid;
+  align-content: space-between;
+  gap: 0.65rem;
+  padding: 0.92rem;
+  border: 1px solid rgba(59, 49, 13, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.rank {
+  color: rgba(59, 49, 13, 0.48);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.wordCard strong {
+  color: #372e0c;
+  font-size: clamp(1.1rem, 2vw, 1.45rem);
+  line-height: 1;
+}
+
+.wordCard span:last-child {
+  color: rgba(59, 49, 13, 0.58);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: lowercase;
+}
+
+.ideaStrip {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.7rem;
+  margin: 0 1.2rem 1.3rem;
+  padding: 1rem;
+  border-radius: 8px;
+  background: #6a7040;
+  color: #fff4c7;
+}
+
+.ideaStrip p {
+  margin: 0;
+  font-size: 0.96rem;
+  line-height: 1.45;
+}
+
+@keyframes wordDrift {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+
+  50% {
+    translate: 0 -0.72rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .hero {
+    min-height: 68vh;
+    padding-top: 4.25rem;
+  }
+
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .resultsPanel {
+    align-self: stretch;
+  }
+}
+
+@media (max-width: 620px) {
+  .hero {
+    min-height: 76vh;
+    padding-bottom: 2.5rem;
+  }
+
+  .floatWord {
+    min-height: 2rem;
+    padding-inline: 0.58rem;
+    font-size: calc(var(--size) * 0.82);
+  }
+
+  .heroCopy h1 {
+    font-size: clamp(3.5rem, 19vw, 5.8rem);
+  }
+
+  .deck {
+    font-size: 1rem;
+  }
+
+  .topGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .feedPanel {
+    min-height: 30rem;
+  }
+
+  .feedInput {
+    min-height: 24rem;
+    font-size: 0.96rem;
+  }
+}
