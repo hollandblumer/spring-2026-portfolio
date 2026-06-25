@@ -2,80 +2,154 @@
   min-height: 100vh;
   overflow-x: hidden;
   background:
-    radial-gradient(circle at 18% 12%, rgba(249, 230, 160, 0.38), transparent 24rem),
-    radial-gradient(circle at 78% 8%, rgba(248, 101, 40, 0.38), transparent 26rem),
-    linear-gradient(180deg, #e33003 0%, #cd2a05 48%, #6a7040 100%);
-  color: #f4edd4;
+    radial-gradient(circle at 14% 14%, rgba(255, 69, 0, 0.36), transparent 22rem),
+    radial-gradient(circle at 84% 9%, rgba(106, 112, 64, 0.38), transparent 25rem),
+    linear-gradient(180deg, #e1caf7 0%, #dcc1f3 45%, #6a7040 100%);
+  color: #f50101;
+}
+
+.loaderOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(106, 112, 64, 0.28), transparent 22rem),
+    linear-gradient(180deg, #e1caf7 0%, #d6b5f2 100%);
+  color: #f50101;
+  transition:
+    opacity 0.48s ease,
+    transform 0.48s ease;
+}
+
+.loaderOverlayExit {
+  opacity: 0;
+  transform: scale(1.04);
+  pointer-events: none;
+}
+
+.loaderStack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+.loaderLine {
+  min-height: 1.05em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: -0.06em 0;
+  color: #f50101;
+  font-size: clamp(3.2rem, 15vw, 8.2rem);
+  line-height: 0.92;
+  white-space: nowrap;
+}
+
+.loaderChar {
+  display: inline-block;
+  padding: 0 0.015em;
+  animation: loaderPop 0.16s ease;
+}
+
+@keyframes loaderPop {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+
+  55% {
+    transform: translateY(-0.05em) scale(1.06);
+  }
+
+  100% {
+    transform: translateY(0) scale(1);
+  }
 }
 
 .hero {
   position: relative;
-  min-height: 72vh;
+  min-height: 86vh;
   display: grid;
-  align-items: end;
-  padding: 5rem clamp(1rem, 4vw, 4rem) 4rem;
+  align-items: center;
+  padding: 4.5rem clamp(1rem, 4vw, 4rem) 3.5rem;
   isolation: isolate;
 }
 
-.wordStage {
+.physicsStage {
   position: absolute;
   inset: 0;
   z-index: -1;
   overflow: hidden;
+  touch-action: none;
   background:
-    linear-gradient(rgba(255, 247, 211, 0.12) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 247, 211, 0.08) 1px, transparent 1px);
-  background-size: 68px 68px;
+    linear-gradient(rgba(245, 1, 1, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(106, 112, 64, 0.13) 1px, transparent 1px);
+  background-size: 58px 58px;
 }
 
-.wordStage::before {
+.physicsStage::before {
   content: "";
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(180deg, rgba(227, 48, 3, 0.05) 0%, rgba(227, 48, 3, 0.62) 78%),
-    radial-gradient(circle at 50% 20%, transparent 0 17rem, rgba(38, 22, 9, 0.18) 36rem);
+    linear-gradient(180deg, rgba(225, 202, 247, 0.18) 0%, rgba(225, 202, 247, 0.72) 67%, rgba(106, 112, 64, 0.34) 100%),
+    radial-gradient(circle at 50% 25%, transparent 0 14rem, rgba(80, 36, 94, 0.12) 35rem);
   pointer-events: none;
 }
 
-.floatWord {
-  --top: calc(9% + (var(--rank) * 2.2%));
+.physicsWord {
   position: absolute;
-  left: var(--x);
-  top: min(74%, var(--top));
+  left: 0;
+  top: 0;
   display: inline-flex;
   align-items: center;
-  min-height: 2.2rem;
-  padding: 0.34rem 0.72rem 0.4rem;
-  border: 1px solid rgba(247, 235, 185, calc(0.22 + var(--heat) * 0.42));
+  justify-content: center;
+  min-height: 2.6rem;
+  padding: 0.32rem 0.76rem 0.42rem;
+  border: 1px solid rgba(245, 1, 1, calc(0.2 + var(--heat) * 0.36));
   border-radius: 999px;
-  background: rgba(247, 235, 185, calc(0.12 + var(--heat) * 0.3));
-  color: #fff7d4;
-  font-size: var(--size);
-  font-weight: 800;
+  background: rgba(255, 245, 252, calc(0.56 + var(--heat) * 0.28));
+  color: #f50101;
+  font-size: clamp(1.05rem, 2.5vw, 2.6rem);
+  font-weight: 700;
   line-height: 1;
   text-transform: lowercase;
-  box-shadow: 0 16px 36px rgba(76, 24, 2, 0.24);
-  transform: translate3d(-50%, 0, 0) rotate(calc((var(--rank) - 8) * 0.9deg));
-  animation: wordDrift 5.8s ease-in-out infinite;
-  animation-delay: var(--delay);
+  box-shadow: 0 16px 34px rgba(92, 41, 113, 0.18);
   white-space: nowrap;
+  cursor: grab;
+  user-select: none;
+  will-change: transform;
+  pointer-events: auto;
 }
 
-.floatWord[data-type="dish"] {
-  background: rgba(244, 237, 212, calc(0.28 + var(--heat) * 0.38));
-  color: #5f4311;
+.physicsWord:active {
+  cursor: grabbing;
 }
 
-.floatWord[data-type="ingredient"] {
-  border-color: rgba(106, 112, 64, 0.58);
-  background: rgba(106, 112, 64, calc(0.28 + var(--heat) * 0.22));
+.physicsWord[data-highlighted="true"] {
+  background: #f50101;
+  color: #e1caf7;
+  border-color: rgba(245, 1, 1, 0.72);
+}
+
+.physicsWord[data-type="dish"] {
+  border-color: rgba(245, 1, 1, 0.56);
+}
+
+.physicsWord[data-type="ingredient"] {
+  background: rgba(106, 112, 64, calc(0.76 + var(--heat) * 0.18));
+  color: #fff4c7;
+  border-color: rgba(106, 112, 64, 0.74);
 }
 
 .heroCopy {
-  width: min(740px, 100%);
+  width: min(760px, 100%);
   display: grid;
   gap: 1rem;
+  pointer-events: none;
 }
 
 .homeLink {
@@ -83,17 +157,18 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  color: rgba(244, 237, 212, 0.82);
+  color: rgba(245, 1, 1, 0.82);
   font-size: 0.86rem;
   font-weight: 700;
   text-decoration: none;
   text-transform: uppercase;
+  pointer-events: auto;
 }
 
 .eyebrow,
 .kicker {
   margin: 0;
-  color: rgba(247, 235, 185, 0.76);
+  color: rgba(245, 1, 1, 0.7);
   font-size: 0.82rem;
   font-weight: 800;
   letter-spacing: 0.16em;
@@ -101,9 +176,9 @@
 }
 
 .heroCopy h1 {
-  max-width: 11ch;
+  max-width: 10.5ch;
   margin: 0;
-  color: #f7ebba;
+  color: #f50101;
   font-size: clamp(4rem, 12vw, 10.5rem);
   font-weight: 800;
   line-height: 0.83;
@@ -113,7 +188,7 @@
 .deck {
   max-width: 42rem;
   margin: 0;
-  color: rgba(255, 247, 216, 0.86);
+  color: rgba(78, 67, 14, 0.86);
   font-size: clamp(1.05rem, 2vw, 1.35rem);
   line-height: 1.55;
 }
@@ -131,7 +206,7 @@
   min-width: 0;
   background:
     linear-gradient(180deg, rgba(255, 249, 228, 0.96), rgba(224, 214, 185, 0.95)),
-    #f4edd4;
+    #fff4c7;
   color: #3b310d;
   box-shadow:
     0 24px 50px rgba(47, 20, 2, 0.28),
@@ -249,20 +324,9 @@
   line-height: 1.45;
 }
 
-@keyframes wordDrift {
-  0%,
-  100% {
-    translate: 0 0;
-  }
-
-  50% {
-    translate: 0 -0.72rem;
-  }
-}
-
 @media (max-width: 900px) {
   .hero {
-    min-height: 68vh;
+    min-height: 78vh;
     padding-top: 4.25rem;
   }
 
@@ -277,14 +341,14 @@
 
 @media (max-width: 620px) {
   .hero {
-    min-height: 76vh;
+    min-height: 82vh;
     padding-bottom: 2.5rem;
   }
 
-  .floatWord {
+  .physicsWord {
     min-height: 2rem;
     padding-inline: 0.58rem;
-    font-size: calc(var(--size) * 0.82);
+    font-size: clamp(0.9rem, 5vw, 1.65rem);
   }
 
   .heroCopy h1 {
