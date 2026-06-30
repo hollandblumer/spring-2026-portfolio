@@ -3,8 +3,32 @@
   <head>
     <meta charset="UTF-8" />
     <title>3D Motion Marbling — Skeletal Orange Hand</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
 
     <style>
+      @font-face {
+        font-family: "Poster Blueprint Sans";
+        font-style: normal;
+        font-weight: 100 900;
+        font-display: swap;
+        src: url("https://fonts.gstatic.com/s/geist/v4/gyByhwUxId8gMEwcGFWNOITddY4.woff2")
+          format("woff2");
+        unicode-range:
+          U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+          U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
+          U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+      }
+
+      :root {
+        --bricolage-font: "Bricolage Grotesque", Arial, sans-serif;
+        --step-label-font: "Poster Blueprint Sans", Arial, sans-serif;
+      }
+
       * {
         box-sizing: border-box;
         margin: 0;
@@ -18,7 +42,7 @@
         min-height: 100dvh;
         overflow: hidden;
         background: #f4ecd2;
-        font-family: Arial, sans-serif;
+        font-family: var(--bricolage-font);
       }
       canvas {
         position: fixed;
@@ -67,50 +91,65 @@
         --template-olive: #697040;
         --template-forest: #3d4224;
         position: relative;
+        isolation: isolate;
         display: flex;
         flex-direction: column;
         gap: 0.28rem;
         width: 100%;
         min-width: 0;
         padding: 1.35rem;
-        background: var(--template-olive);
+        background: transparent;
         box-shadow: none;
         perspective: 1200px;
         overflow: hidden;
       }
 
+      .template-controls::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        background: var(--template-olive);
+        filter: url(#plastic-panel);
+      }
+
+      .template-controls > * {
+        position: relative;
+        z-index: 1;
+      }
+
       .template-controls-title {
-        display: flex;
-        flex-direction: column;
+        display: grid;
         align-items: center;
-        justify-content: center;
+        justify-content: stretch;
         width: 100%;
         min-width: 0;
-        min-height: 68px;
-        margin: 0 0 0.55rem;
-        padding: 0 0.55rem;
+        min-height: 118px;
+        margin: 0 0 0.75rem;
+        padding: 0;
         border: 0;
         background: transparent;
-        font-family: "Times New Roman", Times, serif;
-        line-height: 1.14;
+        font-family: var(--bricolage-font);
+        line-height: 0.92;
         text-transform: uppercase;
       }
 
       .template-controls-title span {
         display: block;
-        max-width: 100%;
-        font-size: clamp(0.88rem, 4.8vw, 1.08rem);
-        font-weight: 700;
-        letter-spacing: 0.03em;
-        line-height: 1.05;
+        width: 100%;
+        font-size: 2.6rem;
+        font-weight: 800;
+        letter-spacing: 0;
+        line-height: 0.92;
         text-align: center;
-        white-space: nowrap;
+        white-space: normal;
       }
 
       .template-controls-title .top {
         position: relative;
         z-index: 2;
         color: #fff;
+        filter: url(#clean-contour);
       }
 
       .template-step {
@@ -155,10 +194,10 @@
         min-width: 0;
         padding: 0 1.05rem;
         color: #fff;
-        font-family: "Times New Roman", Times, serif;
-        font-size: 1.2rem;
+        font-family: var(--step-label-font);
+        font-size: 1rem;
         font-weight: 700;
-        letter-spacing: 0.03em;
+        letter-spacing: 0.08em;
         line-height: 1;
         text-transform: uppercase;
         cursor: pointer;
@@ -236,7 +275,7 @@
         background: rgba(207, 207, 207, 0.88);
         color: #111;
         cursor: pointer;
-        font-family: "Times New Roman", Times, serif;
+        font-family: var(--bricolage-font);
         font-size: 0.68rem;
         font-weight: 700;
         letter-spacing: 0.04em;
@@ -256,23 +295,6 @@
         font-weight: 700;
         line-height: 1.35;
         letter-spacing: 0.03em;
-        text-transform: uppercase;
-      }
-
-      #debug {
-        position: fixed;
-        right: 14px;
-        top: 14px;
-        z-index: 45;
-        max-width: min(360px, calc(100vw - 28px));
-        padding: 0.7rem 0.8rem;
-        background: rgba(20, 22, 12, 0.72);
-        color: #fff;
-        font-family: Arial, sans-serif;
-        font-size: 0.72rem;
-        font-weight: 700;
-        line-height: 1.35;
-        pointer-events: none;
         text-transform: uppercase;
       }
 
@@ -298,7 +320,7 @@
         background: var(--template-olive, #697040);
         color: #fff;
         padding: 1.35rem;
-        font-family: "Times New Roman", Times, serif;
+        font-family: var(--bricolage-font);
         text-transform: uppercase;
       }
 
@@ -312,7 +334,7 @@
       .camera-prompt-card p {
         margin: 0 0 1rem;
         color: rgba(255, 255, 255, 0.82);
-        font-family: Arial, sans-serif;
+        font-family: var(--bricolage-font);
         font-size: 0.62rem;
         font-weight: 700;
         line-height: 1.35;
@@ -339,10 +361,67 @@
   </head>
 
   <body>
+    <svg
+      style="position: absolute; width: 0; height: 0"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <defs>
+        <filter id="clean-contour" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="1.5" result="blur" />
+          <feColorMatrix
+            in="blur"
+            mode="matrix"
+            values="1 0 0 0 0
+                    0 1 0 0 0
+                    0 0 1 0 0
+                    0 0 0 8 -4"
+            result="goo"
+          />
+          <feComposite in="SourceGraphic" in2="goo" operator="atop" />
+        </filter>
+        <filter
+          id="plastic-panel"
+          color-interpolation-filters="sRGB"
+          filterUnits="objectBoundingBox"
+          x="-40%"
+          y="-40%"
+          width="180%"
+          height="180%"
+        >
+          <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur" />
+          <feSpecularLighting
+            in="blur"
+            surfaceScale="4"
+            specularConstant="0.6"
+            specularExponent="50"
+            result="specOut"
+            lighting-color="#fffdf9"
+          >
+            <fePointLight x="-50" y="-100" z="200" />
+          </feSpecularLighting>
+          <feComposite
+            in="specOut"
+            in2="SourceAlpha"
+            operator="in"
+            result="specOut2"
+          />
+          <feComposite
+            in="SourceGraphic"
+            in2="specOut2"
+            operator="arithmetic"
+            k1="0"
+            k2="1"
+            k3="1"
+            k4="0"
+          />
+        </filter>
+      </defs>
+    </svg>
+
     <canvas id="marbleCanvas"></canvas>
     <canvas id="scene"></canvas>
     <video id="video" playsinline autoplay muted></video>
-    <div id="debug">Booting marbling.</div>
 
     <div
       id="cameraPrompt"
@@ -369,7 +448,7 @@
     <div id="ui">
       <div class="template-controls">
         <div class="template-controls-title">
-          <span class="top">3D Motion Marbling</span>
+          <span class="top" id="panelTitle">3D Motion Marbling</span>
         </div>
 
         <details class="template-step" open>
@@ -599,18 +678,7 @@
         document.getElementById("status").textContent = t;
       }
 
-      function updateDebug(extra = "") {
-        document.getElementById("debug").textContent = [
-          `mesh: ${debugState.mesh}`,
-          `camera: ${debugState.camera}`,
-          `frames: ${debugState.frames}`,
-          `landmarks: ${debugState.landmarks}`,
-          `draw: ${debugState.draw}`,
-          extra,
-        ]
-          .filter(Boolean)
-          .join(" | ");
-      }
+      function updateDebug(_extra = "") {}
 
       function waitForVideoReady() {
         if (video.readyState >= 2) return Promise.resolve();

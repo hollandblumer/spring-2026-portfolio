@@ -173,6 +173,9 @@ function HelixIcon(props) {
 const OLIVE_CURSOR =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Ccircle cx='14' cy='14' r='5' fill='%23705208' fill-opacity='0.95'/%3E%3Ccircle cx='14' cy='14' r='10' fill='none' stroke='%23705208' stroke-opacity='0.45' stroke-width='2'/%3E%3C/svg%3E\") 14 14, auto";
 const SHOW_WORK_CAROUSEL = false;
+const PROJECT_POSTER_URLS = Array.from(
+  new Set(PROJECTS.map((item) => item.poster || item.src).filter(Boolean)),
+);
 
 const bricolage = Bricolage_Grotesque({
   subsets: ["latin"],
@@ -352,12 +355,8 @@ export default function Home() {
       }
     });
 
-    const imageUrls = PROJECTS.filter((item) => item.type === "image").map(
-      (item) => item.src,
-    );
-
     Promise.all(
-      imageUrls.map((src) => {
+      PROJECT_POSTER_URLS.map((src) => {
         return new Promise((resolve, reject) => {
           const img = new Image();
           img.src = src;
@@ -414,9 +413,7 @@ export default function Home() {
 
   if (!mounted) return null;
 
-  const assetsReady =
-    images.length === PROJECTS.filter((item) => item.type === "image").length &&
-    p5Ready;
+  const assetsReady = images.length === PROJECT_POSTER_URLS.length && p5Ready;
   const showPreloader = !preloaderAnimationDone || !assetsReady;
   const activeProject = PROJECTS[activeIndex];
   const gridProject =
