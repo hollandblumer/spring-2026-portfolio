@@ -387,89 +387,67 @@ export default function ImageSpiralCarousel({
 
       if (item.type === "video" && item.src && !item.disableSpiralVideo) {
         const video = document.createElement("video");
+        const videoCanvas = document.createElement("canvas");
+        const videoContext = videoCanvas.getContext("2d", { alpha: false });
+        const videoTexture = new THREE.CanvasTexture(videoCanvas);
+
+        videoTexture.colorSpace = THREE.SRGBColorSpace;
+        videoTexture.minFilter = THREE.LinearFilter;
+        videoTexture.magFilter = THREE.LinearFilter;
+        videoTexture.wrapS = THREE.ClampToEdgeWrapping;
+        videoTexture.wrapT = THREE.ClampToEdgeWrapping;
+
         video.src = item.src;
         video.muted = true;
         video.loop = true;
         video.playsInline = true;
         video.preload = "metadata";
         video.crossOrigin = "anonymous";
+        video.addEventListener("loadeddata", () => {
+          if (video.videoWidth && video.videoHeight) {
+            videoCanvas.width = video.videoWidth;
+            videoCanvas.height = video.videoHeight;
+          }
+        });
+        video.addEventListener("playing", () => {
+          const revealFirstFrame = () => {
+            if (!video.videoWidth || !video.videoHeight || !videoContext) {
+              group.userData.videoReady = false;
+              return;
+            }
 
-        group.userData.video = video;
-
-        if (item.src.startsWith("/")) {
-          const videoTexture = new THREE.VideoTexture(video);
-          videoTexture.colorSpace = THREE.SRGBColorSpace;
-          videoTexture.minFilter = THREE.LinearFilter;
-          videoTexture.magFilter = THREE.LinearFilter;
-          videoTexture.wrapS = THREE.ClampToEdgeWrapping;
-          videoTexture.wrapT = THREE.ClampToEdgeWrapping;
-
-          const markVideoReady = () => {
-            if (!video.videoWidth || !video.videoHeight) return;
-            group.userData.videoReady = true;
-            videoTexture.needsUpdate = true;
-            updateActiveVideoRef.current?.(focusRef.current);
-          };
-
-          video.addEventListener("loadeddata", markVideoReady);
-          video.addEventListener("canplay", markVideoReady);
-          video.addEventListener("playing", markVideoReady);
-          group.userData.videoTexture = videoTexture;
-        } else {
-          const videoCanvas = document.createElement("canvas");
-          const videoContext = videoCanvas.getContext("2d", { alpha: false });
-          const videoTexture = new THREE.CanvasTexture(videoCanvas);
-          videoTexture.colorSpace = THREE.SRGBColorSpace;
-          videoTexture.minFilter = THREE.LinearFilter;
-          videoTexture.magFilter = THREE.LinearFilter;
-          videoTexture.wrapS = THREE.ClampToEdgeWrapping;
-          videoTexture.wrapT = THREE.ClampToEdgeWrapping;
-
-          video.addEventListener("loadeddata", () => {
-            if (video.videoWidth && video.videoHeight) {
+            if (!videoCanvas.width || !videoCanvas.height) {
               videoCanvas.width = video.videoWidth;
               videoCanvas.height = video.videoHeight;
             }
-          });
-          video.addEventListener("playing", () => {
-            const revealFirstFrame = () => {
-              if (!video.videoWidth || !video.videoHeight || !videoContext) {
-                group.userData.videoReady = false;
-                return;
-              }
 
-              if (!videoCanvas.width || !videoCanvas.height) {
-                videoCanvas.width = video.videoWidth;
-                videoCanvas.height = video.videoHeight;
-              }
-
-              try {
-                videoContext.drawImage(
-                  video,
-                  0,
-                  0,
-                  videoCanvas.width,
-                  videoCanvas.height,
-                );
-                group.userData.videoReady = true;
-                group.userData.videoTexture.needsUpdate = true;
-                updateActiveVideoRef.current?.(focusRef.current);
-              } catch (_err) {
-                group.userData.videoReady = false;
-              }
-            };
-
-            if ("requestVideoFrameCallback" in video) {
-              video.requestVideoFrameCallback(revealFirstFrame);
-            } else {
-              window.requestAnimationFrame(revealFirstFrame);
+            try {
+              videoContext.drawImage(
+                video,
+                0,
+                0,
+                videoCanvas.width,
+                videoCanvas.height,
+              );
+              group.userData.videoReady = true;
+              group.userData.videoTexture.needsUpdate = true;
+              updateActiveVideoRef.current?.(focusRef.current);
+            } catch (_err) {
+              group.userData.videoReady = false;
             }
-          });
+          };
 
-          group.userData.videoTexture = videoTexture;
-          group.userData.videoCanvas = videoCanvas;
-          group.userData.videoContext = videoContext;
-        }
+          if ("requestVideoFrameCallback" in video) {
+            video.requestVideoFrameCallback(revealFirstFrame);
+          } else {
+            window.requestAnimationFrame(revealFirstFrame);
+          }
+        });
+
+        group.userData.video = video;
+        group.userData.videoTexture = videoTexture;
+        group.userData.videoCanvas = videoCanvas;
+        group.userData.videoContext = videoContext;
       }
 
       textureLoader.load(imageSrc, (texture) => {
