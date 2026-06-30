@@ -79,28 +79,6 @@
         overflow: hidden;
       }
 
-      .template-close {
-        position: absolute;
-        top: 0.45rem;
-        left: 0.45rem;
-        z-index: 3;
-        width: 1.75rem;
-        height: 1.75rem;
-        border: 1px solid rgba(207, 207, 207, 0.38);
-        background: rgba(207, 207, 207, 0.88);
-        color: #111;
-        cursor: pointer;
-        font-family: Arial, sans-serif;
-        font-size: 1rem;
-        font-weight: 700;
-        line-height: 1;
-      }
-
-      .template-close:hover {
-        background: #fff;
-        border-color: rgba(255, 255, 255, 0.82);
-      }
-
       .template-controls-title {
         display: flex;
         flex-direction: column;
@@ -390,15 +368,6 @@
 
     <div id="ui">
       <div class="template-controls">
-        <button
-          class="template-close"
-          type="button"
-          aria-label="Close controls"
-          onclick="closeControls()"
-        >
-          x
-        </button>
-
         <div class="template-controls-title">
           <span class="top">3D Motion Marbling</span>
         </div>
@@ -2244,10 +2213,6 @@
       async function acceptCameraPrompt() {
         dismissCameraPrompt();
         await startCamera();
-      }
-
-      function closeControls() {
-        document.getElementById("ui").style.display = "none";
       }
 
       resize();
