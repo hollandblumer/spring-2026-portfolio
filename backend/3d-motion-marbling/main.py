@@ -14,6 +14,28 @@ DEFAULT_DATA_DIR = REPO_ROOT / "public" / "3d-motion-marbling"
 DEFAULT_UPLOAD_DIR = Path(os.getenv("MANO_UPLOAD_DIR", "/tmp/3d-motion-marbling"))
 DEFAULT_MANO_ROOT = Path(os.getenv("MANO_MODEL_DIR", BASE_DIR / "models"))
 MANO_MODEL_FILES = ("MANO_LEFT.pkl", "MANO_RIGHT.pkl")
+FINGER_BONE_PAIRS = (
+    (0, 1),
+    (1, 2),
+    (2, 3),
+    (3, 4),
+    (0, 5),
+    (5, 6),
+    (6, 7),
+    (7, 8),
+    (0, 9),
+    (9, 10),
+    (10, 11),
+    (11, 12),
+    (0, 13),
+    (13, 14),
+    (14, 15),
+    (15, 16),
+    (0, 17),
+    (17, 18),
+    (18, 19),
+    (19, 20),
+)
 DATA_FILES = {
     "current_hand_state.json": "application/json",
     "current_hand_mesh.obj": "text/plain",
@@ -206,6 +228,8 @@ def landmarks_to_fit_target(landmarks, torch, device):
 
 
 def mano_joints_to_mediapipe_order(joints):
+    # manopth already returns 21 joints in MediaPipe-compatible order:
+    # wrist, thumb, index, middle, ring, pinky, including fingertip vertices.
     j = joints[0, :21, :]
     j = j - j[0]
     j = j / (j.norm(dim=1).mean() + 1e-8)
@@ -224,8 +248,9 @@ def landmarks_to_json(landmarks):
 
 
 def project_mano_vertices(verts, joints, trans, mp_root, mp_scale):
-    mano_root = joints[0, 0, :]
-    mano_scale = (joints[0, :21, :] - mano_root).norm(dim=1).mean() + 1e-8
+    mano_joints = joints[0, :21, :]
+    mano_root = mano_joints[0, :]
+    mano_scale = (mano_joints - mano_root).norm(dim=1).mean() + 1e-8
     fitted = ((verts[0] - mano_root) / mano_scale) + trans[0]
     image_points = fitted * mp_scale + mp_root
     image_points = image_points.detach().cpu()
@@ -248,7 +273,7 @@ class LiveManoFitter:
         self.torch = torch
         torch.set_num_threads(int(os.getenv("MANO_TORCH_THREADS", "1")))
         self.device = torch.device(os.getenv("MANO_DEVICE", "cpu"))
-        self.iterations = int(os.getenv("MANO_ITERATIONS", "5"))
+        self.iterations = int(os.getenv("MANO_ITERATIONS", "16"))
         self.hand_side = hand_side
 
         mano_root = ensure_mano_models()
@@ -266,10 +291,15 @@ class LiveManoFitter:
             flat_hand_mean=False,
             side=hand_side,
         ).to(self.device)
+        self.finger_bone_pairs = torch.tensor(
+            FINGER_BONE_PAIRS,
+            dtype=torch.long,
+            device=self.device,
+        )
         self.pose = torch.zeros(1, 48, device=self.device, requires_grad=True)
         self.shape = torch.zeros(1, 10, device=self.device, requires_grad=True)
         self.trans = torch.zeros(1, 3, device=self.device, requires_grad=True)
-        self.optimizer = torch.optim.Adam([self.pose, self.shape, self.trans], lr=0.01)
+        self.optimizer = torch.optim.Adam([self.pose, self.shape, self.trans], lr=0.012)
 
     def fit_landmarks(self, landmarks):
         if len(landmarks) < 21:
@@ -280,6 +310,10 @@ class LiveManoFitter:
             self.torch,
             self.device,
         )
+        weights = self.torch.ones(21, 1, device=self.device)
+        weights[[4, 8, 12, 16, 20]] = 4.0
+        weights[[1, 5, 9, 13, 17]] = 2.0
+        weights[[2, 3, 6, 7, 10, 11, 14, 15, 18, 19]] = 2.6
 
         frame_pose = self.pose.detach().clone()
         frame_shape = self.shape.detach().clone()
@@ -290,19 +324,36 @@ class LiveManoFitter:
             verts, joints = self.mano_layer(self.pose, self.shape)
             pred = mano_joints_to_mediapipe_order(joints) + self.trans
 
-            loss = ((pred - target) ** 2).mean()
-            loss = loss + 0.0005 * (self.pose ** 2).mean()
+            joint_delta = pred - target
+            bone_from = self.finger_bone_pairs[:, 0]
+            bone_to = self.finger_bone_pairs[:, 1]
+            pred_bones = pred[bone_to] - pred[bone_from]
+            target_bones = target[bone_to] - target[bone_from]
+            pred_dirs = pred_bones[:, :2] / (
+                pred_bones[:, :2].norm(dim=1, keepdim=True) + 1e-8
+            )
+            target_dirs = target_bones[:, :2] / (
+                target_bones[:, :2].norm(dim=1, keepdim=True) + 1e-8
+            )
+            pred_lengths = pred_bones.norm(dim=1)
+            target_lengths = target_bones.norm(dim=1)
+
+            loss = (weights * (joint_delta ** 2)).mean()
+            loss = loss + 0.7 * (weights * (joint_delta[:, :2] ** 2)).mean()
+            loss = loss + 0.75 * ((pred_dirs - target_dirs) ** 2).mean()
+            loss = loss + 0.35 * ((pred_lengths - target_lengths) ** 2).mean()
+            loss = loss + 0.0012 * (self.pose ** 2).mean()
             loss = loss + 0.001 * (self.shape ** 2).mean()
-            loss = loss + 0.0008 * ((self.pose - frame_pose) ** 2).mean()
-            loss = loss + 0.0008 * ((self.trans - frame_trans) ** 2).mean()
+            loss = loss + 0.00045 * ((self.pose - frame_pose) ** 2).mean()
+            loss = loss + 0.0006 * ((self.trans - frame_trans) ** 2).mean()
 
             loss.backward()
             self.optimizer.step()
 
         with self.torch.no_grad():
-            self.pose.mul_(0.92).add_(frame_pose, alpha=0.08)
+            self.pose.mul_(0.96).add_(frame_pose, alpha=0.04)
             self.shape.mul_(0.98).add_(frame_shape, alpha=0.02)
-            self.trans.mul_(0.82).add_(frame_trans, alpha=0.18)
+            self.trans.mul_(0.9).add_(frame_trans, alpha=0.1)
 
         verts, joints = self.mano_layer(self.pose, self.shape)
         return {

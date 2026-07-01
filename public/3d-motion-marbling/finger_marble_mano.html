@@ -653,6 +653,7 @@
       const mirrorManoDisplay = false;
       const invertManoDepth = true;
       const rotateManoDisplay180 = false;
+      const flipManoDisplayY = true;
       const flipManoIntoCameraX = false;
       const tiltManoIntoScreenY = false;
       const lockManoFingerDirection = false;
@@ -1265,6 +1266,16 @@
         }));
       }
 
+      function flipPointsAcrossYAxis(points, landmarks) {
+        if (!flipManoDisplayY) return points;
+        const center = palmCenterFromLandmarks(landmarks);
+        return points.map((p) => ({
+          x: center.x - (p.x - center.x),
+          y: p.y,
+          z: p.z,
+        }));
+      }
+
       function updateHandCalibration(sourcePoints, landmarks) {
         if (
           !sourcePoints ||
@@ -1362,7 +1373,7 @@
           z: invertManoDepth ? 1 - p.z : p.z,
         }));
         const calibration = updateHandCalibration(rawPts, landmarks);
-        const pts = rotatePoints180(
+        const pts = flipPointsAcrossYAxis(
           applyIntoPagePerspective(
             rotatePointsToFingerDirection(
               applyYIntoScreenTilt(
@@ -1818,11 +1829,15 @@
         const scale =
           Math.max(target.width / meshW, target.height / meshH) * 1.18;
 
-        const pts = manoMesh.vertices.map((v) => ({
-          x: target.x + (mirrorManoDisplay ? -1 : 1) * (v.x - meshCx) * scale,
-          y: target.y - (v.y - meshCy) * scale,
-          z: (v.z - b.minZ) / Math.max(1, b.maxZ - b.minZ),
-        }));
+        const pts = flipPointsAcrossYAxis(
+          manoMesh.vertices.map((v) => ({
+            x:
+              target.x + (mirrorManoDisplay ? -1 : 1) * (v.x - meshCx) * scale,
+            y: target.y - (v.y - meshCy) * scale,
+            z: (v.z - b.minZ) / Math.max(1, b.maxZ - b.minZ),
+          })),
+          landmarks,
+        );
 
         octx.save();
         octx.globalCompositeOperation = "lighter";
