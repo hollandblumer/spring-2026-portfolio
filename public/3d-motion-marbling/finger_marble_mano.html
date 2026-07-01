@@ -652,7 +652,8 @@
       let handDepthScale = 1;
       const mirrorManoDisplay = false;
       const invertManoDepth = true;
-      const rotateManoDisplay180 = false;
+      const rotateManoDisplay180 = true;
+      const flipManoDisplayX = true;
       const flipManoDisplayY = true;
       const flipManoIntoCameraX = false;
       const tiltManoIntoScreenY = false;
@@ -1276,6 +1277,16 @@
         }));
       }
 
+      function flipPointsAcrossXAxis(points, landmarks) {
+        if (!flipManoDisplayX) return points;
+        const center = palmCenterFromLandmarks(landmarks);
+        return points.map((p) => ({
+          x: p.x,
+          y: center.y - (p.y - center.y),
+          z: p.z,
+        }));
+      }
+
       function updateHandCalibration(sourcePoints, landmarks) {
         if (
           !sourcePoints ||
@@ -1374,12 +1385,18 @@
         }));
         const calibration = updateHandCalibration(rawPts, landmarks);
         const pts = flipPointsAcrossYAxis(
-          applyIntoPagePerspective(
-            rotatePointsToFingerDirection(
-              applyYIntoScreenTilt(
-                applyScreenDepthPerspective(
-                  applyDepthScale(
-                    rawPts.map((p) => applySimilarity(p, calibration)),
+          flipPointsAcrossXAxis(
+            rotatePoints180(
+              applyIntoPagePerspective(
+                rotatePointsToFingerDirection(
+                  applyYIntoScreenTilt(
+                    applyScreenDepthPerspective(
+                      applyDepthScale(
+                        rawPts.map((p) => applySimilarity(p, calibration)),
+                        landmarks,
+                      ),
+                      landmarks,
+                    ),
                     landmarks,
                   ),
                   landmarks,
@@ -1830,12 +1847,19 @@
           Math.max(target.width / meshW, target.height / meshH) * 1.18;
 
         const pts = flipPointsAcrossYAxis(
-          manoMesh.vertices.map((v) => ({
-            x:
-              target.x + (mirrorManoDisplay ? -1 : 1) * (v.x - meshCx) * scale,
-            y: target.y - (v.y - meshCy) * scale,
-            z: (v.z - b.minZ) / Math.max(1, b.maxZ - b.minZ),
-          })),
+          flipPointsAcrossXAxis(
+            rotatePoints180(
+              manoMesh.vertices.map((v) => ({
+                x:
+                  target.x +
+                  (mirrorManoDisplay ? -1 : 1) * (v.x - meshCx) * scale,
+                y: target.y - (v.y - meshCy) * scale,
+                z: (v.z - b.minZ) / Math.max(1, b.maxZ - b.minZ),
+              })),
+              landmarks,
+            ),
+            landmarks,
+          ),
           landmarks,
         );
 

@@ -217,7 +217,7 @@ def landmarks_to_fit_target(landmarks, torch, device):
             [
                 float(lm.get("x", 0)),
                 -float(lm.get("y", 0)),
-                -float(lm.get("z", 0)),
+                float(lm.get("z", 0)),
             ]
         )
     pts = torch.tensor(pts, dtype=torch.float32, device=device)
