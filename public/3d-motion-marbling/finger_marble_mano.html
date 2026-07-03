@@ -1119,7 +1119,7 @@
 
         const rawScale = Math.max(
           0.72,
-          Math.min(1.42, span / handDepthBaseline),
+          Math.min(1.42, handDepthBaseline / span),
         );
         handDepthScale += (rawScale - handDepthScale) * 0.18;
 
