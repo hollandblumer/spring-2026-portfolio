@@ -110,7 +110,6 @@
         inset: 0;
         z-index: 0;
         background: var(--template-olive);
-        filter: url(#plastic-panel);
       }
 
       .template-controls > * {
@@ -380,42 +379,6 @@
           />
           <feComposite in="SourceGraphic" in2="goo" operator="atop" />
         </filter>
-        <filter
-          id="plastic-panel"
-          color-interpolation-filters="sRGB"
-          filterUnits="objectBoundingBox"
-          x="-40%"
-          y="-40%"
-          width="180%"
-          height="180%"
-        >
-          <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur" />
-          <feSpecularLighting
-            in="blur"
-            surfaceScale="4"
-            specularConstant="0.6"
-            specularExponent="50"
-            result="specOut"
-            lighting-color="#fffdf9"
-          >
-            <fePointLight x="-50" y="-100" z="200" />
-          </feSpecularLighting>
-          <feComposite
-            in="specOut"
-            in2="SourceAlpha"
-            operator="in"
-            result="specOut2"
-          />
-          <feComposite
-            in="SourceGraphic"
-            in2="specOut2"
-            operator="arithmetic"
-            k1="0"
-            k2="1"
-            k3="1"
-            k4="0"
-          />
-        </filter>
       </defs>
     </svg>
 
@@ -681,6 +644,12 @@
       }
 
       function updateDebug(_extra = "") {}
+
+      function clearHandOverlay() {
+        octx.clearRect(0, 0, w, h);
+        smoothedMeshPoints = null;
+        lastFingerPositions = null;
+      }
 
       function waitForVideoReady() {
         if (video.readyState >= 2) return Promise.resolve();
@@ -2039,8 +2008,7 @@
                   : `Tracking MANO hand: ${motionLandmarks.length} points.`,
               );
             } else {
-              octx.clearRect(0, 0, w, h);
-              lastFingerPositions = null;
+              clearHandOverlay();
               debugState.landmarks = 0;
               debugState.draw = "no landmarks";
               updateDebug();
@@ -2097,7 +2065,7 @@
           drawDefaultManoMesh();
 
           cameraRunning = true;
-          camBtn.textContent = "MANO Active";
+          camBtn.textContent = "Camera Active";
           video.classList.add("is-active");
           debugState.camera = "requesting";
           updateDebug("server fit");
@@ -2139,7 +2107,7 @@
             const motionLandmarks = results.multiHandLandmarks?.[0];
             const handSide = getDetectedHandSide(results);
             if (!motionLandmarks || !motionLandmarks.length) {
-              lastFingerPositions = null;
+              clearHandOverlay();
               debugState.landmarks = 0;
               debugState.draw = "browser no hand";
               updateDebug("browser landmarks");
@@ -2228,7 +2196,7 @@
         setStatus("Connecting to hosted Python MANO stream...");
         camBtn.textContent = "Starting...";
         cameraRunning = true;
-        camBtn.textContent = "MANO Active";
+        camBtn.textContent = "Camera Active";
 
         const tick = async () => {
           if (!cameraRunning) return;
@@ -2262,14 +2230,12 @@
               lastFingerPositions = tips;
               setStatus("Move your Python MANO hand through the paint.");
             } else {
-              octx.clearRect(0, 0, w, h);
-              lastFingerPositions = null;
+              clearHandOverlay();
               setStatus("Hosted MANO stream is live. Show your hand.");
             }
           } catch (err) {
             setStatus("Waiting for hosted MANO stream: " + err.message);
-            octx.clearRect(0, 0, w, h);
-            lastFingerPositions = null;
+            clearHandOverlay();
           }
         };
 
@@ -2305,7 +2271,6 @@
         exportCanvas.height = h;
         const ectx = exportCanvas.getContext("2d");
         ectx.drawImage(marbleCanvas, 0, 0);
-        ectx.drawImage(sceneCanvas, 0, 0);
         const a = document.createElement("a");
         a.download = "finger-marble.png";
         a.href = exportCanvas.toDataURL("image/png");

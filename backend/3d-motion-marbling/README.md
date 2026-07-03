@@ -92,6 +92,10 @@ returned MANO `projectedVertices`:
 /3d-motion-marbling/finger_marble_mano.html?api=https://your-api.example.com&fit=1
 ```
 
+The public portfolio route uses the hosted backend so visitors can see the
+fitted hand. Keep the cost guardrails below enabled on Render so public traffic
+is throttled instead of exercising backend compute without bounds.
+
 This mode requires the backend service to have the licensed MANO model files
 available on disk:
 
@@ -171,3 +175,23 @@ GOOGLE_APPLICATION_CREDENTIALS=/etc/secrets/gcp-service-account.json
 MANO_UPLOAD_TOKEN=make-a-long-random-secret
 ALLOWED_ORIGINS=https://hollandblumer.com,https://www.hollandblumer.com,https://hollandblumer.github.io
 ```
+
+Cost guardrails for `/fit_landmarks`:
+
+```bash
+# Set to 0/false/off to disable expensive MANO fitting entirely.
+MANO_FIT_ENABLED=true
+
+# Optional. If set, callers must send this value in the X-MANO-Fit-Token header.
+MANO_FIT_TOKEN=make-a-long-random-secret
+
+# Per-client throttle. Set 0 to disable this guard.
+MANO_FIT_RATE_LIMIT_PER_MINUTE=120
+
+# In-memory monthly hard cap for fit requests. Set 0 to disable this guard.
+MANO_FIT_MONTHLY_LIMIT=3000
+```
+
+The monthly cap is intentionally conservative and resets if the service restarts.
+Use Render spend limits as the billing backstop; use these variables to reduce
+how much public traffic can exercise the expensive fitting endpoint.

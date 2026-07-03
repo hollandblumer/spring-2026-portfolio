@@ -1,5 +1,6 @@
 import json
 import os
+import time
 import traceback
 from pathlib import Path
 
@@ -42,6 +43,8 @@ DATA_FILES = {
 }
 LIVE_FITTERS = {}
 MODELS_READY = False
+FIT_RATE_LIMITS = {}
+FIT_MONTHLY_USAGE = {}
 
 DEFAULT_ALLOWED_ORIGINS = [
     "http://localhost:3000",
@@ -66,6 +69,80 @@ def get_allowed_origins():
         for origin in configured_origins.split(",")
         if origin.strip()
     ]
+
+
+def get_int_env(name, default):
+    try:
+        return int(os.getenv(name, str(default)))
+    except ValueError:
+        return default
+
+
+def get_bool_env(name, default=True):
+    value = os.getenv(name, "")
+    if not value:
+        return default
+    return value.strip().lower() not in {"0", "false", "no", "off"}
+
+
+def get_client_key(request):
+    forwarded_for = request.headers.get("x-forwarded-for", "")
+    if forwarded_for:
+        return forwarded_for.split(",")[0].strip()
+    if request.client and request.client.host:
+        return request.client.host
+    return "unknown"
+
+
+def verify_fit_access(request):
+    if not get_bool_env("MANO_FIT_ENABLED", True):
+        raise HTTPException(
+            status_code=503,
+            detail="MANO fitting is disabled.",
+        )
+
+    expected_token = os.getenv("MANO_FIT_TOKEN", "").strip()
+    if expected_token:
+        provided_token = request.headers.get("x-mano-fit-token", "")
+        if provided_token != expected_token:
+            raise HTTPException(status_code=401, detail="Invalid MANO fit token.")
+
+    now = time.time()
+    client_key = get_client_key(request)
+    per_minute_limit = get_int_env("MANO_FIT_RATE_LIMIT_PER_MINUTE", 120)
+    if per_minute_limit > 0:
+        window_start, count = FIT_RATE_LIMITS.get(client_key, (now, 0))
+        if now - window_start >= 60:
+            window_start, count = now, 0
+        if count >= per_minute_limit:
+            raise HTTPException(
+                status_code=429,
+                detail="MANO fitting rate limit reached. Try again later.",
+            )
+        FIT_RATE_LIMITS[client_key] = (window_start, count + 1)
+
+    monthly_limit = get_int_env("MANO_FIT_MONTHLY_LIMIT", 3000)
+    if monthly_limit > 0:
+        month_key = time.strftime("%Y-%m", time.gmtime(now))
+        count = FIT_MONTHLY_USAGE.get(month_key, 0)
+        if count >= monthly_limit:
+            raise HTTPException(
+                status_code=429,
+                detail="Monthly MANO fitting limit reached.",
+            )
+        FIT_MONTHLY_USAGE[month_key] = count + 1
+
+
+def get_fit_limit_status():
+    month_key = time.strftime("%Y-%m", time.gmtime())
+    return {
+        "enabled": get_bool_env("MANO_FIT_ENABLED", True),
+        "requiresToken": bool(os.getenv("MANO_FIT_TOKEN", "").strip()),
+        "rateLimitPerMinute": get_int_env("MANO_FIT_RATE_LIMIT_PER_MINUTE", 120),
+        "monthlyLimit": get_int_env("MANO_FIT_MONTHLY_LIMIT", 3000),
+        "monthlyUsed": FIT_MONTHLY_USAGE.get(month_key, 0),
+        "month": month_key,
+    }
 
 
 def get_data_dir():
@@ -419,12 +496,14 @@ async def health():
         "gcsManoBucket": os.getenv("GCS_MANO_BUCKET", ""),
         "gcpCredentials": get_credentials_status(),
         "allowedOrigins": get_allowed_origins(),
+        "fitLimits": get_fit_limit_status(),
     }
 
 
 @app.post("/fit_landmarks")
 async def fit_landmarks(request: Request):
     try:
+        verify_fit_access(request)
         payload = await request.json()
         landmarks = payload.get("landmarks", [])
         session_id = payload.get("sessionId", "default")
