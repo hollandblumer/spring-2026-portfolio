@@ -2,6 +2,7 @@ services:
   - type: web
     name: poster-blueprint-api
     env: python
+    plan: free
     rootDir: backend/poster-blueprint
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
@@ -18,5 +19,6 @@ services:
 
 databases:
   - name: poster-blueprint-db
+    plan: free
     databaseName: poster_blueprint
     user: poster_blueprint_user
