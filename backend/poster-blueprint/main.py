@@ -11,7 +11,16 @@ from google import genai
 from google.genai import types
 from PIL import Image
 
-load_dotenv()
+from database import (
+    check_database_connection,
+    create_database_tables,
+    is_database_configured,
+)
+from repository import save_analysis_run
+from schema import graphql_app
+
+BASE_DIR = Path(__file__).resolve().parent
+load_dotenv(BASE_DIR / ".env")
 
 
 DEFAULT_ALLOWED_ORIGINS = [
@@ -41,6 +50,7 @@ def get_allowed_origins():
 
 #creates the main engine for this
 app = FastAPI()
+app.include_router(graphql_app, prefix="/graphql")
 
 #gives the okay for python to communicate with the frontend
 app.add_middleware(
@@ -49,6 +59,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+async def startup():
+    if is_database_configured():
+        create_database_tables()
 
 def get_gemini_client():
     api_key = os.getenv("GEMINI_API_KEY")
@@ -60,7 +76,6 @@ def get_gemini_client():
 
     return genai.Client(api_key=api_key)
 
-BASE_DIR = Path(__file__).resolve().parent
 REFERENCES_DIR = BASE_DIR / "references"
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp"}
 ALLOWED_UPLOAD_FORMATS = {"JPEG", "PNG", "WEBP"}
@@ -71,9 +86,18 @@ MAX_IMAGE_DIMENSION = 6000
 
 @app.get("/health")
 async def health():
+    database_connected = False
+    if is_database_configured():
+        try:
+            database_connected = check_database_connection()
+        except Exception:
+            database_connected = False
+
     return {
         "ok": True,
         "geminiConfigured": bool(os.getenv("GEMINI_API_KEY")),
+        "databaseConfigured": is_database_configured(),
+        "databaseConnected": database_connected,
         "allowedOrigins": get_allowed_origins(),
     }
 
@@ -533,7 +557,12 @@ async def analyze_poster(file:UploadFile = File(...)):
     sift_matches = match_reference_images(raw_bytes)
 
     if sift_found_a_good_match(sift_matches):
-        return sift_matches_to_analysis(sift_matches)
+        analysis = sift_matches_to_analysis(sift_matches)
+        analysis["analysisRunId"] = save_analysis_run(
+            image_name=file.filename,
+            analysis=analysis,
+        )
+        return analysis
 
     reference_manifest = load_reference_manifest()
     personal_context = load_references()
@@ -593,4 +622,8 @@ async def analyze_poster(file:UploadFile = File(...)):
     gemini_analysis = normalize_analysis(response.parsed)
     gemini_analysis["source"] = "gemini"
     gemini_analysis["siftMatches"] = sift_matches
+    gemini_analysis["analysisRunId"] = save_analysis_run(
+        image_name=file.filename,
+        analysis=gemini_analysis,
+    )
     return gemini_analysis

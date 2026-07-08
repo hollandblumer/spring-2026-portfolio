@@ -5,3 +5,7 @@ google-genai
 pillow
 python-multipart
 opencv-python
+sqlalchemy
+psycopg[binary]
+alembic
+strawberry-graphql[fastapi]
