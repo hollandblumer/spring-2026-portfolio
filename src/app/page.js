@@ -55,6 +55,14 @@ const PROJECTS = [
     href: "/templates",
   },
   {
+    id: "resume-editing",
+    title: "Resume Editing",
+    type: "image",
+    src: "/projects/resume-editing.svg",
+    poster: "/projects/resume-editing.svg",
+    href: "/resume-editing",
+  },
+  {
     id: "noony",
     title: "Noony",
     type: "video",
@@ -581,6 +589,17 @@ export default function Home() {
                   }}
                 >
                   Poster Blueprint
+                </a>
+              </li>
+              <li>
+                <a
+                  href="/resume-editing"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setMenuOpen(false);
+                  }}
+                >
+                  Resume Editing
                 </a>
               </li>
               <li>

@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1500" viewBox="0 0 1200 1500" role="img" aria-labelledby="title desc">
+  <title id="title">Resume editing tracker preview</title>
+  <desc id="desc">A stylized application archive interface with job posting, resume, and answer panels.</desc>
+  <defs>
+    <linearGradient id="paper" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#f7ead9"/>
+      <stop offset="0.58" stop-color="#d6dfcf"/>
+      <stop offset="1" stop-color="#b4c0ad"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.72"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.3"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="1500" fill="url(#paper)"/>
+  <circle cx="206" cy="168" r="250" fill="#e33003" opacity="0.24"/>
+  <circle cx="1010" cy="245" r="300" fill="#477982" opacity="0.24"/>
+  <rect x="116" y="140" width="968" height="1220" rx="18" fill="url(#panel)" stroke="#251815" stroke-opacity="0.12" stroke-width="3"/>
+  <text x="166" y="228" fill="#9f341f" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="700">APPLICATION ARCHIVE</text>
+  <text x="166" y="330" fill="#251815" font-family="Arial, Helvetica, sans-serif" font-size="96" font-weight="800">Resume</text>
+  <text x="166" y="424" fill="#251815" font-family="Arial, Helvetica, sans-serif" font-size="96" font-weight="800">Editing</text>
+  <rect x="166" y="525" width="868" height="132" rx="14" fill="#251815" opacity="0.9"/>
+  <text x="210" y="608" fill="#f8ecdd" font-family="Arial, Helvetica, sans-serif" font-size="48" font-weight="700">Creative Technologist</text>
+  <rect x="166" y="716" width="408" height="250" rx="14" fill="#ffffff" opacity="0.52" stroke="#251815" stroke-opacity="0.12" stroke-width="2"/>
+  <rect x="626" y="716" width="408" height="250" rx="14" fill="#ffffff" opacity="0.52" stroke="#251815" stroke-opacity="0.12" stroke-width="2"/>
+  <rect x="166" y="1016" width="868" height="244" rx="14" fill="#ffffff" opacity="0.42" stroke="#251815" stroke-opacity="0.12" stroke-width="2"/>
+  <text x="202" y="780" fill="#251815" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="700">JOB POSTING</text>
+  <text x="662" y="780" fill="#251815" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="700">RESUME SENT</text>
+  <text x="202" y="1080" fill="#251815" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="700">APPLICATION ANSWERS</text>
+  <g fill="#251815" opacity="0.44">
+    <rect x="202" y="827" width="292" height="18" rx="9"/>
+    <rect x="202" y="869" width="326" height="18" rx="9"/>
+    <rect x="202" y="911" width="242" height="18" rx="9"/>
+    <rect x="662" y="827" width="280" height="18" rx="9"/>
+    <rect x="662" y="869" width="320" height="18" rx="9"/>
+    <rect x="662" y="911" width="214" height="18" rx="9"/>
+    <rect x="202" y="1130" width="682" height="18" rx="9"/>
+    <rect x="202" y="1172" width="764" height="18" rx="9"/>
+    <rect x="202" y="1214" width="512" height="18" rx="9"/>
+  </g>
+</svg>

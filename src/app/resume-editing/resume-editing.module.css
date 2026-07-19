@@ -1,0 +1,394 @@
+.page {
+  min-height: 100vh;
+  background: #28201b;
+  color: #f6eadc;
+  font-family: var(--font-source-serif), Georgia, serif;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(14rem, 0.28fr) minmax(0, 1fr);
+  gap: 1rem;
+  width: min(100% - 2rem, 1240px);
+  margin: 0 auto;
+  padding: 1rem 0 3rem;
+}
+
+.fitReview {
+  width: min(100% - 2rem, 1240px);
+  margin: 0 auto;
+  padding: 0 0 4rem;
+}
+
+.fitKicker {
+  margin: 0 0 0.9rem;
+  color: rgba(246, 234, 220, 0.58);
+  font-family: var(--font-newsreader), Georgia, serif;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.sidebar,
+.editor {
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+}
+
+.fitTable {
+  overflow: hidden;
+}
+
+.fitTableHead,
+.fitRow {
+  display: grid;
+  grid-template-columns: 0.9fr 1.2fr 1fr;
+}
+
+.fitTableHead span {
+  padding: 0.7rem 1rem;
+  color: rgba(246, 234, 220, 0.46);
+  font-family: var(--font-newsreader), Georgia, serif;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.fitRow div {
+  display: grid;
+  align-content: start;
+  gap: 0.35rem;
+  padding: 1rem;
+}
+
+.fitRow span {
+  display: none;
+  color: rgba(246, 234, 220, 0.5);
+  font-family: var(--font-newsreader), Georgia, serif;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.fitRow p {
+  margin: 0;
+  color: rgba(246, 234, 220, 0.78);
+  line-height: 1.55;
+}
+
+.sidebar {
+  align-self: start;
+  overflow: hidden;
+}
+
+.applicationList {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.5rem;
+}
+
+.applicationTab {
+  display: grid;
+  gap: 0.18rem;
+  width: 100%;
+  border: 0;
+  border-radius: 6px;
+  padding: 0.85rem;
+  background: transparent;
+  color: #f6eadc;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.applicationTab:hover,
+.activeTab {
+  color: #f6eadc;
+}
+
+.applicationTab strong {
+  overflow: hidden;
+  font-family: var(--font-newsreader), Georgia, serif;
+  font-size: 0.98rem;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.applicationTab span {
+  overflow: hidden;
+  color: rgba(246, 234, 220, 0.58);
+  font-family: var(--font-newsreader), Georgia, serif;
+  font-size: 0.84rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.editor {
+  padding: 1rem;
+}
+
+.metaGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.metaGrid label,
+.tabPanel {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.metaGrid span {
+  color: rgba(246, 234, 220, 0.58);
+  font-family: var(--font-newsreader), Georgia, serif;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.fixedMetaValue {
+  min-height: 2.85rem;
+  margin: 0;
+  padding: 0.65rem 0.75rem;
+  color: rgba(246, 234, 220, 0.86);
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+.metaGrid input,
+.metaGrid select,
+.tabPanel textarea {
+  width: 100%;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #f6eadc;
+  font: inherit;
+  outline: none;
+}
+
+.metaGrid input,
+.metaGrid select {
+  min-height: 2.85rem;
+  padding: 0.65rem 0.75rem;
+}
+
+.metaGrid input:focus,
+.metaGrid select:focus,
+.tabPanel textarea:focus {
+  outline: 1px solid rgba(246, 234, 220, 0.32);
+}
+
+.contentTabs {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0;
+  margin-top: 1.15rem;
+  border: 0;
+  border-radius: 8px;
+  padding: 0;
+  background: transparent;
+}
+
+.contentTab {
+  position: relative;
+  display: block;
+  min-height: 2.75rem;
+  border: 0;
+  border-bottom: 1px solid rgba(246, 234, 220, 0.18);
+  border-radius: 0;
+  padding: 0.65rem 0.45rem 0.8rem;
+  background: transparent;
+  color: rgba(246, 234, 220, 0.48);
+  font: inherit;
+  font-family: var(--font-newsreader), Georgia, serif;
+  font-size: clamp(0.76rem, 1.2vw, 0.92rem);
+  font-weight: 800;
+  line-height: 1.15;
+  text-align: center;
+  cursor: pointer;
+}
+
+.contentTab:hover,
+.activeContentTab {
+  color: #f6eadc;
+}
+
+.activeContentTab::after {
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  background: #f6eadc;
+  content: "";
+}
+
+.tabPanel {
+  min-height: 34rem;
+  margin-top: 0.75rem;
+  border: 0;
+  border-radius: 8px;
+  padding: 0.75rem;
+  background: transparent;
+}
+
+.pdfPanel {
+  min-height: 38rem;
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+}
+
+.resumePdf {
+  display: block;
+  width: 100%;
+  min-height: 38rem;
+  border: 0;
+}
+
+.tabPanel textarea {
+  min-height: 31rem;
+  resize: vertical;
+  padding: 0.85rem;
+  line-height: 1.55;
+}
+
+.compareGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.comparePane {
+  min-width: 0;
+}
+
+.comparePaneHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem;
+}
+
+.comparePaneHeader span {
+  color: rgba(246, 234, 220, 0.58);
+  font-family: var(--font-newsreader), Georgia, serif;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.comparePaneHeader select {
+  min-width: 9rem;
+  border: 0;
+  background: transparent;
+  color: #f6eadc;
+  font: inherit;
+  font-family: var(--font-newsreader), Georgia, serif;
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.comparePaneHeader select:focus {
+  outline: 1px solid rgba(246, 234, 220, 0.32);
+}
+
+.compareContent textarea {
+  width: 100%;
+  min-height: 36rem;
+  border: 0;
+  border-radius: 6px;
+  padding: 0.85rem;
+  background: transparent;
+  color: #f6eadc;
+  font: inherit;
+  line-height: 1.55;
+  outline: none;
+  resize: vertical;
+}
+
+.compareContent textarea:focus {
+  outline: 1px solid rgba(246, 234, 220, 0.32);
+}
+
+.comparePdfPanel {
+  min-height: 36rem;
+  padding: 0.75rem;
+}
+
+.comparePdf {
+  display: block;
+  width: 100%;
+  min-height: 36rem;
+  border: 0;
+}
+
+.editorFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.9rem;
+}
+
+.editorFooter p {
+  margin: 0;
+  color: rgba(246, 234, 220, 0.5);
+  font-family: var(--font-newsreader), Georgia, serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+@media (max-width: 980px) {
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    overflow-x: auto;
+  }
+
+  .applicationList {
+    display: flex;
+  }
+
+  .applicationTab {
+    min-width: 12rem;
+  }
+
+  .metaGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .fitTableHead {
+    display: none;
+  }
+
+  .fitRow {
+    grid-template-columns: 1fr;
+  }
+
+  .fitRow span {
+    display: block;
+  }
+
+  .contentTabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .compareGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .contentTabs {
+    grid-template-columns: 1fr;
+  }
+
+  .contentTab {
+    text-align: left;
+  }
+}
