@@ -7,7 +7,7 @@ export const stitchFixApplication = {
   status: "Denied",
   dateApplied: "2026-07-11",
   dateHeardBack: "2026-07-15",
-  resumePdf: "/resume-editing/stitch-fix-resume.pdf",
+  resumePdf: "/applications/stitch-fix-resume.pdf",
   jobPosting: `Design Technologist
 Remote, USA
 

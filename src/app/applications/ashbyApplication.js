@@ -8,7 +8,7 @@ export const ashbyApplication = {
   status: "Denied",
   dateApplied: "2026-07-09",
   dateHeardBack: "2026-07-14",
-  resumePdf: "/resume-editing/ashby-resume.pdf",
+  resumePdf: "/applications/ashby-resume.pdf",
   jobPosting: `Junior Design Engineer - Americas
 Location: Remote - US; Austin; Boston; Chicago; Denver; Los Angeles; New York; Portland; San Francisco; Seattle
 Employment Type: Full time

@@ -8,7 +8,7 @@ export const garminApplication = {
   status: "Denied",
   dateApplied: "2026-07-13",
   dateHeardBack: "2026-07-17",
-  resumePdf: "/resume-editing/garmin-resume.pdf",
+  resumePdf: "/applications/garmin-resume.pdf",
   jobPosting: `Overview
 We are seeking a full-time Software Engineer 1 - Web Development/Applications at Garmin's U.S. headquarters in the Greater Kansas City area. In this role, you will have the opportunity to play a key role in the implementation of a new web application.
 

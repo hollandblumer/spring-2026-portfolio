@@ -2,12 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Newsreader, Source_Serif_4 } from "next/font/google";
-import styles from "./resume-editing.module.css";
+import styles from "./applications.module.css";
 import { ashbyApplication, ashbyFitRows } from "./ashbyApplication";
 import { garminApplication, garminFitRows } from "./garminApplication";
 import { stitchFixApplication, stitchFixFitRows } from "./stitchFixApplication";
 
-const STORAGE_KEY = "hb-resume-editing-applications";
+const STORAGE_KEY = "hb-applications";
 
 const sourceSerif = Source_Serif_4({
   subsets: ["latin"],
