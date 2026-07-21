@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { Bricolage_Grotesque } from "next/font/google";
 import ElasticMenu from "../../components/ElasticMenu";
 import Preloader from "../../components/Preloader";
@@ -16,6 +17,7 @@ const FILTERS = [
   { key: "contour-lines", label: "contour lines" },
   { key: "smear-effect", label: "smear effect" },
   { key: "ikat-text", label: "ikat text" },
+  { key: "twist", label: "twist" },
 ];
 
 const IkatText = dynamic(() => import("../../components/templates/IkatText"), {
@@ -38,6 +40,15 @@ const ContourLines = dynamic(
     ),
   },
 );
+
+const TwistText = dynamic(() => import("../../components/templates/TwistText"), {
+  ssr: false,
+  loading: () => (
+    <div className="rounded-[26px] border border-[rgba(112,82,8,0.14)] bg-[rgba(255,255,255,0.3)] px-6 py-16 text-center text-[rgba(112,82,8,0.8)] backdrop-blur-[8px]">
+      Loading twist...
+    </div>
+  ),
+});
 
 const bricolage = Bricolage_Grotesque({
   subsets: ["latin"],
@@ -163,9 +174,9 @@ export default function TemplatesPage() {
         >
           <ul>
             <li>
-              <a href="/" onClick={() => setMenuOpen(false)}>
+              <Link href="/" onClick={() => setMenuOpen(false)}>
                 Home
-              </a>
+              </Link>
             </li>
             <li>
               <a href="/tile-lab" onClick={() => setMenuOpen(false)}>
@@ -215,6 +226,8 @@ export default function TemplatesPage() {
             <SmearEffect imageUrl="https://assets.codepen.io/9259849/Screenshot%202025-11-26%20at%202.51.05%E2%80%AFPM.png" />
           ) : activeFilter === "ikat-text" ? (
             <IkatText />
+          ) : activeFilter === "twist" ? (
+            <TwistText />
           ) : (
             <ContourLines />
           )}

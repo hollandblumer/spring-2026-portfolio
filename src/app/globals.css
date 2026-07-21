@@ -1269,6 +1269,14 @@ nextjs-portal {
   justify-content: center;
 }
 
+.twist-wrapper {
+  display: grid;
+  gap: 1.1rem;
+  grid-template-columns: minmax(240px, 280px) minmax(0, 1fr);
+  align-items: start;
+  justify-content: center;
+}
+
 .contour-controls {
   --template-accent-red: #e33003;
   --template-light-gray: #cfcfcf;
@@ -1699,6 +1707,18 @@ nextjs-portal {
   -webkit-backdrop-filter: blur(8px);
 }
 
+.twist-display-area {
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(112, 82, 8, 0.14);
+  border-radius: 26px;
+  padding: 1.25rem;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
 .contour-canvas-shell {
   position: relative;
   width: min(100%, 640px);
@@ -1707,6 +1727,23 @@ nextjs-portal {
   cursor: grab;
   touch-action: none;
   user-select: none;
+}
+
+.twist-canvas-shell {
+  position: relative;
+  width: min(100%, 720px);
+  aspect-ratio: 4 / 5;
+  background: #bfaed4;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  overflow: hidden;
+}
+
+.twist-canvas-shell canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .contour-canvas-shell canvas {
@@ -1763,8 +1800,13 @@ nextjs-portal {
 
   .smear-controls-column,
   .ikat-controls,
-  .contour-controls {
+  .contour-controls,
+  .twist-controls {
     width: 100%;
+  }
+
+  .twist-wrapper {
+    grid-template-columns: 1fr;
   }
 
   .template-controls-title {
