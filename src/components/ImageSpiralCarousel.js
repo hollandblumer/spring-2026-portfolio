@@ -300,6 +300,8 @@ export default function ImageSpiralCarousel({
           uBend: { value: 0.18 },
           uBendDirection: { value: 1 },
           uWind: { value: 0 },
+          uUvScale: { value: new THREE.Vector2(1, 1) },
+          uUvOffset: { value: new THREE.Vector2(0, 0) },
         },
         vertexShader: `
           uniform float uTime;
@@ -330,10 +332,13 @@ export default function ImageSpiralCarousel({
         fragmentShader: `
           uniform sampler2D uTexture;
           uniform float uOpacity;
+          uniform vec2 uUvScale;
+          uniform vec2 uUvOffset;
           varying vec2 vUv;
 
           void main() {
-            vec4 tex = texture2D(uTexture, vUv);
+            vec2 uv = vUv * uUvScale + uUvOffset;
+            vec4 tex = texture2D(uTexture, uv);
             gl_FragColor = vec4(tex.rgb, tex.a * uOpacity);
             #include <colorspace_fragment>
           }
@@ -347,6 +352,15 @@ export default function ImageSpiralCarousel({
     const desktopImageBounds = { width: 7.15, height: 8.6 };
     const getImageBounds = () =>
       window.innerWidth < 768 ? mobileImageBounds : desktopImageBounds;
+    const applyTextureWindow = (image, item) => {
+      const zoom =
+        window.innerWidth < 768 ? item.spiralMobileTextureZoom || 1 : 1;
+      const uvScale = 1 / Math.max(1, zoom);
+      const uvOffset = (1 - uvScale) / 2;
+
+      image.material.uniforms.uUvScale.value.set(uvScale, uvScale);
+      image.material.uniforms.uUvOffset.value.set(uvOffset, uvOffset);
+    };
     const applyImageScale = (image) => {
       const imageAspect = image.userData.aspect;
       if (!imageAspect) return;
@@ -384,6 +398,8 @@ export default function ImageSpiralCarousel({
       group.userData.videoReady = false;
       group.userData.videoCanvas = null;
       group.userData.videoContext = null;
+      group.userData.item = item;
+      applyTextureWindow(image, item);
 
       if (item.type === "video" && item.src && !item.disableSpiralVideo) {
         const video = document.createElement("video");
@@ -622,6 +638,7 @@ export default function ImageSpiralCarousel({
         const image = poster.children.find((child) => child.isMesh);
         if (image) {
           applyImageScale(image);
+          applyTextureWindow(image, poster.userData.item || {});
         }
       });
     };

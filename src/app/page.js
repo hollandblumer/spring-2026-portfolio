@@ -12,13 +12,11 @@ const INSTAGRAM_URL = "https://instagram.com/hollandblumer";
 const LINKEDIN_URL = "https://linkedin.com/in/hollandblumer";
 const PROJECTS = [
   {
-    id: "countdown",
-    title: "Countdown",
+    id: "spiral-experiment",
+    title: "Spiral Experiment",
     type: "video",
-    src: "/videos/first-project.webm",
-    poster: "/videos/first-project-poster.jpg",
-    blurb:
-      "Inspired by that New Year's Eve countdown feeling where everything tightens right before midnight. I used Three.js to take 3, 2, 1 and let them build instead of just appear. The numbers kind of form out of these vertical ribbons that stretch, snap, and settle, almost like they're being pulled into place.\n\nIt's less about clearly reading the digits and more about that moment of anticipation. Each transition has a bit of randomness to it, so it never feels perfectly clean, more like that chaotic energy right before the drop. The forms push forward, collapse back, and then lock in just long enough before shifting again.",
+    src: "/videos/spring.mp4",
+    poster: "/videos/spring-poster.jpg",
   },
   {
     id: "poster-blueprint",
@@ -35,8 +33,18 @@ const PROJECTS = [
     type: "video",
     src: "/videos/filter-optimized.mp4",
     poster: "/videos/filter-poster.jpg",
+    spiralMobileTextureZoom: 1.85,
     blurb:
       "Lately I have been experimenting with type as something more fluid than fixed, stretching, blurring, contouring, and melting words until they start to feel almost alive. A lot of this came from building custom SVG filters and layering blur with thresholding to create those hollow, glowing contours, then pushing that into different directions. In some cases it turned into a drawing tool where shapes merge like metaballs, in others into these percentage counters where each number is constantly forming and breaking apart, and in others into words that feel like they're rising and pulling themselves out of a kind of molten base.\n\nI kept playing with timing, too, letting things pulse, stagger, or drift so nothing locks into a perfectly clean state. It was less about a final system and more about seeing how far I could push distortion, motion, and interaction while still keeping just enough of the original word there.",
+  },
+  {
+    id: "countdown",
+    title: "Countdown",
+    type: "video",
+    src: "/videos/first-project.webm",
+    poster: "/videos/first-project-poster.jpg",
+    blurb:
+      "Inspired by that New Year's Eve countdown feeling where everything tightens right before midnight. I used Three.js to take 3, 2, 1 and let them build instead of just appear. The numbers kind of form out of these vertical ribbons that stretch, snap, and settle, almost like they're being pulled into place.\n\nIt's less about clearly reading the digits and more about that moment of anticipation. Each transition has a bit of randomness to it, so it never feels perfectly clean, more like that chaotic energy right before the drop. The forms push forward, collapse back, and then lock in just long enough before shifting again.",
   },
   {
     id: "3d-motion-marbling",
@@ -335,13 +343,13 @@ export default function Home() {
   const [mounted, setMounted] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [localTime, setLocalTime] = useState("");
-  const [activeIndex, setActiveIndex] = useState(2);
-  const [currentSlide, setCurrentSlide] = useState(3);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [currentSlide, setCurrentSlide] = useState(1);
   const [showAboutCard, setShowAboutCard] = useState(false);
   const [expandedProjectId, setExpandedProjectId] = useState(null);
   const [showProjectPicker, setShowProjectPicker] = useState(false);
   const [gridProjectIndex, setGridProjectIndex] = useState(null);
-  const [displayMode, setDisplayMode] = useState("spiral");
+  const [displayMode, setDisplayMode] = useState("grid");
   const [preloaderExiting, setPreloaderExiting] = useState(false);
   const [spiralIntroReady, setSpiralIntroReady] = useState(false);
 
@@ -423,7 +431,7 @@ export default function Home() {
   const isSpiralMode = displayMode === "spiral";
   const isGridMode = displayMode === "grid";
   const showSpiralDuringPreloader =
-    showPreloader && preloaderExiting && spiralIntroReady;
+    showPreloader && preloaderExiting && spiralIntroReady && isSpiralMode;
 
   const handleOpenProject = () => {
     if (!activeProject) return;
