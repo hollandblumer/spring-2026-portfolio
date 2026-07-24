@@ -20,7 +20,16 @@ export default function ClientSketch(props) {
   }, []);
 
   if (!Sketch) {
-    return <div style={{ width: "100vw", height: "100vh", background: "#E33003" }} />;
+    return (
+      <div
+        style={{
+          width: "100vw",
+          height: "100vh",
+          // red background: "#E33003"
+          background: "#28201B",
+        }}
+      />
+    );
   }
 
   return <Sketch {...props} />;

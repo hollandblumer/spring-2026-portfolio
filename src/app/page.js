@@ -31,8 +31,8 @@ const PROJECTS = [
     id: "type-lab",
     title: "Type Experiments",
     type: "video",
-    src: "/videos/filter-optimized.mp4",
-    poster: "/videos/filter-poster.jpg",
+    src: "/videos/typeexperiments.mp4",
+    poster: "/videos/typeexperiments-poster.jpg",
     spiralMobileTextureZoom: 1.85,
     blurb:
       "Lately I have been experimenting with type as something more fluid than fixed, stretching, blurring, contouring, and melting words until they start to feel almost alive. A lot of this came from building custom SVG filters and layering blur with thresholding to create those hollow, glowing contours, then pushing that into different directions. In some cases it turned into a drawing tool where shapes merge like metaballs, in others into these percentage counters where each number is constantly forming and breaking apart, and in others into words that feel like they're rising and pulling themselves out of a kind of molten base.\n\nI kept playing with timing, too, letting things pulse, stagger, or drift so nothing locks into a perfectly clean state. It was less about a final system and more about seeing how far I could push distortion, motion, and interaction while still keeping just enough of the original word there.",
@@ -41,8 +41,8 @@ const PROJECTS = [
     id: "countdown",
     title: "Countdown",
     type: "video",
-    src: "/videos/first-project.webm",
-    poster: "/videos/first-project-poster.jpg",
+    src: "/videos/count.mp4",
+    poster: "/videos/count-poster.jpg",
     blurb:
       "Inspired by that New Year's Eve countdown feeling where everything tightens right before midnight. I used Three.js to take 3, 2, 1 and let them build instead of just appear. The numbers kind of form out of these vertical ribbons that stretch, snap, and settle, almost like they're being pulled into place.\n\nIt's less about clearly reading the digits and more about that moment of anticipation. Each transition has a bit of randomness to it, so it never feels perfectly clean, more like that chaotic energy right before the drop. The forms push forward, collapse back, and then lock in just long enough before shifting again.",
   },
@@ -321,7 +321,10 @@ function ProjectGridCard({ project, onSelect }) {
 
 function ProjectGrid({ projects, onSelectProject }) {
   return (
-    <section className="absolute inset-0 z-[8] overflow-y-auto bg-[#E33003] px-[15px] pb-28 pt-24 sm:pt-28">
+    <section
+      className="absolute inset-0 z-[8] overflow-y-auto bg-[#28201B] px-[15px] pb-28 pt-24 sm:pt-28"
+      /* red background: bg-[#E33003] */
+    >
       <div className="grid w-full grid-cols-2 gap-[15px] lg:grid-cols-3">
         {projects.map((project, index) => (
           <ProjectGridCard
@@ -473,7 +476,8 @@ export default function Home() {
     <main
       className="w-screen h-screen overflow-hidden relative"
       style={{
-        background: "#E33003",
+        // red background: "#E33003"
+        background: "#28201B",
         cursor: !showPreloader ? OLIVE_CURSOR : "auto",
       }}
     >
@@ -640,6 +644,19 @@ export default function Home() {
           <div className="absolute left-1/2 top-5 z-20 flex -translate-x-1/2 items-center gap-1 rounded-full border border-[rgba(207,207,207,0.32)] bg-[rgba(112,82,8,0.24)] p-1 text-[#cfcfcf] backdrop-blur-sm sm:top-6">
             <button
               type="button"
+              onClick={() => setDisplayMode("grid")}
+              className={`flex h-9 w-9 items-center justify-center rounded-full transition ${
+                isGridMode
+                  ? "bg-[rgba(207,207,207,0.22)] text-[#f1ece0]"
+                  : "text-[rgba(207,207,207,0.78)] hover:bg-[rgba(207,207,207,0.12)]"
+              }`}
+              aria-label="Show image grid"
+              title="Image grid"
+            >
+              <GridNineIcon className="h-4.5 w-4.5" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
               onClick={() => {
                 setGridProjectIndex(null);
                 setDisplayMode("spiral");
@@ -653,19 +670,6 @@ export default function Home() {
               title="Image spiral carousel"
             >
               <HelixIcon className="h-4.5 w-4.5" aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setDisplayMode("grid")}
-              className={`flex h-9 w-9 items-center justify-center rounded-full transition ${
-                isGridMode
-                  ? "bg-[rgba(207,207,207,0.22)] text-[#f1ece0]"
-                  : "text-[rgba(207,207,207,0.78)] hover:bg-[rgba(207,207,207,0.12)]"
-              }`}
-              aria-label="Show image grid"
-              title="Image grid"
-            >
-              <GridNineIcon className="h-4.5 w-4.5" aria-hidden="true" />
             </button>
           </div>
 

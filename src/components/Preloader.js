@@ -22,7 +22,8 @@ export default function Preloader({
   });
 
   const WORD = "LOADING";
-  const BG_COLOR = [227, 48, 3];
+  // red background: [227, 48, 3] / #E33003
+  const BG_COLOR = [40, 32, 27];
   const OLIVE = [112, 82, 8];
   const GREY = [207, 207, 207];
   const clamp01 = (x) => Math.max(0, Math.min(1, x));
