@@ -322,7 +322,7 @@ function ProjectGridCard({ project, onSelect }) {
 function ProjectGrid({ projects, onSelectProject }) {
   return (
     <section
-      className="absolute inset-0 z-[8] overflow-y-auto bg-[#28201B] px-[15px] pb-28 pt-24 sm:pt-28"
+      className="absolute inset-0 z-[8] overflow-y-auto bg-[#272727] px-[15px] pb-28 pt-24 sm:pt-28"
       /* red background: bg-[#E33003] */
     >
       <div className="grid w-full grid-cols-2 gap-[15px] lg:grid-cols-3">
@@ -477,7 +477,7 @@ export default function Home() {
       className="w-screen h-screen overflow-hidden relative"
       style={{
         // red background: "#E33003"
-        background: "#28201B",
+        background: "#272727",
         cursor: !showPreloader ? OLIVE_CURSOR : "auto",
       }}
     >

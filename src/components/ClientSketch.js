@@ -26,7 +26,7 @@ export default function ClientSketch(props) {
           width: "100vw",
           height: "100vh",
           // red background: "#E33003"
-          background: "#28201B",
+          background: "#272727",
         }}
       />
     );
