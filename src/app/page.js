@@ -611,17 +611,6 @@ export default function Home() {
               </li>
               <li>
                 <a
-                  href="/ai"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    setMenuOpen(false);
-                  }}
-                >
-                  AI
-                </a>
-              </li>
-              <li>
-                <a
                   href="/poster-blueprint/"
                   onClick={(event) => {
                     event.stopPropagation();

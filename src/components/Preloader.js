@@ -175,10 +175,19 @@ export default function Preloader({
   return (
     <div
       className={`portfolio-grid-input-layer absolute inset-0 overflow-hidden bg-transparent${projectOpen ? " pointer-events-none" : ""}`}
-      onPointerDown={(event) => forwardGridInput("pointerdown", event)}
+      onPointerDown={(event) => {
+        event.currentTarget.setPointerCapture?.(event.pointerId);
+        forwardGridInput("pointerdown", event);
+      }}
       onPointerMove={(event) => forwardGridInput("pointermove", event)}
-      onPointerUp={(event) => forwardGridInput("pointerup", event)}
-      onPointerCancel={(event) => forwardGridInput("pointercancel", event)}
+      onPointerUp={(event) => {
+        forwardGridInput("pointerup", event);
+        event.currentTarget.releasePointerCapture?.(event.pointerId);
+      }}
+      onPointerCancel={(event) => {
+        forwardGridInput("pointercancel", event);
+        event.currentTarget.releasePointerCapture?.(event.pointerId);
+      }}
       onWheel={(event) => forwardGridInput("wheel", event)}
       role="status"
       aria-label="Loading portfolio"

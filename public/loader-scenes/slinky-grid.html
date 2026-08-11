@@ -660,25 +660,31 @@
     function setCursor(mode){if(mode===cursorMode)return;cursorMode=mode;cursorLabel.textContent=mode==='close'?'×':'View';document.body.classList.toggle('hovering',mode==='view')}
     function setPointer(e){pointer.x=e.clientX/innerWidth*2-1;pointer.y=-(e.clientY/innerHeight)*2+1;trailMat.uniforms.uMouseUv.value.set(e.clientX/innerWidth,1-e.clientY/innerHeight);pointerMoved=true;cursorEl.style.left=e.clientX+'px';cursorEl.style.top=e.clientY+'px'}
 
-    addEventListener('pointerdown',e=>{if(selected||!introDone)return;dragging=true;moved=false;lastY=downY=e.clientY;downX=e.clientX;renderer.domElement.classList.add('dragging')});
-    addEventListener('pointermove',e=>{setPointer(e);if(!dragging||selected)return;const dy=e.clientY-lastY;lastY=e.clientY;if(Math.hypot(e.clientX-downX,e.clientY-downY)>6)moved=true;targetY-=dy*.0028;velocity=-dy*.0028});
     function openCard(card){
       if(!card)return;
       parent.postMessage({type:'portfolio-loader-open-project',index:card.userData.projectIndex},location.origin);
     }
-    addEventListener('pointerup',()=>{if(!introDone)return;renderer.domElement.classList.remove('dragging');const was=dragging;dragging=false;if(!was||moved||!hovered)return;openCard(hovered)});
-    addEventListener('pointercancel',()=>{dragging=false;renderer.domElement.classList.remove('dragging')});
-    addEventListener('wheel',e=>{if(selected||!introDone)return;e.preventDefault();const delta=e.deltaY*.00035;targetY+=delta;velocity=delta},{passive:false});
+    function pickCard(e){setPointer(e);raycaster.setFromCamera(pointer,camera);return raycaster.intersectObjects(cards.filter(card=>card!==selected))[0]?.object||null}
+    function beginGridPointer(e){if(selected||!introDone)return;pickCard(e);dragging=true;moved=false;lastY=downY=e.clientY;downX=e.clientX;renderer.domElement.classList.add('dragging')}
+    function moveGridPointer(e){setPointer(e);if(!dragging||selected)return;const dy=e.clientY-lastY;lastY=e.clientY;if(Math.hypot(e.clientX-downX,e.clientY-downY)>6)moved=true;targetY-=dy*.0028;velocity=-dy*.0028}
+    function endGridPointer(e){if(!introDone)return;const tappedCard=pickCard(e);renderer.domElement.classList.remove('dragging');const was=dragging;dragging=false;if(!was||moved||!tappedCard)return;openCard(tappedCard)}
+    function cancelGridPointer(){dragging=false;renderer.domElement.classList.remove('dragging')}
+    function wheelGrid(e){if(selected||!introDone)return;e.preventDefault?.();const delta=e.deltaY*.00035;targetY+=delta;velocity=delta}
+    addEventListener('pointerdown',beginGridPointer);
+    addEventListener('pointermove',moveGridPointer);
+    addEventListener('pointerup',endGridPointer);
+    addEventListener('pointercancel',cancelGridPointer);
+    addEventListener('wheel',wheelGrid,{passive:false});
 
     addEventListener('message',event=>{
       if(event.source!==parent||event.origin!==location.origin)return;
       if(event.data?.type==='portfolio-grid-input'){
         const data=event.data;
-        if(data.kind==='wheel'){
-          dispatchEvent(new WheelEvent('wheel',{deltaY:data.deltaY,clientX:data.clientX,clientY:data.clientY,bubbles:true,cancelable:true}));
-        }else if(typeof data.kind==='string'&&data.kind.startsWith('pointer')){
-          dispatchEvent(new PointerEvent(data.kind,{clientX:data.clientX,clientY:data.clientY,button:data.button,buttons:data.buttons,pointerId:data.pointerId,pointerType:data.pointerType,bubbles:true,cancelable:true}));
-        }
+        if(data.kind==='pointerdown')beginGridPointer(data);
+        else if(data.kind==='pointermove')moveGridPointer(data);
+        else if(data.kind==='pointerup')endGridPointer(data);
+        else if(data.kind==='pointercancel')cancelGridPointer();
+        else if(data.kind==='wheel')wheelGrid(data);
         return;
       }
       if(event.data?.type==='portfolio-grid-morph'){
