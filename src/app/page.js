@@ -353,7 +353,7 @@ export default function Home() {
       const animate = (now) => {
         const progress = Math.min(1, (now - startedAt) / duration);
         const eased = 1 - Math.pow(1 - progress, 3);
-        setGridEffectStrength(1 - eased * 0.2);
+        setGridEffectStrength(1 - eased * 0.5);
         if (progress < 1) frame = requestAnimationFrame(animate);
       };
       frame = requestAnimationFrame(animate);
@@ -482,7 +482,7 @@ export default function Home() {
       {!showPreloader && (
         <>
           {!showAboutCard && !gridProject && (
-            <div className="fixed left-5 top-5 z-[1001] flex items-center gap-3 sm:left-6 sm:top-6">
+            <div className="portfolio-header-controls fixed left-5 top-5 z-[1001] flex items-center gap-3 sm:left-6 sm:top-6">
               <div className="h-11 w-11">
                 <ElasticMenu
                   isOpen={menuOpen}
@@ -614,7 +614,7 @@ export default function Home() {
             </ul>
           </nav>
 
-          {!gridProject && <div className="absolute right-5 top-5 z-20 flex items-center gap-3 sm:right-6 sm:top-6">
+          {!gridProject && <div className="portfolio-social-controls absolute right-5 top-5 z-20 flex items-center gap-3 sm:right-6 sm:top-6">
             <a
               href={INSTAGRAM_URL}
               target="_blank"

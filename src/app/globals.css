@@ -198,8 +198,23 @@ body {
 }
 
 @media (max-width: 640px) {
+  .portfolio-header-controls {
+    right: 0.75rem;
+    left: 0.75rem;
+    top: 0.75rem;
+    gap: 0.5rem;
+  }
+
+  .portfolio-header-controls > div:first-child {
+    flex: 0 0 2.75rem;
+  }
+
   .portfolio-filter {
-    max-width: calc(100vw - 5.75rem);
+    min-width: 0;
+    max-width: none;
+    flex: 1 1 auto;
+    padding-right: 0.55rem;
+    padding-left: 0.55rem;
   }
 
   .portfolio-filter__prefix {
@@ -207,9 +222,30 @@ body {
   }
 
   .portfolio-filter select {
-    max-width: 8.5rem;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
   }
 
+  .portfolio-effect-control {
+    flex: 0 0 auto;
+    gap: 0.25rem;
+    padding-left: 0.45rem;
+  }
+
+  .portfolio-effect-control__preview {
+    width: 1.1rem;
+    height: 1.1rem;
+  }
+
+  .portfolio-effect-control > span {
+    min-width: 1.9rem;
+  }
+
+  .portfolio-social-controls {
+    top: 4.25rem;
+    right: 0.75rem;
+  }
 }
 
 .grid-enter {
