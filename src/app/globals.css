@@ -322,6 +322,26 @@ body {
   }
 }
 
+@supports (-webkit-touch-callout: none) {
+  @media (hover: none), (pointer: coarse) {
+    .elastic-menu-button,
+    .portfolio-filter,
+    .portfolio-effect-control,
+    .portfolio-social-button {
+      background:
+        radial-gradient(circle at 28% 16%, rgb(255 255 255 / 32%), transparent 20%),
+        linear-gradient(105deg, rgb(78 128 255 / 14%), transparent 28% 72%, rgb(255 78 96 / 13%)),
+        rgb(18 18 18 / 24%) !important;
+      box-shadow:
+        inset 1px 0 2px rgb(88 138 255 / 24%),
+        inset -1px 0 2px rgb(255 86 102 / 22%),
+        inset 0 0 12px rgb(255 255 255 / 14%),
+        0 3px 14px rgb(0 0 0 / 18%) !important;
+      -webkit-backdrop-filter: blur(7px) saturate(1.55) contrast(1.12) !important;
+    }
+  }
+}
+
 @media (max-width: 640px) {
   .portfolio-header-controls {
     right: 5.6rem;
@@ -710,9 +730,9 @@ nextjs-portal {
     visibility: visible !important;
     opacity: 1 !important;
     border-color: rgb(255 255 255 / 62%) !important;
-    background: rgb(20 20 20 / 56%) !important;
+    background: rgb(20 20 20 / 22%) !important;
     box-shadow: inset 0 0 10px rgb(255 255 255 / 14%), 0 3px 14px rgb(0 0 0 / 20%) !important;
-    -webkit-backdrop-filter: blur(4px) saturate(1.3) !important;
+    -webkit-backdrop-filter: blur(2px) saturate(1.35) contrast(1.08) !important;
   }
 }
 

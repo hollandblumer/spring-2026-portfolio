@@ -51,13 +51,14 @@
 
     @media(max-width:768px){
       header{height:64px;padding:0 18px}
-      .fade{display:none}
+      .fade{display:none!important}
       .top,.bottom{height:100px}
       .left,.right{width:100px}
       .badge{bottom:16px}
       .index{left:18px;bottom:22px;font-size:13px}
       .cursor{display:none!important}
     }
+    @media(hover:none),(pointer:coarse){.fade{display:none!important}}
     @media(prefers-reduced-motion:reduce){
       .cursor{transition:none}
     }

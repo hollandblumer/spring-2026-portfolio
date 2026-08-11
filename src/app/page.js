@@ -375,6 +375,7 @@ export default function Home() {
 
   useEffect(() => {
     let frame;
+    const followupTimers = [];
     const updateGlassRects = () => {
       const rects = [...document.querySelectorAll("[data-grid-glass]")].map((element) => {
         const rect = element.getBoundingClientRect();
@@ -386,16 +387,24 @@ export default function Home() {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(updateGlassRects);
     };
-    const resizeObserver = new ResizeObserver(scheduleGlassUpdate);
+    const resizeObserver = typeof ResizeObserver === "function"
+      ? new ResizeObserver(scheduleGlassUpdate)
+      : null;
     document.querySelectorAll("[data-grid-glass]").forEach((element) => {
-      resizeObserver.observe(element);
+      resizeObserver?.observe(element);
     });
     scheduleGlassUpdate();
+    [120, 500, 1200].forEach((delay) => {
+      followupTimers.push(window.setTimeout(scheduleGlassUpdate, delay));
+    });
     addEventListener("resize", scheduleGlassUpdate);
+    addEventListener("orientationchange", scheduleGlassUpdate);
     return () => {
       cancelAnimationFrame(frame);
-      resizeObserver.disconnect();
+      followupTimers.forEach((timer) => window.clearTimeout(timer));
+      resizeObserver?.disconnect();
       removeEventListener("resize", scheduleGlassUpdate);
+      removeEventListener("orientationchange", scheduleGlassUpdate);
     };
   }, [gridProjectIndex, menuOpen, preloaderAnimationDone, images.length]);
 
