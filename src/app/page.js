@@ -1002,7 +1002,10 @@ export default function Home() {
       >
         <Preloader
           canExit={assetsReady}
-          onExitStart={() => setPreloaderExiting(true)}
+          onExitStart={() => {
+            setPreloaderExiting(true);
+            setPreloaderAnimationDone(true);
+          }}
           onComplete={() => setPreloaderAnimationDone(true)}
           onSelectProject={handleOpenGridProject}
           projectIndices={FILTER_PROJECT_INDICES[projectFilter]}
