@@ -27,6 +27,216 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+@keyframes grid-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.project-page-reveal {
+  height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  pointer-events: none;
+  background: transparent;
+  -webkit-overflow-scrolling: touch;
+}
+
+.project-page-reveal.is-ready {
+  pointer-events: auto;
+  background: #eeeae0;
+}
+
+.project-page-reveal__content {
+  display: none;
+}
+
+.project-page-reveal.is-ready .project-page-reveal__content {
+  display: block;
+  opacity: 1;
+}
+
+.project-page-transition {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 1100;
+  display: block;
+  width: 100vw;
+  height: 100dvh;
+  margin: 0;
+  padding: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .project-page-reveal {
+    animation-duration: 1ms;
+    animation-delay: 0ms;
+  }
+}
+
+.portfolio-filter {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  height: 2.75rem;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 9999px;
+  padding: 0 0.8rem;
+  color: rgb(245 245 242 / 88%);
+  background: rgb(5 5 5 / 78%);
+  -webkit-backdrop-filter: blur(8px) saturate(1.2);
+  backdrop-filter: blur(8px) saturate(1.2);
+  box-shadow: inset 0 0 10px rgb(255 255 255 / 6%);
+}
+
+.portfolio-filter__prefix {
+  font-size: 0.68rem;
+  letter-spacing: 0.02em;
+  opacity: 0.62;
+}
+
+.portfolio-filter select {
+  max-width: 10.5rem;
+  cursor: pointer;
+  border: 0;
+  outline: 0;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  font-size: 0.78rem;
+}
+
+.portfolio-filter option {
+  color: #f5f5f2;
+  background: #171717;
+}
+
+.portfolio-effect-control {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  height: 2.75rem;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 9999px;
+  padding: 0.25rem 0.3rem 0.25rem 0.7rem;
+  color: rgb(245 245 242 / 88%);
+  background: rgb(5 5 5 / 78%);
+  -webkit-backdrop-filter: blur(8px) saturate(1.2);
+  backdrop-filter: blur(8px) saturate(1.2);
+  box-shadow: inset 0 0 10px rgb(255 255 255 / 6%);
+}
+
+.portfolio-effect-control > span {
+  min-width: 2.25rem;
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.portfolio-effect-control__preview {
+  width: 1.35rem;
+  height: 1.35rem;
+  flex: none;
+  filter: drop-shadow(0 0 4px rgb(255 255 255 / 18%));
+}
+
+.portfolio-effect-control > div {
+  display: grid;
+  gap: 1px;
+}
+
+.portfolio-effect-control button {
+  display: grid;
+  width: 1.35rem;
+  height: 1rem;
+  cursor: pointer;
+  place-items: center;
+  border: 0;
+  border-radius: 9999px;
+  color: inherit;
+  background: rgb(255 255 255 / 7%);
+}
+
+.portfolio-effect-control button:hover {
+  background: rgb(255 255 255 / 16%);
+}
+
+.portfolio-social-button {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  place-items: center;
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 9999px;
+  color: rgb(245 245 242 / 88%);
+  background: rgb(5 5 5 / 78%);
+  -webkit-backdrop-filter: blur(8px) saturate(1.2);
+  backdrop-filter: blur(8px) saturate(1.2);
+  box-shadow: inset 0 0 10px rgb(255 255 255 / 6%);
+  transition: color 180ms ease, background 180ms ease, transform 180ms ease;
+}
+
+.portfolio-social-button:hover {
+  color: #fff;
+  background: rgb(255 255 255 / 12%);
+  transform: scale(1.05);
+}
+
+@media (max-width: 640px) {
+  .portfolio-filter {
+    max-width: calc(100vw - 5.75rem);
+  }
+
+  .portfolio-filter__prefix {
+    display: none;
+  }
+
+  .portfolio-filter select {
+    max-width: 8.5rem;
+  }
+
+}
+
+.grid-enter {
+  animation: grid-enter 650ms cubic-bezier(0.19, 1, 0.22, 1) both;
+}
+
+.webgl-project-grid {
+  overflow: hidden;
+  outline: none;
+  touch-action: none;
+}
+
+.webgl-project-grid__canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+}
+
+.webgl-project-grid__canvas.is-dragging {
+  cursor: grabbing;
+}
+
+.webgl-project-grid__canvas.is-hovering:not(.is-dragging) {
+  cursor: pointer;
+}
+
 .blue-grain {
   background-color: var(--blueprint-paper);
   position: relative;
@@ -62,6 +272,7 @@ nextjs-portal {
 }
 
 .elastic-menu-button {
+  position: relative;
   padding: 0;
   margin: 0;
   border: none;
@@ -73,15 +284,150 @@ nextjs-portal {
   -webkit-tap-highlight-color: transparent;
 }
 
+.portfolio-filter,
+.portfolio-effect-control,
+.portfolio-social-button {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 58%);
+  background:
+    radial-gradient(ellipse at 50% 48%, rgb(8 8 8 / 16%) 28%, rgb(8 8 8 / 24%) 62%, rgb(0 0 0 / 42%) 100%),
+    radial-gradient(circle at 29% 18%, rgb(255 255 255 / 34%), transparent 18%),
+    linear-gradient(105deg, rgb(70 125 255 / 8%), transparent 23% 77%, rgb(255 72 72 / 9%)),
+    rgb(8 8 8 / 30%);
+  box-shadow:
+    inset 1px 0 2px rgb(90 140 255 / 20%),
+    inset -1px 0 2px rgb(255 80 80 / 20%),
+    inset 0 0 14px rgb(255 255 255 / 13%),
+    inset 0 -6px 12px rgb(0 0 0 / 13%),
+    0 5px 16px rgb(0 0 0 / 16%);
+  -webkit-backdrop-filter: blur(1.5px) saturate(1.5) contrast(1.22);
+  backdrop-filter: blur(1.5px) saturate(1.5) contrast(1.22);
+}
+
+.elastic-menu-button,
+.elastic-menu-button:hover {
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 40%);
+  border-radius: 9999px;
+  background: rgb(14 14 14 / 20%);
+  box-shadow: inset 0 0 9px rgb(255 255 255 / 8%), 0 3px 12px rgb(0 0 0 / 12%);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+}
+
+.elastic-menu-button::before,
+.elastic-menu-button::after {
+  display: none;
+}
+
+.elastic-menu-button svg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 24px;
+  height: 24px;
+  overflow: visible;
+  transform: translate(-50%, -50%);
+}
+
+.elastic-glass-bar {
+  position: absolute;
+  left: 50%;
+  display: block;
+  width: 29px;
+  height: 4px;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 48%);
+  border-radius: 0;
+  background:
+    linear-gradient(90deg, rgb(92 137 219 / 26%), rgb(255 255 255 / 38%) 24% 72%, rgb(211 116 128 / 22%)),
+    rgb(25 28 33 / 40%);
+  box-shadow:
+    inset 0 1px 1px rgb(255 255 255 / 62%),
+    inset 1px 0 1px rgb(92 137 219 / 28%),
+    inset -1px 0 1px rgb(211 116 128 / 22%),
+    0 1px 2px rgb(0 0 0 / 18%);
+  transform: translateX(-50%);
+  transform-origin: center;
+  animation: menu-glass-bounce 3.1s ease-in-out infinite;
+  transition: top 350ms cubic-bezier(0.22, 0.61, 0.36, 1), transform 350ms cubic-bezier(0.22, 0.61, 0.36, 1), opacity 220ms ease;
+}
+
+.elastic-glass-bar::after {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(105deg, transparent 9%, rgb(255 255 255 / 44%) 24%, transparent 39%);
+  content: "";
+  pointer-events: none;
+}
+
+.elastic-glass-bar--top {
+  top: 10px;
+  animation-delay: -0.16s;
+}
+
+.elastic-glass-bar--middle {
+  top: 20px;
+  animation-delay: -0.08s;
+}
+
+.elastic-glass-bar--bottom {
+  top: 30px;
+}
+
+@keyframes menu-glass-bounce {
+  0%, 72%, 100% { transform: translateX(-50%) scaleX(1) translateY(0); }
+  78% { transform: translateX(-50%) scaleX(1.1) translateY(1px); }
+  84% { transform: translateX(-50%) scaleX(0.94) translateY(-1px); }
+  90% { transform: translateX(-50%) scaleX(1.035) translateY(0); }
+  95% { transform: translateX(-50%) scaleX(0.985) translateY(0); }
+}
+
+.elastic-glass-bar.is-open {
+  animation: none;
+}
+
+.elastic-glass-bar--top.is-open {
+  top: 20px;
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.elastic-glass-bar--middle.is-open {
+  opacity: 0;
+  transform: translateX(-50%) scaleX(0.45);
+}
+
+.elastic-glass-bar--bottom.is-open {
+  top: 20px;
+  transform: translateX(-50%) rotate(-45deg);
+}
+
 .elastic-line {
-  transform-origin: 50px 50px;
-  transition:
-    transform 0.35s cubic-bezier(0.22, 0.61, 0.36, 1),
-    opacity 0.25s ease;
+  transform-box: view-box;
+  transform-origin: center;
+  transition: transform 350ms cubic-bezier(0.22, 0.61, 0.36, 1), opacity 250ms ease;
+}
+
+.elastic-line__base {
+  stroke-linecap: round;
+}
+
+.elastic-line__base {
+  stroke: #fff;
+  stroke-width: 2.5px;
+}
+
+.elastic-menu-close-x path {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2.5px;
+  stroke-linecap: round;
 }
 
 .elastic-line-top.is-open {
-  transform: translateY(15px) rotate(45deg);
+  transform: none;
 }
 
 .elastic-line-middle.is-open {
@@ -90,7 +436,88 @@ nextjs-portal {
 }
 
 .elastic-line-bottom.is-open {
-  transform: translateY(-5px) rotate(-45deg);
+  transform: none;
+}
+
+.portfolio-filter,
+.portfolio-effect-control,
+.portfolio-social-button {
+  color: #fff;
+  text-shadow: 0 1px 4px #000, 0 0 2px rgb(0 0 0 / 90%);
+}
+
+.portfolio-filter svg,
+.portfolio-effect-control svg,
+.portfolio-social-button svg {
+  filter: drop-shadow(0 1px 2px #000) drop-shadow(0 0 1px #000);
+}
+
+.portfolio-filter::after,
+.portfolio-effect-control::after,
+.portfolio-social-button::after {
+  position: absolute;
+  inset: 2px;
+  border: 1px solid rgb(255 255 255 / 9%);
+  border-radius: inherit;
+  content: "";
+  pointer-events: none;
+}
+
+.portfolio-filter::before,
+.portfolio-effect-control::before,
+.portfolio-social-button::before {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(ellipse at 50% 115%, rgb(255 255 255 / 12%), transparent 52%),
+    linear-gradient(90deg, rgb(80 135 255 / 7%), transparent 16% 84%, rgb(255 78 78 / 8%));
+  content: "";
+  pointer-events: none;
+}
+
+.portfolio-filter:hover,
+.portfolio-effect-control:hover,
+.portfolio-social-button:hover {
+  background:
+    radial-gradient(ellipse at 50% 48%, rgb(8 8 8 / 18%) 28%, rgb(8 8 8 / 27%) 62%, rgb(0 0 0 / 45%) 100%),
+    radial-gradient(circle at 29% 18%, rgb(255 255 255 / 34%), transparent 18%),
+    linear-gradient(105deg, rgb(70 125 255 / 10%), transparent 23% 77%, rgb(255 72 72 / 11%)),
+    rgb(8 8 8 / 34%);
+}
+
+/* Keep the interface quiet; the grid shader supplies the actual refraction. */
+.portfolio-filter,
+.portfolio-effect-control,
+.portfolio-social-button {
+  border-color: rgb(255 255 255 / 40%);
+  color: rgb(255 255 255 / 92%);
+  background: rgb(14 14 14 / 20%);
+  box-shadow: inset 0 0 9px rgb(255 255 255 / 8%), 0 3px 12px rgb(0 0 0 / 12%);
+  text-shadow: 0 1px 2px rgb(0 0 0 / 55%);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+}
+
+.portfolio-filter::before,
+.portfolio-filter::after,
+.portfolio-effect-control::before,
+.portfolio-effect-control::after,
+.portfolio-social-button::before,
+.portfolio-social-button::after {
+  display: none;
+}
+
+.portfolio-filter:hover,
+.portfolio-effect-control:hover,
+.portfolio-social-button:hover {
+  background: rgb(14 14 14 / 27%);
+}
+
+.portfolio-filter svg,
+.portfolio-effect-control svg,
+.portfolio-social-button svg {
+  filter: none;
 }
 
 .slideout-backdrop {

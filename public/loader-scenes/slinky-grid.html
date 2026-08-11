@@ -1,0 +1,748 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>WebGL Column Gallery</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--ease:cubic-bezier(.19,1,.22,1)}
+    *{box-sizing:border-box;margin:0;padding:0;user-select:none}
+    html,body{width:100%;height:100%;overflow:hidden;background:transparent;color:#fff;font-family:"Instrument Serif",serif;overscroll-behavior:none}
+    body>canvas{position:fixed;inset:0;width:100%;height:100%;cursor:grab}
+    body>canvas.dragging{cursor:grabbing}
+    body.open>canvas{cursor:pointer}
+    header{position:fixed;z-index:3;top:0;left:0;width:100%;height:80px;padding:0 32px;display:flex;align-items:center;justify-content:space-between;font-size:16px;pointer-events:none}
+    header a{color:#fff;text-decoration:none;pointer-events:auto}
+    nav{display:flex;gap:16px}
+    a:focus-visible{outline:1px solid #fff;outline-offset:4px}
+    .fade{position:fixed;z-index:2;pointer-events:none}
+    .top,.bottom{left:0;width:100%;height:160px}
+    .top{top:0;background:linear-gradient(#fffc,#fff0)}
+    .bottom{bottom:0;background:linear-gradient(#fff0,#fffc)}
+    .left,.right{top:0;width:160px;height:100%}
+    .left{left:0;background:linear-gradient(90deg,#fffc,#fff0)}
+    .right{right:0;background:linear-gradient(90deg,#fff0,#fffc)}
+    .index{position:fixed;z-index:3;left:32px;bottom:28px;font-size:15px;letter-spacing:.01em;pointer-events:none}
+    .badge{position:fixed;z-index:3;bottom:24px;left:50%;transform:translateX(-50%);height:50px;padding:4px;border:1px solid #ffffff1a;border-radius:99px;background:#ffffff0a;backdrop-filter:blur(10px);display:grid;place-items:center}
+    .badge div{width:64px;height:40px;border-radius:99px;background:#ffffff0b;display:grid;place-items:center;filter:drop-shadow(0 0 6px #fff8)}
+    .cursor{position:fixed;z-index:4;width:56px;height:56px;border:1px solid #ffffff2e;border-radius:50%;background:#ffffff0a;backdrop-filter:blur(10px);display:none;place-items:center;pointer-events:none;transform:translate(-50%,-50%) scale(.7);opacity:0;transition:opacity .25s,transform .5s var(--ease)}
+    body.hovering .cursor,body.open .cursor{display:none;opacity:0}
+    .cursor span{font-family:Inter,Arial,sans-serif;font-size:12px;letter-spacing:.02em}
+    body.open .cursor span{font-family:"Instrument Serif",serif;font-size:22px;line-height:1}
+
+    /* page chrome holds back until the reveal lands */
+    header,.badge,.index,.fade{opacity:0;transition:opacity .9s ease}
+    body.ready header,body.ready .badge,body.ready .index,body.ready .fade{opacity:1}
+    body.ready .fade{transition-delay:.35s}
+    body.ready header{transition-delay:.5s}
+    body.ready .index{transition-delay:.65s}
+    body.ready .badge{transition-delay:.8s}
+
+    /* loader — the counter is drawn in WebGL, this is just its shell */
+    .loader{position:fixed;inset:0;z-index:20;pointer-events:none;overflow:hidden}
+    .loader.is-done{visibility:hidden}
+    .loader-bg{position:absolute;inset:0;background:#000;transition:opacity .5s ease}
+    .loader.is-exiting .loader-bg{opacity:0}
+    .loader canvas{position:absolute;inset:0;display:block;width:100%;height:100%}
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+
+    @media(max-width:768px){
+      header{height:64px;padding:0 18px}
+      .top,.bottom{height:100px}
+      .left,.right{width:100px}
+      .badge{bottom:16px}
+      .index{left:18px;bottom:22px;font-size:13px}
+      .cursor{display:none!important}
+    }
+    @media(prefers-reduced-motion:reduce){
+      .cursor{transition:none}
+    }
+  </style>
+</head>
+<body>
+  <div class="fade top"></div><div class="fade right"></div><div class="fade bottom"></div><div class="fade left"></div>
+  <div class="cursor"><span>View</span></div>
+
+  <div class="loader" id="loader" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Loading gallery">
+    <span class="sr-only" id="loaderStatus">loading 0 percent</span>
+    <div class="loader-bg"></div>
+    <canvas id="loaderCanvas" aria-hidden="true"></canvas>
+  </div>
+
+  <!-- classic script: defines window.Loader before the module body runs -->
+  <script>
+  (function () {
+    "use strict";
+
+    var CONFIG = {
+      label: "loading",
+      digits: 3,
+      background: [0.0, 0.0, 0.0],
+      text: [1.0, 1.0, 1.0],
+      fontStack: 'Inter, "Helvetica Neue", system-ui, sans-serif',
+      fontWeight: 700,
+      glyphFill: 0.34,
+      lensRadius: 0.44,
+      thickness: 1.20,
+      ior: 1.35,
+      dispersion: 0.05,
+      barrel: 0.26,
+      compensate: 0.5,
+      vignette: 0.24,
+      splitStrength: 0.007,
+      autoCeiling: 0.94,
+      swellMax: 0.30,
+      refractFloor: 0.00,
+      refractPeak: 0.70,
+      lensProfile: 0.80,
+      finishMs: 300,
+      holdMs: 120,
+      entryPeak: 0.45,
+      entryMs: 720,
+      exitMs: 720,
+      simulateMs: 3200
+    };
+
+    var loaderEl = document.getElementById("loader");
+    var srEl = document.getElementById("loaderStatus");
+    var canvas = document.getElementById("loaderCanvas");
+    var gl = canvas.getContext("webgl", { antialias: false, alpha: true, premultipliedAlpha: true });
+
+    function announceDone() {
+      window.Loader.finished = true;
+      window.dispatchEvent(new CustomEvent("loader:complete"));
+    }
+
+    if (!gl) {
+      window.Loader = { set: function () {}, complete: function () {}, exiting: true, finished: true, config: CONFIG };
+      loaderEl.classList.add("is-done");
+      return;
+    }
+
+    var SCREEN_VS =
+      "attribute vec2 aPos; varying vec2 vUv;" +
+      "void main(){ vUv = aPos + 0.5; gl_Position = vec4(aPos * 2.0, 0.0, 1.0); }";
+
+    var LOADER_FS =
+      "precision highp float; varying vec2 vUv;" +
+      "uniform sampler2D uGlyph;" +
+      "uniform vec3 uBackground; uniform vec3 uText; uniform vec2 uParallax;" +
+      "uniform float uExit;" +
+      "void main(){" +
+      "vec2 uv = clamp(vUv + uParallax, 0.001, 0.999);" +
+      "vec3 color = uBackground;" +
+      "float glyph = texture2D(uGlyph, uv).a;" +
+      "color = mix(color, uText, glyph);" +
+      "color = mix(color, uBackground, uExit);" +
+      "gl_FragColor = vec4(color, 1.0); }";
+
+    var TRAIL_FS =
+      "precision highp float; varying vec2 vUv; uniform sampler2D uPrevious;" +
+      "uniform vec2 uPointer; uniform float uActive;" +
+      "void main(){ float previous = texture2D(uPrevious, vUv).r * 0.945;" +
+      "float stamp = (1.0 - smoothstep(0.0, 0.115, distance(vUv, uPointer))) * uActive;" +
+      "float value = max(previous, stamp); gl_FragColor = vec4(value, value, value, 1.0); }";
+
+    var POST_FS =
+      "precision highp float; varying vec2 vUv;" +
+      "uniform sampler2D uScene; uniform sampler2D uTrail;" +
+      "uniform float uExit; uniform float uBarrel; uniform float uCompensate;" +
+      "uniform float uSplit; uniform float uVignette; uniform float uAspect;" +
+      "uniform float uLensRadius; uniform float uThickness; uniform float uIor; uniform float uDispersion;" +
+      "uniform float uRefract; uniform float uProfile;" +
+      "vec2 lensOffset(vec3 normal, float eta, float scale) {" +
+      "  vec3 bent = refract(vec3(0.0, 0.0, -1.0), normal, eta);" +
+      "  return bent.xy * scale / vec2(uAspect, 1.0);" +
+      "}" +
+      "void main(){" +
+      "vec2 center = vUv - 0.5;" +
+      "float r2 = dot(center, center);" +
+      "float k = uBarrel + uExit * 0.85;" +
+      "float gain = mix(1.0, 1.0 / max(0.35, 1.0 - k * 0.5), uCompensate);" +
+      "vec2 buv = center * (1.0 - k * r2) * gain * (1.0 - uExit * 0.06) + 0.5;" +
+      "vec2 p = (buv - 0.5) * vec2(uAspect, 1.0) / max(0.05, uLensRadius);" +
+      "float d = length(p);" +
+      "vec2 offR = vec2(0.0); vec2 offG = vec2(0.0); vec2 offB = vec2(0.0);" +
+      "if (d < 1.0) {" +
+      "  float z = pow(max(0.0001, 1.0 - d * d), uProfile);" +
+      "  vec3 normal = normalize(vec3(p, z));" +
+      "  float scale = uThickness * uLensRadius * uRefract * 2.5;" +
+      "  offR = lensOffset(normal, 1.0 / max(1.001, uIor - uDispersion), scale);" +
+      "  offG = lensOffset(normal, 1.0 / max(1.001, uIor), scale);" +
+      "  offB = lensOffset(normal, 1.0 / max(1.001, uIor + uDispersion), scale);" +
+      "}" +
+      "float trail = texture2D(uTrail, vUv).r;" +
+      "float split = trail * uSplit + uExit * 0.016;" +
+      "vec2 rgbOffset = vec2(split, split * 0.45);" +
+      "float blur = trail * uSplit * 0.375;" +
+      "vec3 color;" +
+      "color.r = texture2D(uScene, clamp(buv + offR + rgbOffset, 0.001, 0.999)).r;" +
+      "color.g = texture2D(uScene, clamp(buv + offG, 0.001, 0.999)).g;" +
+      "color.b = texture2D(uScene, clamp(buv + offB - rgbOffset, 0.001, 0.999)).b;" +
+      "vec2 base = clamp(buv + offG, 0.001, 0.999);" +
+      "color += texture2D(uScene, clamp(base + vec2(blur, 0.0), 0.001, 0.999)).rgb;" +
+      "color += texture2D(uScene, clamp(base - vec2(blur, 0.0), 0.001, 0.999)).rgb;" +
+      "color += texture2D(uScene, clamp(base + vec2(0.0, blur), 0.001, 0.999)).rgb;" +
+      "color += texture2D(uScene, clamp(base - vec2(0.0, blur), 0.001, 0.999)).rgb;" +
+      "color /= 5.0;" +
+      "float rim = smoothstep(0.90, 1.0, d) * (1.0 - step(1.0, d));" +
+      "color += rim * 0.11 * uRefract * (1.0 - uExit);" +
+      "color *= 1.0 - uVignette * smoothstep(0.05, 0.55, r2);" +
+      "float alpha = max(max(color.r, color.g), color.b);" +
+      "gl_FragColor = vec4(color, alpha); }";
+
+    function compile(vsSource, fsSource) {
+      function shader(type, source) {
+        var s = gl.createShader(type);
+        gl.shaderSource(s, source);
+        gl.compileShader(s);
+        if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(s));
+        return s;
+      }
+      var program = gl.createProgram();
+      gl.attachShader(program, shader(gl.VERTEX_SHADER, vsSource));
+      gl.attachShader(program, shader(gl.FRAGMENT_SHADER, fsSource));
+      gl.linkProgram(program);
+      var wrapped = { program: program, u: {} };
+      var count = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
+      for (var i = 0; i < count; i++) {
+        var info = gl.getActiveUniform(program, i);
+        wrapped.u[info.name] = gl.getUniformLocation(program, info.name);
+      }
+      wrapped.aPos = gl.getAttribLocation(program, "aPos");
+      return wrapped;
+    }
+
+    var loaderProg = compile(SCREEN_VS, LOADER_FS);
+    var trailProg = compile(SCREEN_VS, TRAIL_FS);
+    var postProg = compile(SCREEN_VS, POST_FS);
+
+    var quad = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5]), gl.STATIC_DRAW);
+
+    function bindQuad(prog) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+      gl.enableVertexAttribArray(prog.aPos);
+      gl.vertexAttribPointer(prog.aPos, 2, gl.FLOAT, false, 0, 0);
+    }
+
+    function makeTexture() {
+      var tex = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      return tex;
+    }
+
+    function makeFBO(width, height) {
+      var tex = makeTexture();
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      var fbo = gl.createFramebuffer();
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      return { fbo: fbo, tex: tex, w: width, h: height };
+    }
+
+    var trailA = makeFBO(256, 256);
+    var trailB = makeFBO(256, 256);
+    var sceneTarget = makeFBO(2, 2);
+
+    var glyphCanvas = document.createElement("canvas");
+    var glyphTex = makeTexture();
+
+    function drawGlyphs(text) {
+      var ctx = glyphCanvas.getContext("2d");
+      var width = glyphCanvas.width;
+      var height = glyphCanvas.height;
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = "#ffffff";
+      ctx.textBaseline = "alphabetic";
+
+      var probe = 400;
+      ctx.font = CONFIG.fontWeight + " " + probe + "px " + CONFIG.fontStack;
+
+      var cell = 0;
+      var digits = "0123456789";
+      for (var i = 0; i < digits.length; i++) cell = Math.max(cell, ctx.measureText(digits[i]).width);
+      var reference = ctx.measureText("8");
+      var glyphHeight = reference.actualBoundingBoxAscent + reference.actualBoundingBoxDescent;
+      if (!cell || !glyphHeight) return;
+
+      var scale = Math.min(
+        (width * CONFIG.glyphFill) / (cell * Math.max(text.length, CONFIG.digits)),
+        (height * CONFIG.glyphFill) / glyphHeight
+      );
+      var size = probe * scale;
+      var cellWidth = cell * scale;
+
+      ctx.font = CONFIG.fontWeight + " " + size + "px " + CONFIG.fontStack;
+      var fitted = ctx.measureText("8");
+      var baseline = height / 2 + (fitted.actualBoundingBoxAscent - fitted.actualBoundingBoxDescent) / 2;
+
+      var x = width / 2 - (cellWidth * text.length) / 2;
+      for (var k = 0; k < text.length; k++) {
+        var advance = ctx.measureText(text[k]).width;
+        ctx.fillText(text[k], x + (cellWidth - advance) / 2, baseline);
+        x += cellWidth;
+      }
+
+      gl.bindTexture(gl.TEXTURE_2D, glyphTex);
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, glyphCanvas);
+    }
+
+    var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var MAX_TEXTURE_PIXELS = 2560;
+    var target = 0, displayed = 0, renderedPercent = -1;
+    var exit = 0, entry = 0, completeAt = 0, exitStarted = false;
+    var finished = false, running = false, manual = false;
+    var startedAt = 0, frameId = 0, previousTime = 0, aspect = 1;
+    var pointerX = 0.5, pointerY = 0.5;
+    var parX = 0, parY = 0, curParX = 0, curParY = 0;
+    var lastMove = -Infinity, trailActive = 0;
+    var handoff = 0, displayedVel = 0, countSlipY = 0, swellPos = 0, swellVel = 0;
+    var finishing = false, finishFrom = 0, finishAt = 0;
+
+    /* critically damped: unlike exponential smoothing, velocity stays
+       continuous when the target jumps, so asset callbacks do not lurch */
+    function spring(pos, vel, goal, omega, dt) {
+      var f = 1 + 2 * dt * omega;
+      var oo = omega * omega;
+      var dto = dt * oo;
+      var nv = (vel + dto * (goal - pos)) / (f + dt * dto);
+      return [pos + dt * nv, nv];
+    }
+
+    function resize() {
+      var width = Math.max(1, loaderEl.clientWidth);
+      var height = Math.max(1, loaderEl.clientHeight);
+      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+      aspect = canvas.width / canvas.height;
+
+      var scale = Math.min(1, MAX_TEXTURE_PIXELS / Math.max(canvas.width, canvas.height));
+      glyphCanvas.width = Math.max(2, Math.round(canvas.width * scale));
+      glyphCanvas.height = Math.max(2, Math.round(canvas.height * scale));
+
+      sceneTarget.w = canvas.width;
+      sceneTarget.h = canvas.height;
+      gl.bindTexture(gl.TEXTURE_2D, sceneTarget.tex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, sceneTarget.w, sceneTarget.h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+
+      renderedPercent = -1;
+    }
+
+    window.addEventListener("resize", function () { if (!finished) resize(); });
+
+    /* the shell is pointer-events:none, so listen on window */
+    window.addEventListener("pointermove", function (event) {
+      if (finished) return;
+      var x = event.clientX / window.innerWidth;
+      var y = event.clientY / window.innerHeight;
+      pointerX = x;
+      pointerY = 1 - y;
+      parX = Math.max(-0.012, Math.min(0.012, (x - 0.5) * 0.02));
+      parY = Math.max(-0.012, Math.min(0.012, (0.5 - y) * 0.02));
+      lastMove = performance.now();
+    });
+
+    /* webfont may land after the first draw — force a redraw when it does */
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(function () { renderedPercent = -1; });
+    }
+
+    function finish() {
+      finished = true;
+      running = false;
+      window.cancelAnimationFrame(frameId);
+      loaderEl.classList.add("is-done");
+      announceDone();
+      var lose = gl.getExtension("WEBGL_lose_context");
+      if (lose) lose.loseContext();
+    }
+
+    function frame() {
+      frameId = window.requestAnimationFrame(frame);
+      var now = performance.now();
+      var delta = Math.min((now - previousTime) / 1000, 0.05);
+      previousTime = now;
+      var displayedBeforeFrame = displayed;
+
+      if (!manual) {
+        var t = Math.min(1, (now - startedAt) / CONFIG.simulateMs);
+        target = (1 - Math.pow(1 - t, 2.2)) * CONFIG.autoCeiling;
+      }
+
+      if (finishing) {
+        var ft = Math.min(1, (now - finishAt) / Math.max(1, CONFIG.finishMs));
+        displayed = finishFrom + (1 - finishFrom) * (1 - Math.pow(1 - ft, 2));
+        displayedVel = 0;
+        if (ft >= 1) displayed = 1;
+      } else {
+        var st = spring(displayed, displayedVel, target, 5.5, delta);
+        displayed = Math.min(1, st[0]); displayedVel = st[1];
+      }
+
+      /* Echo the gallery's active-scroll slip while the count is moving. */
+      var countSpeed = delta > 0 ? (displayed - displayedBeforeFrame) / delta : 0;
+      var countSlipTarget = reduceMotion ? 0 : Math.max(-0.105, Math.min(0.105, -countSpeed * 0.24));
+      countSlipY += (countSlipTarget - countSlipY) * (1 - Math.exp(-delta * 8));
+
+      var percent = Math.round(displayed * 100);
+      if (percent !== renderedPercent) {
+        drawGlyphs(String(percent));
+        renderedPercent = percent;
+        loaderEl.setAttribute("aria-valuenow", percent);
+        srEl.textContent = CONFIG.label + " " + percent + " percent";
+      }
+
+      if (displayed >= 1 && !completeAt) completeAt = now + CONFIG.holdMs;
+      if (completeAt && now >= completeAt) {
+        if (!exitStarted) {
+          exitStarted = true;
+          window.Loader.exiting = true;
+          loaderEl.classList.add("is-exiting");
+          window.dispatchEvent(new CustomEvent("loader:exit"));
+        }
+        exit = Math.min(1, exit + delta * (1000 / Math.max(1, CONFIG.exitMs)));
+      }
+      var easedExit = exit * exit * (3 - 2 * exit);
+
+      entry = Math.min(1, entry + delta * (1000 / Math.max(1, CONFIG.entryMs)));
+      var easedEntry = entry * entry * (3 - 2 * entry);
+      var entryPart = reduceMotion ? 0 : (1 - easedEntry) * CONFIG.entryPeak;
+      var burst = Math.max(entryPart, easedExit);
+
+      /* the lens intensifies as the counter climbs, so 100 arrives already
+         most of the way into the blowout; the exit carries it the rest */
+      var sw = spring(swellPos, swellVel, Math.pow(displayed, 2.2) * CONFIG.swellMax, 3.2, delta);
+      swellPos = sw[0]; swellVel = sw[1];
+      var base = reduceMotion ? 0 : Math.max(entryPart, swellPos);
+      var intensity = base + (1 - base) * easedExit;
+
+      /* refraction climbs across the count on its own curve, so the rim
+         ghosts build from 0 to 100 instead of holding flat */
+      var countRatio = Math.min(1, swellPos / Math.max(0.0001, CONFIG.swellMax));
+      var refractDrive = Math.max(
+        intensity,
+        CONFIG.refractFloor + (CONFIG.refractPeak - CONFIG.refractFloor) * countRatio
+      );
+
+      var pointerActive = !reduceMotion && now - lastMove < 1200 ? 1 : 0;
+      if (!reduceMotion) {
+        if (!pointerActive) { parX *= 0.94; parY *= 0.94; }
+        curParX += (parX - curParX) * 0.06;
+        curParY += (parY - curParY) * 0.06;
+      }
+      trailActive += (pointerActive - trailActive) * 0.08;
+
+      gl.bindFramebuffer(gl.FRAMEBUFFER, trailB.fbo);
+      gl.viewport(0, 0, trailB.w, trailB.h);
+      gl.useProgram(trailProg.program);
+      bindQuad(trailProg);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, trailA.tex);
+      gl.uniform1i(trailProg.u.uPrevious, 0);
+      gl.uniform2f(trailProg.u.uPointer, pointerX, pointerY);
+      gl.uniform1f(trailProg.u.uActive, trailActive);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      var swap = trailA; trailA = trailB; trailB = swap;
+
+      gl.bindFramebuffer(gl.FRAMEBUFFER, sceneTarget.fbo);
+      gl.viewport(0, 0, sceneTarget.w, sceneTarget.h);
+      gl.useProgram(loaderProg.program);
+      bindQuad(loaderProg);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, glyphTex);
+      gl.uniform1i(loaderProg.u.uGlyph, 0);
+      gl.uniform3fv(loaderProg.u.uBackground, CONFIG.background);
+      gl.uniform3fv(loaderProg.u.uText, CONFIG.text);
+      var ballX = reduceMotion ? 0 : Math.sin(now * 0.00115) * 0.008;
+      var ballY = reduceMotion ? 0 : Math.sin(now * 0.00155 + 1.2) * 0.006;
+      gl.uniform2f(loaderProg.u.uParallax, curParX + ballX, curParY + countSlipY + ballY);
+      gl.uniform1f(loaderProg.u.uExit, burst);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.useProgram(postProg.program);
+      bindQuad(postProg);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, sceneTarget.tex);
+      gl.uniform1i(postProg.u.uScene, 0);
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, trailA.tex);
+      gl.uniform1i(postProg.u.uTrail, 1);
+      gl.uniform1f(postProg.u.uExit, reduceMotion ? 0 : intensity);
+      gl.uniform1f(postProg.u.uBarrel, CONFIG.barrel);
+      gl.uniform1f(postProg.u.uCompensate, CONFIG.compensate);
+      gl.uniform1f(postProg.u.uSplit, CONFIG.splitStrength);
+      gl.uniform1f(postProg.u.uVignette, CONFIG.vignette);
+      gl.uniform1f(postProg.u.uAspect, aspect);
+      gl.uniform1f(postProg.u.uLensRadius, CONFIG.lensRadius);
+      gl.uniform1f(postProg.u.uThickness, CONFIG.thickness);
+      gl.uniform1f(postProg.u.uIor, CONFIG.ior);
+      gl.uniform1f(postProg.u.uDispersion, CONFIG.dispersion);
+      gl.uniform1f(postProg.u.uRefract, reduceMotion ? 0 : refractDrive);
+      gl.uniform1f(postProg.u.uProfile, CONFIG.lensProfile);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+      if (exit >= 1 && !finished) finish();
+    }
+
+    resize();
+    startedAt = performance.now();
+    previousTime = startedAt;
+    running = true;
+    frame();
+
+    window.Loader = {
+      finished: false,
+      exiting: false,
+      /* The auto ramp has usually climbed some way before the module wakes up.
+         Rather than clamping (which stalls the counter until the module's own
+         estimate catches up), remap that estimate into the remaining headroom
+         so it picks up exactly where the ramp left off. */
+      set: function (value) {
+        var v = Math.min(1, Math.max(0, value));
+        if (!manual) { manual = true; handoff = displayed; }
+        target = Math.max(target, handoff + (1 - handoff) * v);
+      },
+      complete: function () {
+        if (!manual) { manual = true; handoff = displayed; }
+        target = 1;
+        if (!finishing) { finishing = true; finishFrom = displayed; finishAt = performance.now(); }
+      },
+      config: CONFIG
+    };
+  })();
+  </script>
+
+  <script type="module">
+    /* ---------- loader wiring ----------
+       NOTE: the `import` below is hoisted, so nothing in this module body runs
+       until three.js has downloaded. The loader auto-simulates up to
+       CONFIG.autoCeiling in the meantime, then this takes over. */
+    const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const revealMs=reduceMotion?400:1500,introSec=reduceMotion?.25:.9;
+    const startTime=performance.now();
+    let assetsDone=0,assetsTotal=13,assetsLoaded=false,sceneReady=false,parentReady=window.parent===window;
+    let revealAt=0,reveal=0,introDone=false;
+    const easeInOut=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+
+    function loaderTick(now){
+      const elapsed=now-startTime;
+      if(assetsLoaded&&sceneReady&&parentReady&&elapsed>700){Loader.complete();return}
+      const byAssets=assetsDone/assetsTotal*94,byTime=Math.min(88,elapsed/38);
+      Loader.set(Math.min(94,Math.max(byAssets,byTime))/100);
+      requestAnimationFrame(loaderTick);
+    }
+    requestAnimationFrame(loaderTick);
+
+    /* the loader may already have finished (no-WebGL fallback), so check the
+       flag as well as listening — the event could have fired before this ran */
+    function startReveal(){if(revealAt)return;document.body.classList.add('ready');revealAt=performance.now();parent.postMessage('portfolio-loader-exit-start',location.origin)}
+    /* fire on exit-START so the fbm lens opens underneath the dissolving counter */
+    if(Loader.exiting||Loader.finished)startReveal();
+    else{addEventListener('loader:exit',startReveal,{once:true});addEventListener('loader:complete',startReveal,{once:true})}
+
+    addEventListener('message',event=>{if(event.source===parent&&event.data==='portfolio-loader-ready')parentReady=true});
+
+    /* ---------- gallery ---------- */
+    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+
+    const textureUrls=['/videos/spring-poster.jpg','/poster-blueprint/snapshot.png','/videos/typeexperiments-poster.jpg','/videos/count-poster.jpg','/projects/3dmotionmarbling.png','/videos/templates-poster.jpg','/videos/noony-poster.jpg','/projects/checkerboard3d.jpeg','/projects/canvas-particles.jpeg','/projects/design-splash.jpeg','/projects/chargepoint.png','/projects/american-seasons.png'];
+    assetsTotal=textureUrls.length+1;
+    const renderer=new THREE.WebGLRenderer({antialias:false,alpha:true,powerPreference:'high-performance'});
+    renderer.outputColorSpace=THREE.SRGBColorSpace;
+    renderer.toneMapping=THREE.NoToneMapping;
+    renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(innerWidth,innerHeight);renderer.setClearColor(0xffffff,1);document.body.prepend(renderer.domElement);
+    const camera=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,.1,100);camera.position.z=1.5;
+    const scene=new THREE.Scene(),group=new THREE.Group();scene.add(group);
+    const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2(-2,-2),clock=new THREE.Clock();
+    const loader=new THREE.TextureLoader();loader.setCrossOrigin('anonymous');
+
+    const vertex=`varying vec2 vUv;
+      uniform float uPathBend,uPathAmp,uPathTurns,uHalfW,uCenterX;
+      void main(){vec3 pos=position;if(uPathBend>.001){float worldX=uCenterX+position.x;float invHalf=1./max(uHalfW,.0001);float phase=uPathTurns*3.14159265*worldX*invHalf;float s=sin(phase),c=cos(phase);float pathY=-uPathAmp*s*s*s;float dphase=uPathTurns*3.14159265*invHalf;float dydx=-uPathAmp*3.*s*s*c*dphase;vec2 n=normalize(vec2(-dydx,1.));float bentX=position.x+n.x*position.y;float bentY=pathY+n.y*position.y;pos.x=mix(position.x,bentX,uPathBend);pos.y=mix(position.y,bentY,uPathBend);}gl_Position=projectionMatrix*viewMatrix*modelMatrix*vec4(pos,1.);vUv=uv;}`;
+    const fragment=`varying vec2 vUv;
+      uniform sampler2D uTexture,uDisplacement;uniform vec2 uTexParallax;uniform float uTexScale,uOpacity,uSelectProgress,uScaleDelay,uDispAmount,uAspect,uImageAspect;
+      void main(){vec2 cover=vec2(1.);if(uImageAspect>uAspect)cover.x=uAspect/uImageAspect;else cover.y=uImageAspect/uAspect;float selectFit=.92;vec2 para=uTexParallax;float scaleA=mix(uTexScale,selectFit,uSelectProgress);vec2 uvA=(vUv-.5)*cover*scaleA+.5+para;float scaleB=mix(uTexScale,selectFit,uScaleDelay);vec2 uvB=(vUv-.5)*cover*scaleB+.5+para;vec2 dispSample=texture2D(uDisplacement,vUv).rg-.5;vec2 dispOffset=dispSample*uDispAmount;vec2 radial=(vUv-.5)*uDispAmount*.35;vec4 layerA=texture2D(uTexture,clamp(uvA,0.,1.));vec4 layerB=texture2D(uTexture,clamp(uvB+dispOffset+radial,0.,1.));float mixAmt=smoothstep(0.,.12,abs(uDispAmount));vec3 color=mix(layerA.rgb,layerB.rgb,mixAmt*.72);color=mix(color,max(layerA.rgb,layerB.rgb),mixAmt*.28);gl_FragColor=vec4(color,layerA.a*uOpacity);}`;
+    const screenVertex=`varying vec2 vUv;void main(){gl_Position=vec4(position.xy,0.,1.);vUv=uv;}`;
+    const trailFragment=`varying vec2 vUv;uniform sampler2D uPrev;uniform vec2 uMouseUv;uniform float uHover,uRadius,uDecay;void main(){float prev=texture2D(uPrev,vUv).r*uDecay;float d=distance(vUv,uMouseUv);float stamp=(1.-smoothstep(0.,uRadius,d))*uHover;float value=max(prev,stamp);gl_FragColor=vec4(value,value,value,1.);}`;
+    /* post pass now also owns the intro reveal: an fbm-wobbled circular lens
+       opening from centre, pulling the live scene in as it goes. */
+    const postFragment=`varying vec2 vUv;
+      uniform sampler2D uScene,uTrailMap;uniform vec2 uAspect;uniform vec4 uGlassRects[5];uniform float uFisheye,uRgbAmount,uRgbBoost,uBlur,uReveal,uProjectMode,uTime;
+      float hash(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
+      float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+1.),f.x),f.y);}
+      float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<3;i++){v+=a*noise(p);p*=2.;a*=.5;}return v;}
+      void main(){
+        vec2 uv=vUv;float lens=1.;
+        if(uReveal<1.){
+          float d=distance(uv*uAspect,vec2(.5)*uAspect)/(.5*length(uAspect));
+          float wave=(fbm(uv*3.+uTime*.25)-.5)*.12*sin(3.14159265*uReveal);
+          float prog=uReveal*1.35+wave;
+          lens=1.-smoothstep(-.35,0.,d-prog);
+          if(uProjectMode<.5)uv=(uv-.5)*lens+.5;
+        }
+        vec2 c=uv-.5;float r2=dot(c,c);vec2 fishUv=c*(1.+uFisheye*r2)+.5;
+        float t=texture2D(uTrailMap,vUv).r;
+        float rgbStr=t*uRgbAmount+uRgbBoost;vec2 off=vec2(rgbStr,rgbStr*.5);float blur=t*uBlur;
+        vec3 col=vec3(0.);
+        col.r+=texture2D(uScene,fishUv+off).r;col.g+=texture2D(uScene,fishUv).g;col.b+=texture2D(uScene,fishUv-off).b;
+        col+=texture2D(uScene,fishUv+vec2(blur,0.)).rgb;col+=texture2D(uScene,fishUv-vec2(blur,0.)).rgb;
+        col+=texture2D(uScene,fishUv+vec2(0.,blur)).rgb;col+=texture2D(uScene,fishUv-vec2(0.,blur)).rgb;
+        col/=5.;
+        for(int i=0;i<5;i++){
+          vec4 gr=uGlassRects[i];
+          vec2 gc=gr.xy+gr.zw*.5;
+          vec2 local=(vUv-gc)/max(gr.zw*.5,vec2(.0001));
+          float rr=dot(local,local);
+          float glassMask=(1.-smoothstep(.62,1.,rr))*step(.0001,gr.z);
+          float liquid=.038+sin(uTime*1.8+local.x*3.2+local.y*2.4)*.007;
+          vec2 bend=local*max(0.,1.-rr)*liquid;
+          vec2 chroma=normalize(local+vec2(.0001))*.006;
+          vec3 refracted=vec3(texture2D(uScene,clamp(fishUv+bend+chroma,0.,1.)).r,texture2D(uScene,clamp(fishUv+bend,0.,1.)).g,texture2D(uScene,clamp(fishUv+bend-chroma,0.,1.)).b);
+          col=mix(col,refracted*1.08,glassMask*.94);
+        }
+        float alpha=mix(1.,1.-lens,uProjectMode);
+        vec3 outColor=mix(col*lens,col,uProjectMode);
+        gl_FragColor=vec4(outColor,alpha);
+        #include <colorspace_fragment>
+      }`;
+
+    const flat=(r,g,b)=>{const t=new THREE.DataTexture(new Uint8Array([r,g,b,255]),1,1);t.needsUpdate=true;return t};
+    const fallbackCard=flat(22,22,22),fallbackDisp=flat(128,128,128);
+    /* a failed texture resolves to a flat fallback so the counter can never stall */
+    const loadTexture=(url,fallback)=>new Promise(resolve=>loader.load(url,t=>{t.minFilter=THREE.LinearFilter;t.magFilter=THREE.LinearFilter;assetsDone++;resolve(t)},undefined,()=>{assetsDone++;resolve(fallback)}));
+    const [textures,displacement]=await Promise.all([
+      Promise.all(textureUrls.map(async url=>{const t=await loadTexture(url,fallbackCard);t.colorSpace=THREE.SRGBColorSpace;return t})),
+      loadTexture('https://experiments.ricardochance.com/displacement.png',fallbackDisp)
+    ]);
+    displacement.colorSpace=THREE.NoColorSpace;displacement.wrapS=displacement.wrapT=THREE.RepeatWrapping;
+    assetsLoaded=true;
+
+    const texParallax=new THREE.Vector2(),parallaxTarget=new THREE.Vector2();
+    const CARD_ASPECT=4/5,CARD_HEIGHT=1/CARD_ASPECT;
+    const geometry=new THREE.PlaneGeometry(1,CARD_HEIGHT,64,12),cards=[];
+    const cardCount=36;let columns=innerWidth<=768?2:3,rows=Math.ceil(cardCount/columns),cardScale=.92,spacingX=.95,spacingY=.57,total=rows*spacingY;
+    for(let i=0;i<cardCount;i++){
+      const texture=textures[i%textures.length],image=texture.image;
+      const material=new THREE.ShaderMaterial({vertexShader:vertex,fragmentShader:fragment,side:THREE.DoubleSide,transparent:true,depthWrite:false,uniforms:{uTexture:{value:texture},uDisplacement:{value:displacement},uTexParallax:{value:texParallax},uTexScale:{value:1},uOpacity:{value:0},uPathBend:{value:0},uPathAmp:{value:0},uPathTurns:{value:1.5},uHalfW:{value:1},uCenterX:{value:0},uSelectProgress:{value:0},uScaleDelay:{value:0},uDispAmount:{value:0},uAspect:{value:CARD_ASPECT},uImageAspect:{value:image?.width&&image?.height?image.width/image.height:CARD_ASPECT}}});
+      const mesh=new THREE.Mesh(geometry,material);mesh.scale.set(cardScale,cardScale,1);mesh.userData.index=i;mesh.userData.projectIndex=i%textures.length;mesh.userData.col=i%columns;mesh.userData.row=Math.floor(i/columns);mesh.userData.introDelay=0;group.add(mesh);cards.push(mesh);
+    }
+
+    const rtOptions={type:THREE.HalfFloatType,format:THREE.RGBAFormat,minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter,depthBuffer:false,stencilBuffer:false};
+    let trailA=new THREE.WebGLRenderTarget(256,256,rtOptions),trailB=new THREE.WebGLRenderTarget(256,256,rtOptions);
+    const sceneTarget=new THREE.WebGLRenderTarget(1,1,{...rtOptions,depthBuffer:true});sceneTarget.texture.wrapS=sceneTarget.texture.wrapT=THREE.ClampToEdgeWrapping;
+    const ortho=new THREE.OrthographicCamera(-1,1,1,-1,0,1),quadGeo=new THREE.PlaneGeometry(2,2);
+    const trailMat=new THREE.ShaderMaterial({vertexShader:screenVertex,fragmentShader:trailFragment,uniforms:{uPrev:{value:trailA.texture},uMouseUv:{value:new THREE.Vector2(.5,.5)},uHover:{value:0},uRadius:{value:.12},uDecay:{value:.95}}});
+    const trailScene=new THREE.Scene();trailScene.add(new THREE.Mesh(quadGeo,trailMat));
+    const postMat=new THREE.ShaderMaterial({vertexShader:screenVertex,fragmentShader:postFragment,transparent:true,uniforms:{uScene:{value:sceneTarget.texture},uTrailMap:{value:trailA.texture},uAspect:{value:new THREE.Vector2(innerWidth/innerHeight,1)},uGlassRects:{value:Array.from({length:5},()=>new THREE.Vector4())},uFisheye:{value:-.5},uRgbAmount:{value:.12},uRgbBoost:{value:0},uBlur:{value:.045},uReveal:{value:0},uProjectMode:{value:0},uTime:{value:0}}});
+    const postScene=new THREE.Scene();postScene.add(new THREE.Mesh(quadGeo,postMat));
+
+    let targetY=total/2,currentY=total/2,velocity=0,dragging=false,moved=false,lastY=0,downX=0,downY=0,hovered=null,selected=null,selection=0,closing=false,pointerMoved=false,trailHover=0,morphEnabled=true,effectStrength=1;
+    function wrap(v,size){return((v+size/2)%size+size)%size-size/2}
+    function layout(){if(selected)return;for(const card of cards){const x=(card.userData.col-(columns-1)/2)*spacingX;const stagger=morphEnabled?card.userData.col*spacingY*.34:0;card.position.set(x,wrap(card.userData.row*spacingY+stagger+currentY,total),0)}}
+
+    const cursorEl=document.querySelector('.cursor'),cursorLabel=cursorEl.firstElementChild;let cursorMode='';
+    function setCursor(mode){if(mode===cursorMode)return;cursorMode=mode;cursorLabel.textContent=mode==='close'?'×':'View';document.body.classList.toggle('hovering',mode==='view')}
+    function setPointer(e){pointer.x=e.clientX/innerWidth*2-1;pointer.y=-(e.clientY/innerHeight)*2+1;trailMat.uniforms.uMouseUv.value.set(e.clientX/innerWidth,1-e.clientY/innerHeight);pointerMoved=true;cursorEl.style.left=e.clientX+'px';cursorEl.style.top=e.clientY+'px'}
+
+    addEventListener('pointerdown',e=>{if(selected||!introDone)return;dragging=true;moved=false;lastY=downY=e.clientY;downX=e.clientX;renderer.domElement.classList.add('dragging')});
+    addEventListener('pointermove',e=>{setPointer(e);if(!dragging||selected)return;const dy=e.clientY-lastY;lastY=e.clientY;if(Math.hypot(e.clientX-downX,e.clientY-downY)>6)moved=true;targetY-=dy*.0028;velocity=-dy*.0028});
+    function openCard(card){
+      if(!card)return;
+      parent.postMessage({type:'portfolio-loader-open-project',index:card.userData.projectIndex},location.origin);
+    }
+    addEventListener('pointerup',()=>{if(!introDone)return;renderer.domElement.classList.remove('dragging');const was=dragging;dragging=false;if(!was||moved||!hovered)return;openCard(hovered)});
+    addEventListener('pointercancel',()=>{dragging=false;renderer.domElement.classList.remove('dragging')});
+    addEventListener('wheel',e=>{if(selected||!introDone)return;e.preventDefault();const delta=e.deltaY*.00035;targetY+=delta;velocity=delta},{passive:false});
+
+    addEventListener('message',event=>{
+      if(event.source!==parent||event.origin!==location.origin)return;
+      if(event.data?.type==='portfolio-grid-morph'){
+        morphEnabled=event.data.enabled!==false;
+        if(!morphEnabled){trailHover=0;trailMat.uniforms.uHover.value=0}
+        layout();
+        return;
+      }
+      if(event.data?.type==='portfolio-grid-project-close'){
+        postMat.uniforms.uReveal.value=1;
+        postMat.uniforms.uProjectMode.value=0;
+        return;
+      }
+      if(event.data?.type==='portfolio-grid-effect-strength'){
+        effectStrength=THREE.MathUtils.clamp(Number(event.data.value)||0,0,1.6);
+        return;
+      }
+      if(event.data?.type==='portfolio-grid-glass-rects'){
+        const rects=Array.isArray(event.data.rects)?event.data.rects:[];
+        postMat.uniforms.uGlassRects.value.forEach((uniform,index)=>{const rect=rects[index];uniform.set(...(Array.isArray(rect)&&rect.length===4?rect:[0,0,0,0]))});
+        return;
+      }
+      if(event.data?.type!=='portfolio-grid-filter')return;
+      const indices=event.data.indices?.filter(index=>Number.isInteger(index)&&index>=0&&index<textures.length);
+      if(!indices?.length)return;
+      cards.forEach((card,i)=>{
+        const projectIndex=indices[i%indices.length],texture=textures[projectIndex],image=texture.image;
+        card.userData.projectIndex=projectIndex;
+        card.material.uniforms.uTexture.value=texture;
+        card.material.uniforms.uImageAspect.value=image?.width&&image?.height?image.width/image.height:CARD_ASPECT;
+      });
+    });
+
+    function resize(){renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();postMat.uniforms.uAspect.value.set(camera.aspect,1);const nextColumns=innerWidth<=768?2:3;if(nextColumns!==columns){columns=nextColumns;rows=Math.ceil(cardCount/columns);for(let i=0;i<cards.length;i++){cards[i].userData.col=i%columns;cards[i].userData.row=Math.floor(i/columns)}}const visibleH=2*Math.tan(75*Math.PI/360)*camera.position.z,visibleW=visibleH*camera.aspect;cardScale=Math.min(.92,visibleW/(columns===2?2.25:3.35));spacingX=cardScale*1.04;spacingY=cardScale*CARD_HEIGHT+cardScale*.05;total=rows*spacingY;for(const card of cards)if(card!==selected&&introDone)card.scale.set(cardScale,cardScale,1);const p=Math.min(devicePixelRatio,1.5);sceneTarget.setSize(Math.max(1,innerWidth*p*.85),Math.max(1,innerHeight*p*.85));layout()}
+    addEventListener('resize',resize);resize();
+
+    function animate(){
+      requestAnimationFrame(animate);
+      const now=performance.now(),dt=Math.min(clock.getDelta(),.05);
+      if(!dragging&&!selected){targetY+=velocity;velocity*=.92;targetY+=.025*dt}
+      currentY+=(targetY-currentY)*.08;layout();
+
+      /* intro: cards rise in behind the opening lens, nearest the centre first */
+      if(!introDone){
+        if(revealAt){
+          if(!cards[0].userData.delayed){for(const card of cards){card.userData.introDelay=Math.min(1.1,Math.hypot(card.position.x,card.position.y)*.24);card.userData.delayed=true}}
+          reveal=easeInOut(Math.min(1,(now-revealAt)/revealMs));
+          const it=(now-revealAt)/1000;
+          for(const card of cards){
+            const p=Math.min(1,Math.max(0,(it-card.userData.introDelay)/introSec)),e=1-Math.pow(1-p,3);
+            card.material.uniforms.uOpacity.value=e;
+            const s=cardScale*(.88+.12*e);card.scale.set(s,s,1);
+          }
+          if(reveal>=1){introDone=true;reveal=1;document.body.classList.add('done');for(const card of cards){card.material.uniforms.uOpacity.value=1;card.scale.set(cardScale,cardScale,1)}setTimeout(()=>parent.postMessage('portfolio-loader-complete',location.origin),450)}
+        }
+      }
+      postMat.uniforms.uProjectMode.value=0;
+      postMat.uniforms.uReveal.value=introDone?1:reveal;
+      postMat.uniforms.uTime.value=now*.001;
+
+      raycaster.setFromCamera(pointer,camera);const hits=raycaster.intersectObjects(cards.filter(c=>c!==selected));hovered=introDone?(hits[0]?.object||null):null;
+      setCursor(selected?'close':(hovered&&!dragging?'view':''));
+      const speed=Math.min(Math.abs(velocity)/.04,1);
+      /* Keep image content anchored to the cursor. Only actual grid scrolling
+         contributes a subtle vertical texture offset. */
+      parallaxTarget.set(0,morphEnabled?THREE.MathUtils.clamp(-velocity*15.5,-.125,.125)*effectStrength:0);texParallax.lerp(parallaxTarget,1-Math.exp(-dt*4));
+      if(selected){
+        if(!closing){selection=Math.min(1,selection+dt/.9);const t=1-Math.pow(1-selection,3);selected.position.lerpVectors(selected.userData.fromPos,new THREE.Vector3(0,0,.15),t);const target=Math.min(2.35,innerWidth/innerHeight*2);selected.scale.lerpVectors(selected.userData.fromScale,new THREE.Vector3(target,target,1),t);selected.material.uniforms.uSelectProgress.value=t;selected.material.uniforms.uScaleDelay.value+=(t-selected.material.uniforms.uScaleDelay.value)*(1-Math.exp(-dt*5.5));selected.material.uniforms.uDispAmount.value=Math.sin(t*Math.PI)*.95}
+        else{selection=Math.max(0,selection-dt/.7);const t=1-Math.pow(1-selection,3);selected.position.lerpVectors(selected.userData.fromPos,new THREE.Vector3(0,0,.15),t);const target=Math.min(2.35,innerWidth/innerHeight*2);selected.scale.lerpVectors(selected.userData.fromScale,new THREE.Vector3(target,target,1),t);selected.material.uniforms.uSelectProgress.value=t;selected.material.uniforms.uScaleDelay.value=t;selected.material.uniforms.uDispAmount.value=Math.sin(t*Math.PI)*.95;if(selection<=0){selected.material.uniforms.uSelectProgress.value=selected.material.uniforms.uScaleDelay.value=selected.material.uniforms.uDispAmount.value=0;selected.renderOrder=0;selected=null;closing=false;document.body.classList.remove('open');layout()}}
+      }
+      trailHover+=((morphEnabled&&((hovered&&!dragging&&pointerMoved)||selected)?1:0)-trailHover)*.12;trailMat.uniforms.uHover.value=morphEnabled?trailHover*(pointerMoved?1:0):0;trailMat.uniforms.uPrev.value=trailA.texture;renderer.setRenderTarget(trailB);renderer.render(trailScene,ortho);[trailA,trailB]=[trailB,trailA];pointerMoved=false;
+      renderer.setRenderTarget(sceneTarget);renderer.setClearColor(0xffffff,1);renderer.clear();renderer.render(scene,camera);
+      postMat.uniforms.uScene.value=sceneTarget.texture;postMat.uniforms.uTrailMap.value=trailA.texture;postMat.uniforms.uRgbAmount.value=morphEnabled?.12*effectStrength:0;postMat.uniforms.uBlur.value=morphEnabled?.045*effectStrength:0;const fishTarget=morphEnabled?THREE.MathUtils.lerp(-1.12,-1.5,speed)*effectStrength:0;postMat.uniforms.uFisheye.value+=(fishTarget-postMat.uniforms.uFisheye.value)*.08;renderer.setClearColor(0x000000,0);renderer.setRenderTarget(null);renderer.render(postScene,ortho);
+    }
+    layout();animate();sceneReady=true;
+  </script>
+</body>
+</html>

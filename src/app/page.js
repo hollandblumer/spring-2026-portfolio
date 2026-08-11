@@ -2,14 +2,30 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Bricolage_Grotesque } from "next/font/google";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
 import Preloader from "../components/Preloader";
 import Carousel from "../components/Carousel";
 import ImageSpiralCarousel from "../components/ImageSpiralCarousel";
 import ElasticMenu from "../components/ElasticMenu";
+import ProjectPageTransition from "../components/ProjectPageTransition";
 
 const INSTAGRAM_URL = "https://instagram.com/hollandblumer";
 const LINKEDIN_URL = "https://linkedin.com/in/hollandblumer";
+const PROJECT_FILTERS = [
+  { value: "all", label: "All" },
+  { value: "typography", label: "Typography" },
+  { value: "grid-layouts", label: "Grid Layouts" },
+  { value: "fullstack-projects", label: "Fullstack Projects" },
+  { value: "cms-websites", label: "CMS Websites" },
+];
+
+const FILTER_PROJECT_INDICES = {
+  all: Array.from({ length: 12 }, (_, index) => index),
+  typography: [0, 2, 3, 6],
+  "grid-layouts": [1, 5, 7, 9],
+  "fullstack-projects": [1, 4, 10],
+  "cms-websites": [5, 8, 11],
+};
 const PROJECTS = [
   {
     id: "spiral-experiment",
@@ -164,6 +180,20 @@ function GridNineIcon(props) {
   );
 }
 
+function WarpedGridIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <g stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 3Q12 5 21 3Q19 12 21 21Q12 19 3 21Q5 12 3 3Z" opacity=".82" />
+        <path d="M8.3 4Q9.7 12 8.3 20" opacity=".72" />
+        <path d="M15.7 4Q14.3 12 15.7 20" opacity=".72" />
+        <path d="M4 8.3Q12 9.7 20 8.3" opacity=".72" />
+        <path d="M4 15.7Q12 14.3 20 15.7" opacity=".72" />
+      </g>
+    </svg>
+  );
+}
+
 function HelixIcon(props) {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
@@ -253,99 +283,12 @@ function AboutOverlay({ onClose }) {
   );
 }
 
-function ProjectGridCard({ project, onSelect }) {
-  const videoRef = useRef(null);
-  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
-
-  const handleMouseEnter = () => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    const playPromise = video.play();
-    playPromise?.catch(() => {});
-  };
-
-  const handleMouseLeave = () => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    video.pause();
-    setIsVideoPlaying(false);
-    if (video.readyState > 0) {
-      video.currentTime = 0;
-    }
-  };
-
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      className="group block min-w-0 text-left"
-      aria-label={`Open ${project.title}`}
-    >
-      <div className="relative aspect-[4/5] w-full overflow-hidden bg-[rgba(207,207,207,0.16)]">
-        <img
-          src={project.poster}
-          alt=""
-          className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.025]"
-        />
-        {project.type === "video" ? (
-          <video
-            ref={videoRef}
-            src={project.src}
-            poster={project.poster}
-            muted
-            loop
-            playsInline
-            preload="metadata"
-            onPlaying={() => setIsVideoPlaying(true)}
-            onPause={() => setIsVideoPlaying(false)}
-            aria-hidden="true"
-            className={`absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.025] ${
-              isVideoPlaying ? "opacity-100" : "opacity-0"
-            }`}
-          />
-        ) : null}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[rgba(25,14,3,0.78)] via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-visible:opacity-100" />
-        <span
-          className={`pointer-events-none absolute bottom-4 left-4 right-4 translate-y-2 text-base font-semibold leading-tight text-[#f1ece0] opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100 sm:bottom-5 sm:left-5 sm:right-5 sm:text-xl ${bricolage.className}`}
-        >
-          {project.title}
-        </span>
-      </div>
-    </button>
-  );
-}
-
-function ProjectGrid({ projects, onSelectProject }) {
-  return (
-    <section
-      className="absolute inset-0 z-[8] overflow-y-auto bg-[#272727] px-[15px] pb-28 pt-24 sm:pt-28"
-      /* red background: bg-[#E33003] */
-    >
-      <div className="grid w-full grid-cols-2 gap-[15px] lg:grid-cols-3">
-        {projects.map((project, index) => (
-          <ProjectGridCard
-            key={project.id}
-            project={project}
-            onSelect={() => onSelectProject(index)}
-          />
-        ))}
-      </div>
-    </section>
-  );
-}
-
 export default function Home() {
   const router = useRouter();
   const [preloaderAnimationDone, setPreloaderAnimationDone] = useState(false);
-  const [p5Ready, setP5Ready] = useState(false);
   const [images, setImages] = useState([]);
   const [mounted, setMounted] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [localTime, setLocalTime] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const [currentSlide, setCurrentSlide] = useState(1);
   const [showAboutCard, setShowAboutCard] = useState(false);
@@ -355,18 +298,19 @@ export default function Home() {
   const [displayMode, setDisplayMode] = useState("grid");
   const [preloaderExiting, setPreloaderExiting] = useState(false);
   const [spiralIntroReady, setSpiralIntroReady] = useState(false);
+  const [projectFilter, setProjectFilter] = useState("all");
+  const gridMorphEnabled = true;
+  const [gridEffectStrength, setGridEffectStrength] = useState(1);
+  const [glassButtonRects, setGlassButtonRects] = useState([]);
+  const effectDemoRanRef = useRef(false);
+  const [projectRevealDone, setProjectRevealDone] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
-
-    setMounted(true);
-    import("react-p5").then(() => {
-      if (isMounted) {
-        setP5Ready(true);
-      }
+    const mountFrame = window.requestAnimationFrame(() => {
+      if (isMounted) setMounted(true);
     });
-
-    Promise.all(
+    Promise.allSettled(
       PROJECT_POSTER_URLS.map((src) => {
         return new Promise((resolve, reject) => {
           const img = new Image();
@@ -375,32 +319,15 @@ export default function Home() {
           img.onerror = reject;
         });
       }),
-    ).then((loadedUrls) => {
+    ).then(() => {
       if (isMounted) {
-        setImages(loadedUrls);
+        setImages(PROJECT_POSTER_URLS);
       }
     });
 
     return () => {
       isMounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    const formatter = new Intl.DateTimeFormat(undefined, {
-      hour: "numeric",
-      minute: "2-digit",
-    });
-
-    const updateTime = () => {
-      setLocalTime(formatter.format(new Date()));
-    };
-
-    updateTime();
-    const intervalId = window.setInterval(updateTime, 1000);
-
-    return () => {
-      window.clearInterval(intervalId);
+      window.cancelAnimationFrame(mountFrame);
     };
   }, []);
 
@@ -416,6 +343,51 @@ export default function Home() {
     };
   }, [preloaderExiting]);
 
+  useEffect(() => {
+    if (!preloaderAnimationDone || effectDemoRanRef.current) return undefined;
+    effectDemoRanRef.current = true;
+    const delay = window.setTimeout(() => {
+      const startedAt = performance.now();
+      const duration = 700;
+      let frame;
+      const animate = (now) => {
+        const progress = Math.min(1, (now - startedAt) / duration);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        setGridEffectStrength(1 - eased * 0.2);
+        if (progress < 1) frame = requestAnimationFrame(animate);
+      };
+      frame = requestAnimationFrame(animate);
+      return () => cancelAnimationFrame(frame);
+    }, 450);
+    return () => clearTimeout(delay);
+  }, [preloaderAnimationDone]);
+
+  useEffect(() => {
+    let frame;
+    const updateGlassRects = () => {
+      const rects = [...document.querySelectorAll("[data-grid-glass]")].map((element) => {
+        const rect = element.getBoundingClientRect();
+        return [rect.left / innerWidth, 1 - rect.bottom / innerHeight, rect.width / innerWidth, rect.height / innerHeight];
+      });
+      setGlassButtonRects(rects);
+    };
+    const scheduleGlassUpdate = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(updateGlassRects);
+    };
+    const resizeObserver = new ResizeObserver(scheduleGlassUpdate);
+    document.querySelectorAll("[data-grid-glass]").forEach((element) => {
+      resizeObserver.observe(element);
+    });
+    scheduleGlassUpdate();
+    addEventListener("resize", scheduleGlassUpdate);
+    return () => {
+      cancelAnimationFrame(frame);
+      resizeObserver.disconnect();
+      removeEventListener("resize", scheduleGlassUpdate);
+    };
+  }, [gridProjectIndex, menuOpen, preloaderAnimationDone, images.length]);
+
   const handleIndexChange = useCallback((slideNumber) => {
     setCurrentSlide(slideNumber);
     setActiveIndex(slideNumber - 1);
@@ -424,7 +396,7 @@ export default function Home() {
 
   if (!mounted) return null;
 
-  const assetsReady = images.length === PROJECT_POSTER_URLS.length && p5Ready;
+  const assetsReady = images.length === PROJECT_POSTER_URLS.length;
   const showPreloader = !preloaderAnimationDone || !assetsReady;
   const activeProject = PROJECTS[activeIndex];
   const gridProject =
@@ -460,6 +432,7 @@ export default function Home() {
 
     setActiveIndex(index);
     setCurrentSlide(index + 1);
+    setProjectRevealDone(false);
     setGridProjectIndex(index);
   };
 
@@ -477,7 +450,7 @@ export default function Home() {
       className="w-screen h-screen overflow-hidden relative"
       style={{
         // red background: "#E33003"
-        background: "#272727",
+        background: "#ffffff",
         cursor: !showPreloader ? OLIVE_CURSOR : "auto",
       }}
     >
@@ -488,15 +461,6 @@ export default function Home() {
             onIndexChange={handleIndexChange}
             canPlayActiveMedia={!showPreloader}
             currentIndex={activeIndex}
-          />
-        </div>
-      )}
-
-      {assetsReady && isGridMode && !showPreloader && (
-        <div className="animate-in fade-in zoom-in-[0.985] duration-500">
-          <ProjectGrid
-            projects={PROJECTS}
-            onSelectProject={handleOpenGridProject}
           />
         </div>
       )}
@@ -517,7 +481,7 @@ export default function Home() {
 
       {!showPreloader && (
         <>
-          {!showAboutCard && (
+          {!showAboutCard && !gridProject && (
             <div className="fixed left-5 top-5 z-[1001] flex items-center gap-3 sm:left-6 sm:top-6">
               <div className="h-11 w-11">
                 <ElasticMenu
@@ -525,14 +489,44 @@ export default function Home() {
                   onClick={() => setMenuOpen((prev) => !prev)}
                 />
               </div>
+              <label className="portfolio-filter" data-grid-glass>
+                <span className="portfolio-filter__prefix">Sort by</span>
+                <select
+                  value={projectFilter}
+                  onChange={(event) => setProjectFilter(event.target.value)}
+                  aria-label="Sort projects by category"
+                >
+                  {PROJECT_FILTERS.map((filter) => (
+                    <option key={filter.value} value={filter.value}>
+                      {filter.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="portfolio-effect-control" data-grid-glass aria-label="Grid effect intensity">
+                <WarpedGridIcon className="portfolio-effect-control__preview" />
+                <span>{Math.round(gridEffectStrength * 100)}%</span>
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setGridEffectStrength((value) => Math.min(1.6, value + 0.1))}
+                    aria-label="Increase grid effect"
+                    title="Increase grid effect"
+                  >
+                    <ChevronUp className="h-3.5 w-3.5" aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setGridEffectStrength((value) => Math.max(0, value - 0.1))}
+                    aria-label="Decrease grid effect"
+                    title="Decrease grid effect"
+                  >
+                    <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
             </div>
           )}
-
-          <div className="absolute bottom-5 left-5 z-20 hidden text-[#cfcfcf] sm:block sm:bottom-6 sm:left-6">
-            <div className="rounded-full border border-[rgba(207,207,207,0.3)] bg-[rgba(112,82,8,0.18)] px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.18em] backdrop-blur-sm sm:text-xs">
-              {localTime}
-            </div>
-          </div>
 
           {menuOpen && (
             <button
@@ -620,13 +614,14 @@ export default function Home() {
             </ul>
           </nav>
 
-          <div className="absolute right-5 top-5 z-20 flex items-center gap-3 sm:right-6 sm:top-6">
+          {!gridProject && <div className="absolute right-5 top-5 z-20 flex items-center gap-3 sm:right-6 sm:top-6">
             <a
               href={INSTAGRAM_URL}
               target="_blank"
               rel="noreferrer"
               aria-label="Instagram"
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-[rgba(207,207,207,0.45)] bg-[rgba(112,82,8,0.35)] text-[#cfcfcf] backdrop-blur-sm transition-transform duration-200 hover:scale-105"
+              className="portfolio-social-button"
+              data-grid-glass
             >
               <InstagramIcon className="h-5 w-5" />
             </a>
@@ -635,13 +630,14 @@ export default function Home() {
               target="_blank"
               rel="noreferrer"
               aria-label="LinkedIn"
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-[rgba(207,207,207,0.45)] bg-[rgba(112,82,8,0.35)] text-[#cfcfcf] backdrop-blur-sm transition-transform duration-200 hover:scale-105"
+              className="portfolio-social-button"
+              data-grid-glass
             >
               <LinkedInIcon className="h-5 w-5" />
             </a>
-          </div>
+          </div>}
 
-          <div className="absolute left-1/2 top-5 z-20 flex -translate-x-1/2 items-center gap-1 rounded-full border border-[rgba(207,207,207,0.32)] bg-[rgba(112,82,8,0.24)] p-1 text-[#cfcfcf] backdrop-blur-sm sm:top-6">
+          <div className="hidden" aria-hidden="true">
             <button
               type="button"
               onClick={() => setDisplayMode("grid")}
@@ -674,60 +670,70 @@ export default function Home() {
           </div>
 
           {isGridMode && gridProject && (
-            <>
-              <button
-                type="button"
-                className="slideout-backdrop"
-                aria-label="Close project details"
-                onClick={() => setGridProjectIndex(null)}
-                style={{ zIndex: 1000 }}
-              />
-              <div className="pointer-events-none fixed inset-0 z-[1001] flex items-center justify-center p-5 pt-20 sm:pt-24">
-                <div
-                  className="pointer-events-auto flex max-h-full w-full max-w-[760px] flex-col overflow-hidden rounded-[28px] border border-[rgba(207,207,207,0.24)] bg-[rgba(204,202,202,0.82)] p-5 text-[#705208] shadow-[0_24px_60px_rgba(0,0,0,0.24)] backdrop-blur-xl sm:p-6"
-                  onClick={(event) => event.stopPropagation()}
+            <article className={`project-page-reveal fixed inset-0 z-[1002] overflow-y-auto text-[#191919] [touch-action:pan-y]${projectRevealDone ? " is-ready" : ""}`}>
+              {!projectRevealDone && (
+                <ProjectPageTransition
+                  project={gridProject}
+                  onComplete={() => setProjectRevealDone(true)}
+                />
+              )}
+              <div className="project-page-reveal__content">
+              <header className="sticky top-0 z-10 flex h-20 items-center justify-between border-b border-black/15 bg-[rgba(238,234,224,0.82)] px-5 backdrop-blur-xl sm:h-24 sm:px-8">
+                <p className={`text-xs uppercase tracking-[0.16em] ${bricolage.className}`}>
+                  Selected work
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setGridProjectIndex(null)}
+                  className={`flex h-10 items-center rounded-full border border-black/20 px-4 text-xs uppercase tracking-[0.14em] transition hover:bg-black hover:text-white ${bricolage.className}`}
+                  aria-label="Close project page"
                 >
-                  <div className="flex shrink-0 items-center justify-between gap-4">
-                    <p
-                      className={`text-lg uppercase tracking-[0.12em] ${bricolage.className}`}
-                    >
-                      {gridProject.title}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => setGridProjectIndex(null)}
-                      className={`text-lg leading-none text-[rgba(112,82,8,0.72)] transition-opacity hover:opacity-60 ${bricolage.className}`}
-                      aria-label="Close project details"
-                    >
-                      x
-                    </button>
-                  </div>
-                  <div className="mt-5 min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1 [touch-action:pan-y]">
-                    <img
-                      src={gridProject.poster}
-                      alt={gridProject.title}
-                      className="mx-auto max-h-[48vh] w-full rounded-[18px] object-contain"
-                    />
+                  Close
+                </button>
+              </header>
+
+              <div className="mx-auto w-full max-w-[1500px] px-5 pb-20 sm:px-8 sm:pb-28">
+                <div className="flex min-h-[calc(100dvh-5rem)] items-center justify-center py-8 sm:min-h-[calc(100dvh-6rem)] sm:py-10">
+                  <img
+                    src={gridProject.poster}
+                    alt={gridProject.title}
+                    className="project-page-reveal__image block h-[calc(100dvh-9rem)] w-[calc(100vw-40px)] max-w-[1100px] bg-black/5 object-contain sm:h-[calc(100dvh-11rem)] sm:w-[calc(100vw-64px)]"
+                  />
+                </div>
+
+                <div className="grid gap-8 border-y border-black/15 py-10 md:grid-cols-[minmax(0,1fr)_auto] md:items-end sm:py-14">
+                  <h1 className={`max-w-5xl text-[clamp(3rem,9vw,9rem)] leading-[0.86] tracking-[-0.06em] ${bricolage.className}`}>
+                    {gridProject.title}
+                  </h1>
+                  <p className={`pb-1 text-xs uppercase tracking-[0.16em] text-black/55 ${bricolage.className}`}>
+                    {String(gridProjectIndex + 1).padStart(2, "0")} / {String(PROJECTS.length).padStart(2, "0")}
+                  </p>
+                </div>
+
+                <div className="grid gap-8 pt-10 md:grid-cols-[minmax(180px,0.32fr)_minmax(0,0.68fr)] sm:pt-14">
+                  <p className={`text-xs uppercase tracking-[0.16em] text-black/50 ${bricolage.className}`}>
+                    Project overview
+                  </p>
+                  <div>
                     {gridProject.blurb && (
-                      <p
-                        className={`mt-5 whitespace-pre-line text-sm leading-6 sm:text-[15px] sm:leading-7 ${bricolage.className}`}
-                      >
+                      <p className={`max-w-3xl whitespace-pre-line text-base leading-7 sm:text-lg sm:leading-8 ${bricolage.className}`}>
                         {gridProject.blurb}
                       </p>
                     )}
+                    {gridProject.href && (
+                      <button
+                        type="button"
+                        onClick={() => router.push(gridProject.href)}
+                        className={`mt-10 rounded-full border border-black/25 px-6 py-3 text-xs uppercase tracking-[0.16em] transition hover:bg-black hover:text-white ${bricolage.className}`}
+                      >
+                        Open project
+                      </button>
+                    )}
                   </div>
-                  {gridProject.href && (
-                    <button
-                      type="button"
-                      onClick={() => router.push(gridProject.href)}
-                      className={`mt-5 shrink-0 self-start rounded-full border border-[rgba(112,82,8,0.22)] bg-[rgba(255,255,255,0.42)] px-5 py-2.5 text-xs uppercase tracking-[0.18em] transition hover:bg-[rgba(255,255,255,0.68)] ${bricolage.className}`}
-                    >
-                      open project
-                    </button>
-                  )}
                 </div>
               </div>
-            </>
+              </div>
+            </article>
           )}
 
           {isSpiralMode && !showAboutCard && !showProjectPicker && (
@@ -944,32 +950,35 @@ export default function Home() {
             </>
           )}
 
-          <div className="absolute bottom-5 right-5 z-20 hidden items-center gap-6 text-[#cfcfcf] sm:flex sm:bottom-6 sm:right-6">
-            <div className="px-1 py-1 text-sm font-medium uppercase tracking-[0.16em] sm:text-base">
-              <span className="text-[#705208]">
-                {String(currentSlide).padStart(2, "0")}
-              </span>{" "}
-              / {String(PROJECTS.length).padStart(2, "0")}
-            </div>
-          </div>
-
           {showAboutCard && (
             <AboutOverlay onClose={() => setShowAboutCard(false)} />
           )}
         </>
       )}
 
-      {showPreloader && (
-        <div
-          className={`absolute inset-0 ${preloaderExiting ? "z-[18]" : "z-[40]"}`}
-        >
-          <Preloader
-            canExit={assetsReady}
-            onExitStart={() => setPreloaderExiting(true)}
-            onComplete={() => setPreloaderAnimationDone(true)}
-          />
-        </div>
-      )}
+      <div
+        className={`absolute inset-0 ${
+          isGridMode
+            ? showPreloader
+              ? preloaderExiting
+                ? "z-[18]"
+                : "z-[40]"
+              : "z-[8]"
+            : "invisible pointer-events-none z-0"
+        }`}
+      >
+        <Preloader
+          canExit={assetsReady}
+          onExitStart={() => setPreloaderExiting(true)}
+          onComplete={() => setPreloaderAnimationDone(true)}
+          onSelectProject={handleOpenGridProject}
+          projectIndices={FILTER_PROJECT_INDICES[projectFilter]}
+          morphEnabled={gridMorphEnabled}
+          effectStrength={gridEffectStrength}
+          glassRects={glassButtonRects}
+          projectOpen={Boolean(gridProject)}
+        />
+      </div>
     </main>
   );
 }

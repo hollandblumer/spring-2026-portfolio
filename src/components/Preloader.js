@@ -1,225 +1,149 @@
 "use client";
-import React, { useRef } from "react";
-import ClientSketch from "./ClientSketch";
+
+import { useCallback, useEffect, useRef } from "react";
 
 export default function Preloader({
   onComplete,
   onExitStart,
+  onSelectProject,
+  projectIndices,
+  morphEnabled = true,
+  effectStrength = 1,
+  glassRects = [],
+  projectOpen = false,
   canExit = false,
 }) {
-  const buffersRef = useRef({
-    pgFront: null,
-    pgBack: null,
-    pgWarp: null,
-  });
-  const stateRef = useRef({
-    t: 0,
-    mode: 0,
-    completedBreaths: 0,
-    phase: "breathing",
-    hasStartedExit: false,
-    hasCompleted: false,
-  });
+  const frameRef = useRef(null);
+  const frameLoadedRef = useRef(false);
+  const exitStartedRef = useRef(false);
+  const completedRef = useRef(false);
 
-  const WORD = "LOADING";
-  // red background: [227, 48, 3] / #E33003
-  const BG_COLOR = [39, 39, 39];
-  // olive text: [112, 82, 8] / #705208
-  const OLIVE = [226, 226, 226];
-  const GREY = [207, 207, 207];
-  const clamp01 = (x) => Math.max(0, Math.min(1, x));
-
-  const easeInOutCubic = (x) => {
-    const value = clamp01(x);
-    return value < 0.5
-      ? 4 * value * value * value
-      : 1 - Math.pow(-2 * value + 2, 3) / 2;
-  };
-
-  const symmetricGrowth = (p) => {
-    const progress = p % 1;
-    const tri = 1 - Math.abs(2 * progress - 1);
-    return easeInOutCubic(tri);
-  };
-
-  const drawTopBottomErase = (p5, progress) => {
-    const ctx = p5.drawingContext;
-    const mid = p5.height / 2;
-    const eraseSpread = progress * (p5.height * 0.7);
-    const feather = 2;
-    const topEdge = mid - eraseSpread;
-    const bottomEdge = mid + eraseSpread;
-
-    ctx.save();
-    ctx.fillStyle = `rgb(${BG_COLOR[0]}, ${BG_COLOR[1]}, ${BG_COLOR[2]})`;
-    ctx.fillRect(0, topEdge, p5.width, bottomEdge - topEdge);
-
-    const topGrad = ctx.createLinearGradient(0, topEdge - feather, 0, topEdge);
-    topGrad.addColorStop(
-      0,
-      `rgba(${BG_COLOR[0]}, ${BG_COLOR[1]}, ${BG_COLOR[2]}, 0)`,
+  const sendReady = useCallback(() => {
+    if (!canExit || !frameLoadedRef.current) return;
+    frameRef.current?.contentWindow?.postMessage(
+      "portfolio-loader-ready",
+      window.location.origin,
     );
-    topGrad.addColorStop(
-      1,
-      `rgba(${BG_COLOR[0]}, ${BG_COLOR[1]}, ${BG_COLOR[2]}, 1)`,
+  }, [canExit]);
+
+  useEffect(() => {
+    sendReady();
+  }, [sendReady]);
+
+  useEffect(() => {
+    if (!frameLoadedRef.current || !projectIndices?.length) return;
+    frameRef.current?.contentWindow?.postMessage(
+      { type: "portfolio-grid-filter", indices: projectIndices },
+      window.location.origin,
     );
-    ctx.fillStyle = topGrad;
-    ctx.fillRect(0, topEdge - feather, p5.width, feather);
+  }, [projectIndices]);
 
-    const bottomGrad = ctx.createLinearGradient(
-      0,
-      bottomEdge,
-      0,
-      bottomEdge + feather,
+  useEffect(() => {
+    if (!frameLoadedRef.current) return;
+    frameRef.current?.contentWindow?.postMessage(
+      { type: "portfolio-grid-morph", enabled: morphEnabled },
+      window.location.origin,
     );
-    bottomGrad.addColorStop(
-      0,
-      `rgba(${BG_COLOR[0]}, ${BG_COLOR[1]}, ${BG_COLOR[2]}, 1)`,
+  }, [morphEnabled]);
+
+  useEffect(() => {
+    if (!frameLoadedRef.current) return;
+    frameRef.current?.contentWindow?.postMessage(
+      { type: "portfolio-grid-effect-strength", value: effectStrength },
+      window.location.origin,
     );
-    bottomGrad.addColorStop(
-      1,
-      `rgba(${BG_COLOR[0]}, ${BG_COLOR[1]}, ${BG_COLOR[2]}, 0)`,
+  }, [effectStrength]);
+
+  useEffect(() => {
+    if (!frameLoadedRef.current) return;
+    frameRef.current?.contentWindow?.postMessage(
+      { type: "portfolio-grid-glass-rects", rects: glassRects },
+      window.location.origin,
     );
-    ctx.fillStyle = bottomGrad;
-    ctx.fillRect(0, bottomEdge, p5.width, feather);
-    ctx.restore();
-  };
+  }, [glassRects]);
 
-  const setup = (p5, canvasParentRef) => {
-    p5.createCanvas(p5.windowWidth, p5.windowHeight).parent(canvasParentRef);
-    p5.pixelDensity(2);
-    buffersRef.current.pgFront = p5.createGraphics(p5.width, p5.height);
-    buffersRef.current.pgBack = p5.createGraphics(p5.width, p5.height);
-    buffersRef.current.pgWarp = p5.createGraphics(p5.width, p5.height);
-  };
+  useEffect(() => {
+    if (!frameLoadedRef.current || projectOpen) return;
+    frameRef.current?.contentWindow?.postMessage(
+      { type: "portfolio-grid-project-close" },
+      window.location.origin,
+    );
+  }, [projectOpen]);
 
-  const prepBuffer = (p5, g, col) => {
-    g.clear();
-    g.noStroke();
-    g.fill(col);
-    g.textAlign(p5.CENTER, p5.CENTER);
-    g.textFont("Impact");
-    const size = p5.min(g.width, g.height) * 0.22;
-    g.textSize(size);
-    const tracking = size * 0.06;
-    let total = 0;
-    for (let c of WORD) total += g.textWidth(c) + tracking;
-    total -= tracking;
-    let x = g.width / 2 - total / 2;
-    const y = g.height / 2;
-    for (let c of WORD) {
-      const w = g.textWidth(c);
-      g.text(c, x + w / 2, y);
-      x += w + tracking;
-    }
-  };
-
-  const draw = (p5) => {
-    const { pgFront, pgBack, pgWarp } = buffersRef.current;
-    const animation = stateRef.current;
-
-    if (!pgFront || !pgBack || !pgWarp) return;
-
-    if (animation.phase !== "done") {
-      animation.t += (0.25 * p5.deltaTime) / 1000;
-      if (animation.t >= 1) {
-        if (animation.phase === "exit") {
-          animation.phase = "done";
-          animation.t = 1;
-        } else {
-          animation.t = 0;
-          animation.mode = (animation.mode + 1) % 3;
-          animation.completedBreaths++;
-          if (canExit && animation.completedBreaths >= 1) {
-            animation.phase = "exit";
-            if (!animation.hasStartedExit) {
-              animation.hasStartedExit = true;
-              onExitStart?.();
-            }
-          }
-        }
+  useEffect(() => {
+    const handleMessage = (event) => {
+      if (
+        event.origin !== window.location.origin ||
+        event.source !== frameRef.current?.contentWindow
+      ) {
+        return;
       }
-    }
 
-    const eraseStart = 0.5;
-    const inExit = animation.phase === "exit" || animation.phase === "done";
-    let growth;
-    let eraseProgress = 0;
+      if (
+        event.data === "portfolio-loader-exit-start" &&
+        !exitStartedRef.current
+      ) {
+        exitStartedRef.current = true;
+        onExitStart?.();
+      }
 
-    if (inExit && animation.t >= eraseStart) {
-      growth = 1;
-      eraseProgress = easeInOutCubic(
-        p5.map(animation.t, eraseStart, 1, 0, 1, true),
+      if (
+        event.data === "portfolio-loader-complete" &&
+        !completedRef.current
+      ) {
+        completedRef.current = true;
+        onComplete?.();
+      }
+
+      if (
+        event.data?.type === "portfolio-loader-open-project" &&
+        Number.isInteger(event.data.index)
+      ) {
+        onSelectProject?.(event.data.index, event.data.origin);
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [onComplete, onExitStart, onSelectProject]);
+
+  const handleLoad = () => {
+    frameLoadedRef.current = true;
+    sendReady();
+    if (projectIndices?.length) {
+      frameRef.current?.contentWindow?.postMessage(
+        { type: "portfolio-grid-filter", indices: projectIndices },
+        window.location.origin,
       );
-    } else {
-      growth = symmetricGrowth(animation.t);
     }
-
-    const bulgeVal = 1.12;
-    const noiseAmt = 92;
-    const twistVals = [2.9, 0.5, 1.1];
-    const twistStart = twistVals[animation.mode];
-    const twistEnd = twistVals[(animation.mode + 1) % 3];
-    const currentTwistBase =
-      inExit && animation.t >= eraseStart
-        ? p5.lerp(twistStart, twistEnd, 0.5)
-        : p5.lerp(twistStart, twistEnd, animation.t);
-    const twist = currentTwistBase * growth;
-    const wobble = animation.t * p5.TWO_PI * 2;
-
-    prepBuffer(p5, pgFront, p5.color(...GREY));
-    prepBuffer(p5, pgBack, p5.color(...OLIVE));
-
-    pgWarp.clear();
-    const mid = p5.height / 2;
-    const spread = growth * p5.height * 0.4;
-
-    for (let y = 0; y < p5.height; y++) {
-      const angle = p5.map(y, 0, p5.height, -p5.PI, p5.PI) * twist;
-      const front = Math.cos(angle) >= 0;
-      const perspective = p5.lerp(1, Math.abs(p5.cos(angle)), growth);
-      const xShift = p5.sin(angle) * p5.width * 0.1 * growth;
-      const bulge = p5.lerp(
-        1,
-        p5.map(p5.sin((y / p5.height) * p5.PI), 0, 1, 1, bulgeVal),
-        growth,
-      );
-      const wave = p5.sin(y * 0.008 + wobble) * noiseAmt * growth;
-
-      const dw = p5.width * perspective * bulge;
-      const dx = p5.width / 2 + xShift + wave - dw / 2;
-      const sy =
-        y < mid - spread ? y + spread : y > mid + spread ? y - spread : mid;
-
-      pgWarp.image(front ? pgFront : pgBack, dx, y, dw, 1, 0, sy, p5.width, 1);
-    }
-
-    p5.clear();
-    if (!inExit) {
-      p5.background(...BG_COLOR);
-    }
-    p5.image(pgWarp, 0, 0);
-
-    if (eraseProgress > 0) {
-      drawTopBottomErase(p5, eraseProgress);
-    }
-
-    if (animation.phase === "done" && canExit && !animation.hasCompleted) {
-      animation.hasCompleted = true;
-      onComplete?.();
-    }
+    frameRef.current?.contentWindow?.postMessage(
+      { type: "portfolio-grid-morph", enabled: morphEnabled },
+      window.location.origin,
+    );
+    frameRef.current?.contentWindow?.postMessage(
+      { type: "portfolio-grid-effect-strength", value: effectStrength },
+      window.location.origin,
+    );
+    frameRef.current?.contentWindow?.postMessage(
+      { type: "portfolio-grid-glass-rects", rects: glassRects },
+      window.location.origin,
+    );
   };
 
   return (
-    <ClientSketch
-      setup={setup}
-      draw={draw}
-      windowResized={(p5) => {
-        p5.resizeCanvas(p5.windowWidth, p5.windowHeight);
-        buffersRef.current.pgFront = p5.createGraphics(p5.width, p5.height);
-        buffersRef.current.pgBack = p5.createGraphics(p5.width, p5.height);
-        buffersRef.current.pgWarp = p5.createGraphics(p5.width, p5.height);
-      }}
-    />
+    <div
+      className={`absolute inset-0 overflow-hidden bg-transparent${projectOpen ? " pointer-events-none" : ""}`}
+      role="status"
+      aria-label="Loading portfolio"
+    >
+      <iframe
+        ref={frameRef}
+        src="/loader-scenes/slinky-grid.html"
+        title="Loading portfolio"
+        className="absolute inset-0 h-full w-full border-0"
+        onLoad={handleLoad}
+      />
+      <span className="sr-only">Loading portfolio</span>
+    </div>
   );
 }
