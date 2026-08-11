@@ -289,8 +289,15 @@ body {
 .portfolio-social-controls {
   z-index: 1100 !important;
   isolation: isolate;
+  pointer-events: auto;
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
+}
+
+.portfolio-header-controls > *,
+.portfolio-social-controls > * {
+  pointer-events: auto;
+  touch-action: manipulation;
 }
 
 .portfolio-social-controls {
@@ -368,7 +375,10 @@ body {
 
   .portfolio-social-button {
     width: 2.25rem;
-    height: 2.75rem;
+    height: 2.25rem;
+    flex: 0 0 2.25rem;
+    border-radius: 50%;
+    aspect-ratio: 1;
   }
 }
 
