@@ -108,6 +108,8 @@ body {
 
 .portfolio-filter select {
   max-width: 10.5rem;
+  height: 1.5rem;
+  align-self: center;
   cursor: pointer;
   border: 0;
   outline: 0;
@@ -115,11 +117,97 @@ body {
   background: transparent;
   font: inherit;
   font-size: 0.78rem;
+  line-height: 1.5rem;
+  padding-block: 0;
+  text-align: center;
+  text-align-last: center;
 }
 
 .portfolio-filter option {
   color: #f5f5f2;
   background: #171717;
+  text-align: center;
+}
+
+.portfolio-filter__trigger {
+  display: flex;
+  min-width: 7.5rem;
+  height: 100%;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  font-size: 0.78rem;
+}
+
+.portfolio-filter__chevron {
+  width: 0.85rem;
+  height: 0.85rem;
+  flex: none;
+}
+
+.portfolio-filter__menu {
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  left: 0;
+  z-index: 20;
+  display: grid;
+  width: max-content;
+  min-width: 100%;
+  gap: 0.15rem;
+  border: 1px solid rgb(255 255 255 / 24%);
+  border-radius: 0.9rem;
+  padding: 0.35rem;
+  background: rgb(20 20 20 / 88%);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 22%);
+  -webkit-backdrop-filter: blur(12px) saturate(1.25);
+  backdrop-filter: blur(12px) saturate(1.25);
+}
+
+.portfolio-filter__option {
+  display: flex;
+  min-height: 2rem;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 0.55rem;
+  padding: 0.25rem 0.65rem 0.25rem 0.4rem;
+  color: rgb(255 255 255 / 88%);
+  background: transparent;
+  font: inherit;
+  font-size: 0.78rem;
+  text-align: center;
+}
+
+.portfolio-filter__option-content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  line-height: 1;
+}
+
+.portfolio-filter__option:hover,
+.portfolio-filter__option[aria-selected="true"] {
+  background: rgb(255 255 255 / 10%);
+}
+
+.portfolio-filter__check {
+  width: 0.9rem;
+  height: 0.9rem;
+  flex: none;
+  align-self: center;
+  opacity: 0;
+}
+
+.portfolio-filter__option[aria-selected="true"] .portfolio-filter__check {
+  opacity: 1;
 }
 
 .portfolio-effect-control {
@@ -210,6 +298,14 @@ body {
 }
 
 @supports (-webkit-touch-callout: none) {
+  .portfolio-grid-input-layer {
+    touch-action: none;
+  }
+
+  .portfolio-grid-frame {
+    pointer-events: none;
+  }
+
   .elastic-menu-button,
   .portfolio-filter,
   .portfolio-effect-control,
@@ -576,6 +672,39 @@ nextjs-portal {
 .portfolio-effect-control svg,
 .portfolio-social-button svg {
   filter: none;
+}
+
+.portfolio-filter {
+  overflow: visible;
+}
+
+@supports (-webkit-touch-callout: none) {
+  .portfolio-header-controls,
+  .portfolio-social-controls {
+    z-index: 2147483646 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+
+  .elastic-menu-button,
+  .portfolio-filter,
+  .portfolio-effect-control,
+  .portfolio-social-button {
+    visibility: visible !important;
+    opacity: 1 !important;
+    border-color: rgb(255 255 255 / 62%) !important;
+    background: rgb(20 20 20 / 56%) !important;
+    box-shadow: inset 0 0 10px rgb(255 255 255 / 14%), 0 3px 14px rgb(0 0 0 / 20%) !important;
+    -webkit-backdrop-filter: blur(4px) saturate(1.3) !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .portfolio-filter__trigger {
+    width: 100%;
+    min-width: 0;
+  }
 }
 
 .slideout-backdrop {

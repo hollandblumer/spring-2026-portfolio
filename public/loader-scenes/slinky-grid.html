@@ -670,6 +670,15 @@
 
     addEventListener('message',event=>{
       if(event.source!==parent||event.origin!==location.origin)return;
+      if(event.data?.type==='portfolio-grid-input'){
+        const data=event.data;
+        if(data.kind==='wheel'){
+          dispatchEvent(new WheelEvent('wheel',{deltaY:data.deltaY,clientX:data.clientX,clientY:data.clientY,bubbles:true,cancelable:true}));
+        }else if(typeof data.kind==='string'&&data.kind.startsWith('pointer')){
+          dispatchEvent(new PointerEvent(data.kind,{clientX:data.clientX,clientY:data.clientY,button:data.button,buttons:data.buttons,pointerId:data.pointerId,pointerType:data.pointerType,bubbles:true,cancelable:true}));
+        }
+        return;
+      }
       if(event.data?.type==='portfolio-grid-morph'){
         morphEnabled=event.data.enabled!==false;
         if(!morphEnabled){trailHover=0;trailMat.uniforms.uHover.value=0}

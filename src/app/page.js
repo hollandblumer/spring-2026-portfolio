@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Bricolage_Grotesque } from "next/font/google";
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
+import { Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
 import Preloader from "../components/Preloader";
 import Carousel from "../components/Carousel";
 import ImageSpiralCarousel from "../components/ImageSpiralCarousel";
@@ -299,11 +299,21 @@ export default function Home() {
   const [preloaderExiting, setPreloaderExiting] = useState(false);
   const [spiralIntroReady, setSpiralIntroReady] = useState(false);
   const [projectFilter, setProjectFilter] = useState("all");
+  const [filterOpen, setFilterOpen] = useState(false);
   const gridMorphEnabled = true;
   const [gridEffectStrength, setGridEffectStrength] = useState(1);
   const [glassButtonRects, setGlassButtonRects] = useState([]);
   const effectDemoRanRef = useRef(false);
+  const filterRef = useRef(null);
   const [projectRevealDone, setProjectRevealDone] = useState(false);
+
+  useEffect(() => {
+    const closeFilter = (event) => {
+      if (!filterRef.current?.contains(event.target)) setFilterOpen(false);
+    };
+    document.addEventListener("pointerdown", closeFilter);
+    return () => document.removeEventListener("pointerdown", closeFilter);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -489,20 +499,42 @@ export default function Home() {
                   onClick={() => setMenuOpen((prev) => !prev)}
                 />
               </div>
-              <label className="portfolio-filter" data-grid-glass>
-                <span className="portfolio-filter__prefix">Sort by</span>
-                <select
-                  value={projectFilter}
-                  onChange={(event) => setProjectFilter(event.target.value)}
+              <div ref={filterRef} className="portfolio-filter" data-grid-glass>
+                <button
+                  type="button"
+                  className="portfolio-filter__trigger"
+                  onClick={() => setFilterOpen((open) => !open)}
                   aria-label="Sort projects by category"
+                  aria-haspopup="listbox"
+                  aria-expanded={filterOpen}
                 >
-                  {PROJECT_FILTERS.map((filter) => (
-                    <option key={filter.value} value={filter.value}>
-                      {filter.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                  <span className="portfolio-filter__prefix">Sort by</span>
+                  <span>{PROJECT_FILTERS.find((filter) => filter.value === projectFilter)?.label}</span>
+                  <ChevronDown className="portfolio-filter__chevron" aria-hidden="true" />
+                </button>
+                {filterOpen && (
+                  <div className="portfolio-filter__menu" role="listbox" aria-label="Project category">
+                    {PROJECT_FILTERS.map((filter) => (
+                      <button
+                        type="button"
+                        role="option"
+                        aria-selected={projectFilter === filter.value}
+                        className="portfolio-filter__option"
+                        key={filter.value}
+                        onClick={() => {
+                          setProjectFilter(filter.value);
+                          setFilterOpen(false);
+                        }}
+                      >
+                        <span className="portfolio-filter__option-content">
+                          <Check className="portfolio-filter__check" aria-hidden="true" />
+                          <span>{filter.label}</span>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <div className="portfolio-effect-control" data-grid-glass aria-label="Grid effect intensity">
                 <WarpedGridIcon className="portfolio-effect-control__preview" />
                 <span>{Math.round(gridEffectStrength * 100)}%</span>

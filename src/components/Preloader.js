@@ -32,6 +32,21 @@ export default function Preloader({
   }, [sendReady]);
 
   useEffect(() => {
+    if (!canExit) return undefined;
+    const safariFailsafe = window.setTimeout(() => {
+      if (!exitStartedRef.current) {
+        exitStartedRef.current = true;
+        onExitStart?.();
+      }
+      if (!completedRef.current) {
+        completedRef.current = true;
+        onComplete?.();
+      }
+    }, 7000);
+    return () => window.clearTimeout(safariFailsafe);
+  }, [canExit, onComplete, onExitStart]);
+
+  useEffect(() => {
     if (!frameLoadedRef.current || !projectIndices?.length) return;
     frameRef.current?.contentWindow?.postMessage(
       { type: "portfolio-grid-filter", indices: projectIndices },
@@ -140,9 +155,31 @@ export default function Preloader({
     );
   };
 
+  const forwardGridInput = (kind, event) => {
+    frameRef.current?.contentWindow?.postMessage(
+      {
+        type: "portfolio-grid-input",
+        kind,
+        clientX: event.clientX ?? 0,
+        clientY: event.clientY ?? 0,
+        deltaY: event.deltaY ?? 0,
+        button: event.button ?? 0,
+        buttons: event.buttons ?? 0,
+        pointerId: event.pointerId ?? 1,
+        pointerType: event.pointerType ?? "mouse",
+      },
+      window.location.origin,
+    );
+  };
+
   return (
     <div
-      className={`absolute inset-0 overflow-hidden bg-transparent${projectOpen ? " pointer-events-none" : ""}`}
+      className={`portfolio-grid-input-layer absolute inset-0 overflow-hidden bg-transparent${projectOpen ? " pointer-events-none" : ""}`}
+      onPointerDown={(event) => forwardGridInput("pointerdown", event)}
+      onPointerMove={(event) => forwardGridInput("pointermove", event)}
+      onPointerUp={(event) => forwardGridInput("pointerup", event)}
+      onPointerCancel={(event) => forwardGridInput("pointercancel", event)}
+      onWheel={(event) => forwardGridInput("wheel", event)}
       role="status"
       aria-label="Loading portfolio"
     >
@@ -150,7 +187,7 @@ export default function Preloader({
         ref={frameRef}
         src="/loader-scenes/slinky-grid.html"
         title="Loading portfolio"
-        className="absolute inset-0 h-full w-full border-0"
+        className="portfolio-grid-frame absolute inset-0 h-full w-full border-0"
         onLoad={handleLoad}
       />
       <span className="sr-only">Loading portfolio</span>
