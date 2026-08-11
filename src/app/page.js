@@ -357,13 +357,14 @@ export default function Home() {
     if (!preloaderAnimationDone || effectDemoRanRef.current) return undefined;
     effectDemoRanRef.current = true;
     const delay = window.setTimeout(() => {
+      const targetStrength = window.matchMedia("(max-width: 640px)").matches ? 0.4 : 0.5;
       const startedAt = performance.now();
       const duration = 700;
       let frame;
       const animate = (now) => {
         const progress = Math.min(1, (now - startedAt) / duration);
         const eased = 1 - Math.pow(1 - progress, 3);
-        setGridEffectStrength(1 - eased * 0.5);
+        setGridEffectStrength(1 - eased * (1 - targetStrength));
         if (progress < 1) frame = requestAnimationFrame(animate);
       };
       frame = requestAnimationFrame(animate);
