@@ -17,6 +17,7 @@ export default function Preloader({
   const frameLoadedRef = useRef(false);
   const exitStartedRef = useRef(false);
   const completedRef = useRef(false);
+  const completionFallbackRef = useRef(null);
 
   const sendReady = useCallback(() => {
     if (!canExit || !frameLoadedRef.current) return;
@@ -85,12 +86,18 @@ export default function Preloader({
       ) {
         exitStartedRef.current = true;
         onExitStart?.();
+        completionFallbackRef.current = window.setTimeout(() => {
+          if (completedRef.current) return;
+          completedRef.current = true;
+          onComplete?.();
+        }, 1600);
       }
 
       if (
         event.data === "portfolio-loader-complete" &&
         !completedRef.current
       ) {
+        window.clearTimeout(completionFallbackRef.current);
         completedRef.current = true;
         onComplete?.();
       }
@@ -104,7 +111,10 @@ export default function Preloader({
     };
 
     window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
+    return () => {
+      window.removeEventListener("message", handleMessage);
+      window.clearTimeout(completionFallbackRef.current);
+    };
   }, [onComplete, onExitStart, onSelectProject]);
 
   const handleLoad = () => {
