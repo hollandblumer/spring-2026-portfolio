@@ -857,20 +857,9 @@ export default function Home() {
 
               <div className="mx-auto w-full max-w-[1240px] px-5 pb-20 pt-9 sm:px-8 sm:pb-28 sm:pt-12">
                 <div className="mb-7 grid gap-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
-                  <div>
-                    <h1 className={`max-w-4xl text-[clamp(2.25rem,5vw,4.75rem)] font-semibold leading-[0.96] tracking-[-0.055em] ${bricolage.className}`}>
-                      {gridProject.title}
-                    </h1>
-                    <div className="mt-6 flex items-center gap-3">
-                      <span className={`flex h-11 w-11 items-center justify-center rounded-full bg-[#705208] text-xs font-semibold text-white ${bricolage.className}`} aria-hidden="true">
-                        HB
-                      </span>
-                      <div className={bricolage.className}>
-                        <p className="text-sm font-semibold">Holland Blumer</p>
-                        <p className="text-xs text-black/50">Creative technologist &amp; designer</p>
-                      </div>
-                    </div>
-                  </div>
+                  <h1 className={`max-w-4xl text-[clamp(2.25rem,5vw,4.75rem)] font-semibold leading-[0.96] tracking-[-0.055em] ${bricolage.className}`}>
+                    {gridProject.title}
+                  </h1>
                   <p className={`text-xs uppercase tracking-[0.14em] text-black/45 ${bricolage.className}`}>
                     {String(gridProjectIndex + 1).padStart(2, "0")} / {String(PROJECTS.length).padStart(2, "0")}
                   </p>
@@ -899,18 +888,18 @@ export default function Home() {
                 </div>
 
                 <div className="mx-auto grid max-w-[980px] gap-8 border-t border-black/10 pt-10 mt-12 md:grid-cols-[180px_minmax(0,1fr)] sm:mt-16 sm:pt-14">
-                  <div className={bricolage.className}>
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-black/45">About the project</p>
+                  <div>
+                    <p className={`text-xs font-semibold uppercase tracking-[0.14em] text-black/45 ${bricolage.className}`}>About the project</p>
                     <p className="mt-3 text-xs leading-5 text-black/45">Design, development<br />and motion</p>
                   </div>
                   <div className="min-w-0">
                     {gridProject.blurb && !gridProject.gallery?.length && (
-                      <p className={`max-w-3xl whitespace-pre-line text-lg leading-8 sm:text-xl sm:leading-9 ${bricolage.className}`}>
+                      <p className="max-w-3xl whitespace-pre-line text-lg leading-8 sm:text-xl sm:leading-9">
                         {gridProject.blurb}
                       </p>
                     )}
                     {gridProject.blurb && gridProject.gallery?.length > 0 && (
-                      <div className={`grid gap-10 sm:gap-14 ${bricolage.className}`}>
+                      <div className="grid gap-10 sm:gap-14">
                         {gridProject.blurb.split("\n\n").map((section) => {
                           const [heading, ...bodyLines] = section.split("\n");
                           const sectionImages = gridProject.gallery.filter(
@@ -920,7 +909,7 @@ export default function Home() {
                           return (
                             <section key={heading} className="grid gap-5">
                               <div className="max-w-3xl">
-                                <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-black/45">
+                                <h2 className={`mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-black/45 ${bricolage.className}`}>
                                   {heading}
                                 </h2>
                                 <p className="text-base leading-7 sm:text-lg sm:leading-8">
