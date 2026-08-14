@@ -64,11 +64,12 @@ def get_allowed_origins():
     if not configured_origins:
         return DEFAULT_ALLOWED_ORIGINS
 
-    return [
+    configured = [
         origin.strip()
         for origin in configured_origins.split(",")
         if origin.strip()
     ]
+    return list(dict.fromkeys([*DEFAULT_ALLOWED_ORIGINS, *configured]))
 
 
 def get_int_env(name, default):

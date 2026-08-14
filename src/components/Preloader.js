@@ -7,6 +7,7 @@ export default function Preloader({
   onExitStart,
   onSelectProject,
   projectIndices,
+  projectFilter = "all",
   morphEnabled = true,
   effectStrength = 1,
   glassRects = [],
@@ -50,10 +51,10 @@ export default function Preloader({
   useEffect(() => {
     if (!frameLoadedRef.current || !projectIndices?.length) return;
     frameRef.current?.contentWindow?.postMessage(
-      { type: "portfolio-grid-filter", indices: projectIndices },
+      { type: "portfolio-grid-filter", indices: projectIndices, filter: projectFilter },
       window.location.origin,
     );
-  }, [projectIndices]);
+  }, [projectFilter, projectIndices]);
 
   useEffect(() => {
     if (!frameLoadedRef.current) return;
@@ -146,7 +147,7 @@ export default function Preloader({
     sendReady();
     if (projectIndices?.length) {
       frameRef.current?.contentWindow?.postMessage(
-        { type: "portfolio-grid-filter", indices: projectIndices },
+        { type: "portfolio-grid-filter", indices: projectIndices, filter: projectFilter },
         window.location.origin,
       );
     }
@@ -207,7 +208,7 @@ export default function Preloader({
     >
       <iframe
         ref={frameRef}
-        src="/loader-scenes/slinky-grid.html?v=short-filter-layout-9"
+        src="/loader-scenes/slinky-grid.html?v=floating-books-cms-32"
         title="Loading portfolio"
         className="portfolio-grid-frame absolute inset-0 h-full w-full border-0"
         onLoad={handleLoad}

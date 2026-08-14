@@ -84,7 +84,7 @@ export default function ProjectPageTransition({ project, onComplete }) {
       context.scale(dpr, dpr);
       const width = window.innerWidth;
       const height = window.innerHeight;
-      context.fillStyle = "#eeeae0";
+      context.fillStyle = "#faf9f6";
       context.fillRect(0, 0, width, height);
       if (image.naturalWidth) {
         const headerHeight = width < 640 ? 80 : 96;

@@ -13,25 +13,21 @@ const INSTAGRAM_URL = "https://instagram.com/hollandblumer";
 const LINKEDIN_URL = "https://linkedin.com/in/hollandblumer";
 const PROJECT_FILTERS = [
   { value: "all", label: "All" },
-  { value: "typography", label: "Typography" },
-  { value: "generative-art", label: "Generative Art" },
-  { value: "grid-layouts", label: "Grid Layouts" },
+  { value: "creative-coding", label: "Creative Coding" },
   { value: "fullstack-projects", label: "Fullstack Projects" },
   { value: "cms-websites", label: "CMS Websites" },
 ];
 
 const FILTER_PROJECT_INDICES = {
   all: [
-    ...Array.from({ length: 19 }, (_, index) => index).filter(
-      (index) => index !== 6 && index !== 11,
+    ...Array.from({ length: 25 }, (_, index) => index).filter(
+      (index) => ![4, 6, 11, 19, 20, 21, 23, 24].includes(index),
     ),
     11,
   ],
-  typography: [0, 2, 10, 3, 6, 15],
-  "generative-art": [7, 9],
-  "grid-layouts": [13, 14],
-  "fullstack-projects": [4, 11],
-  "cms-websites": [5, 8, 12, 17],
+  "creative-coding": [0, 2, 13, 10, 3, 6, 15, 7, 9, 14, 5],
+  "fullstack-projects": [1, 4, 11, 22, 23],
+  "cms-websites": [8, 18, 12, 17, 19, 20, 24, 21],
 };
 const PROJECTS = [
   {
@@ -204,6 +200,48 @@ const PROJECTS = [
     src: "/videos/meredith.mp4",
     poster: "/videos/meredith-poster.jpg",
   },
+  {
+    id: "kelsey-malone",
+    title: "Kelsey Malone",
+    type: "video",
+    src: "/videos/kelsey.mp4",
+    poster: "/videos/kelsey-poster.jpg",
+  },
+  {
+    id: "aj-integrated",
+    title: "AJ Integrated",
+    type: "video",
+    src: "/videos/aj-integrated.mp4",
+    poster: "/videos/aj-integrated-poster.jpg",
+  },
+  {
+    id: "collwick-rotation",
+    title: "Collwick Rotation",
+    type: "video",
+    src: "/videos/collwick rotation.mp4",
+    poster: "/videos/collwick-rotation-poster.jpg",
+  },
+  {
+    id: "ccnyc-gallery",
+    title: "CCNYC Gallery",
+    type: "video",
+    src: "/videos/ccnyc-gallery-video.mp4",
+    poster: "/videos/ccnyc-gallery-poster.jpg?v=05s",
+  },
+  {
+    id: "divot-promo",
+    title: "Divot Promo",
+    type: "image",
+    src: "/videos/divot-logo.jpeg",
+    poster: "/videos/divot-logo.jpeg",
+  },
+  {
+    id: "floating-books",
+    title: "Floating Books",
+    type: "video",
+    src: "/videos/floating-books-optimized.mp4",
+    poster: "/videos/floating-books-poster.jpg",
+  },
 ];
 
 function InstagramIcon(props) {
@@ -372,6 +410,7 @@ export default function Home() {
   const [filterOpen, setFilterOpen] = useState(false);
   const gridMorphEnabled = true;
   const [gridEffectStrength, setGridEffectStrength] = useState(1.3);
+  const regularGridEffectStrengthRef = useRef(1.3);
   const [gridVideosPaused, setGridVideosPaused] = useState(false);
   const [glassButtonRects, setGlassButtonRects] = useState([]);
   const effectDemoRanRef = useRef(false);
@@ -615,6 +654,14 @@ export default function Home() {
                         className="portfolio-filter__option"
                         key={filter.value}
                         onClick={() => {
+                          const currentIsCategory = projectFilter !== "all";
+                          const nextIsCategory = filter.value !== "all";
+                          if (!currentIsCategory && nextIsCategory) {
+                            regularGridEffectStrengthRef.current = gridEffectStrength;
+                            setGridEffectStrength(0.1);
+                          } else if (currentIsCategory && !nextIsCategory) {
+                            setGridEffectStrength(regularGridEffectStrengthRef.current);
+                          }
                           setProjectFilter(filter.value);
                           setFilterOpen(false);
                         }}
@@ -792,22 +839,44 @@ export default function Home() {
                 />
               )}
               <div className="project-page-reveal__content">
-              <header className="sticky top-0 z-10 flex h-20 items-center justify-between border-b border-black/15 bg-[rgba(238,234,224,0.82)] px-5 backdrop-blur-xl sm:h-24 sm:px-8">
-                <p className={`text-xs uppercase tracking-[0.16em] ${bricolage.className}`}>
-                  Selected work
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setGridProjectIndex(null)}
-                  className={`flex h-10 items-center rounded-full border border-black/20 px-4 text-xs uppercase tracking-[0.14em] transition hover:bg-black hover:text-white ${bricolage.className}`}
-                  aria-label="Close project page"
-                >
-                  Close
-                </button>
+              <header className="sticky top-0 z-10 border-b border-black/10 bg-[rgba(250,249,246,0.9)] backdrop-blur-xl">
+                <div className="mx-auto flex h-16 w-full max-w-[1240px] items-center justify-between px-5 sm:h-20 sm:px-8">
+                  <p className={`text-sm font-semibold tracking-[-0.02em] ${bricolage.className}`}>
+                    Holland Blumer
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setGridProjectIndex(null)}
+                    className={`flex h-10 items-center rounded-full bg-black px-5 text-xs font-semibold text-white transition hover:bg-black/75 ${bricolage.className}`}
+                    aria-label="Close project page"
+                  >
+                    Close
+                  </button>
+                </div>
               </header>
 
-              <div className="mx-auto w-full max-w-[1500px] px-5 pb-20 sm:px-8 sm:pb-28">
-                <div className="flex min-h-[calc(100dvh-5rem)] items-center justify-center py-8 sm:min-h-[calc(100dvh-6rem)] sm:py-10">
+              <div className="mx-auto w-full max-w-[1240px] px-5 pb-20 pt-9 sm:px-8 sm:pb-28 sm:pt-12">
+                <div className="mb-7 grid gap-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+                  <div>
+                    <h1 className={`max-w-4xl text-[clamp(2.25rem,5vw,4.75rem)] font-semibold leading-[0.96] tracking-[-0.055em] ${bricolage.className}`}>
+                      {gridProject.title}
+                    </h1>
+                    <div className="mt-6 flex items-center gap-3">
+                      <span className={`flex h-11 w-11 items-center justify-center rounded-full bg-[#705208] text-xs font-semibold text-white ${bricolage.className}`} aria-hidden="true">
+                        HB
+                      </span>
+                      <div className={bricolage.className}>
+                        <p className="text-sm font-semibold">Holland Blumer</p>
+                        <p className="text-xs text-black/50">Creative technologist &amp; designer</p>
+                      </div>
+                    </div>
+                  </div>
+                  <p className={`text-xs uppercase tracking-[0.14em] text-black/45 ${bricolage.className}`}>
+                    {String(gridProjectIndex + 1).padStart(2, "0")} / {String(PROJECTS.length).padStart(2, "0")}
+                  </p>
+                </div>
+
+                <div className="flex min-h-[52dvh] items-center justify-center overflow-hidden rounded-[1.35rem] bg-[#e9e7e1] p-3 sm:min-h-[65dvh] sm:rounded-[1.75rem] sm:p-5">
                   {gridProject.type === "video" ? (
                     <video
                       src={gridProject.src}
@@ -817,33 +886,26 @@ export default function Home() {
                       muted
                       loop
                       playsInline
-                      className="project-page-reveal__image block h-[calc(100dvh-9rem)] w-[calc(100vw-40px)] max-w-[1100px] bg-black/5 object-contain sm:h-[calc(100dvh-11rem)] sm:w-[calc(100vw-64px)]"
+                      controls
+                      className="project-page-reveal__image block max-h-[78dvh] w-full rounded-xl object-contain sm:rounded-2xl"
                     />
                   ) : (
                     <img
                       src={gridProject.poster}
                       alt={gridProject.title}
-                      className="project-page-reveal__image block h-[calc(100dvh-9rem)] w-[calc(100vw-40px)] max-w-[1100px] bg-black/5 object-contain sm:h-[calc(100dvh-11rem)] sm:w-[calc(100vw-64px)]"
+                      className="project-page-reveal__image block max-h-[78dvh] w-full rounded-xl object-contain sm:rounded-2xl"
                     />
                   )}
                 </div>
 
-                <div className="grid gap-8 border-y border-black/15 py-10 md:grid-cols-[minmax(0,1fr)_auto] md:items-end sm:py-14">
-                  <h1 className={`max-w-5xl text-[clamp(3rem,9vw,9rem)] leading-[0.86] tracking-[-0.06em] ${bricolage.className}`}>
-                    {gridProject.title}
-                  </h1>
-                  <p className={`pb-1 text-xs uppercase tracking-[0.16em] text-black/55 ${bricolage.className}`}>
-                    {String(gridProjectIndex + 1).padStart(2, "0")} / {String(PROJECTS.length).padStart(2, "0")}
-                  </p>
-                </div>
-
-                <div className="grid gap-8 pt-10 md:grid-cols-[minmax(180px,0.32fr)_minmax(0,0.68fr)] sm:pt-14">
-                  <p className={`text-xs uppercase tracking-[0.16em] text-black/50 ${bricolage.className}`}>
-                    Project overview
-                  </p>
-                  <div>
+                <div className="mx-auto grid max-w-[980px] gap-8 border-t border-black/10 pt-10 mt-12 md:grid-cols-[180px_minmax(0,1fr)] sm:mt-16 sm:pt-14">
+                  <div className={bricolage.className}>
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-black/45">About the project</p>
+                    <p className="mt-3 text-xs leading-5 text-black/45">Design, development<br />and motion</p>
+                  </div>
+                  <div className="min-w-0">
                     {gridProject.blurb && !gridProject.gallery?.length && (
-                      <p className={`max-w-3xl whitespace-pre-line text-base leading-7 sm:text-lg sm:leading-8 ${bricolage.className}`}>
+                      <p className={`max-w-3xl whitespace-pre-line text-lg leading-8 sm:text-xl sm:leading-9 ${bricolage.className}`}>
                         {gridProject.blurb}
                       </p>
                     )}
@@ -858,7 +920,7 @@ export default function Home() {
                           return (
                             <section key={heading} className="grid gap-5">
                               <div className="max-w-3xl">
-                                <h2 className="mb-3 text-xs uppercase tracking-[0.16em] text-black/50">
+                                <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-black/45">
                                   {heading}
                                 </h2>
                                 <p className="text-base leading-7 sm:text-lg sm:leading-8">
@@ -868,7 +930,7 @@ export default function Home() {
                               {sectionImages.map((image) => (
                                 <figure
                                   key={image.src}
-                                  className="mt-2 overflow-hidden border border-black/10 bg-white"
+                                  className="mt-2 overflow-hidden rounded-2xl bg-white"
                                 >
                                   <img
                                     src={image.src}
@@ -888,7 +950,7 @@ export default function Home() {
                       <button
                         type="button"
                         onClick={() => router.push(gridProject.href)}
-                        className={`mt-10 rounded-full border border-black/25 px-6 py-3 text-xs uppercase tracking-[0.16em] transition hover:bg-black hover:text-white ${bricolage.className}`}
+                        className={`mt-10 rounded-full bg-black px-7 py-3.5 text-xs font-semibold text-white transition hover:bg-black/75 ${bricolage.className}`}
                       >
                         Open project
                       </button>
@@ -1160,6 +1222,7 @@ export default function Home() {
           onComplete={() => setPreloaderAnimationDone(true)}
           onSelectProject={handleOpenGridProject}
           projectIndices={FILTER_PROJECT_INDICES[projectFilter]}
+          projectFilter={projectFilter}
           morphEnabled={gridMorphEnabled}
           effectStrength={gridEffectStrength}
           glassRects={glassButtonRects}

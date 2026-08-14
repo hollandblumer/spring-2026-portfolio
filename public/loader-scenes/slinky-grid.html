@@ -561,8 +561,8 @@
     /* ---------- gallery ---------- */
     import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 
-    const textureUrls=['/videos/springcompilation.mp4','/poster-blueprint/snapshot.png','/videos/typeexperiments-poster.jpg','/videos/count.mp4','/projects/3dmotionmarbling.png','/videos/templates-optimized.mp4','/videos/noony-optimized.mp4','https://assets.codepen.io/9259849/5cc44ca4-52f5-4d90-98a1-0d993bc4b837.mp4','/videos/katiegrover.mp4','/projects/design-splash.jpeg','/videos/ccnyc-twist.mp4','/projects/chargepoint.png','/videos/seasons.mp4','/videos/Card Layout.mp4','/videos/slinkygrid.mp4','/videos/Rip open.mp4?v=2','/videos/Sign warp.mp4','/videos/cherylfudge.mp4','/videos/meredith.mp4'];
-    const videoPosterUrls=['/videos/spring-poster.jpg',null,null,'/videos/count-poster.jpg',null,'/videos/templates-poster.jpg','/videos/noony-poster.jpg','/projects/checkerboard3d.jpeg','/projects/canvas-particles.jpeg',null,'/videos/ccnyc-twist-poster.jpg',null,'/projects/american-seasons.png','/videos/card-layout-poster.jpg','/videos/slinkygrid-poster.jpg','/videos/Rip open.png','/videos/sign-warp-poster.jpg','/projects/cherylfudge.png','/videos/meredith-poster.jpg'];
+    const textureUrls=['/videos/springcompilation.mp4','/poster-blueprint/snapshot.png','/videos/typeexperiments-poster.jpg','/videos/count.mp4','/projects/3dmotionmarbling.png?v=orange-hand','/videos/templates-optimized.mp4','/videos/noony-optimized.mp4','https://assets.codepen.io/9259849/5cc44ca4-52f5-4d90-98a1-0d993bc4b837.mp4','/videos/katiegrover.mp4','/projects/design-splash.jpeg','/videos/ccnyc-twist.mp4','/projects/chargepoint.png','/videos/seasons.mp4','/videos/Card Layout.mp4','/videos/slinkygrid.mp4','/videos/Rip open.mp4?v=2','/videos/Sign warp.mp4','/videos/cherylfudge.mp4','/videos/meredith.mp4','/videos/kelsey.mp4','/videos/aj-integrated.mp4','/videos/collwick rotation.mp4','/videos/ccnyc-gallery-video.mp4','/videos/divot-logo.jpeg','/videos/floating-books-optimized.mp4'];
+    const videoPosterUrls=['/videos/spring-poster.jpg',null,null,'/videos/count-poster.jpg',null,'/videos/templates-poster.jpg','/videos/noony-poster.jpg','/projects/checkerboard3d.jpeg','/projects/canvas-particles.jpeg',null,'/videos/ccnyc-twist-poster.jpg',null,'/projects/american-seasons.png','/videos/card-layout-poster.jpg','/videos/slinkygrid-poster.jpg','/videos/Rip open.png','/videos/sign-warp-poster.jpg','/projects/cherylfudge.png','/videos/meredith-poster.jpg','/videos/kelsey-poster.jpg','/videos/aj-integrated-poster.jpg','/videos/collwick-rotation-poster.jpg','/videos/ccnyc-gallery-poster.jpg?v=05s',null,'/videos/floating-books-poster.jpg'];
     assetsTotal=textureUrls.length+1;
     const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'high-performance'});
     renderer.outputColorSpace=THREE.SRGBColorSpace;
@@ -660,13 +660,14 @@
     const isVideoProject=index=>/\.(mp4|webm)(?:[?#]|$)/i.test(textureUrls[index]||'');
     const CARD_ASPECT=4/5,CARD_HEIGHT=1/CARD_ASPECT;
     const cardHeightScales=Array(textureUrls.length).fill(1),cards=[];
+    const projectHeightScale=projectIndex=>projectIndex===20?.62:1;
     const cardCount=36;let visibleCardCount=cardCount,columns=innerWidth<=768?2:3,rows=Math.ceil(visibleCardCount/columns),cardScale=.92,spacingX=.95,spacingY=.57,total=rows*spacingY;
     for(let i=0;i<cardCount;i++){
       const texture=textures[i%textures.length],image=texture.image,heightScale=cardHeightScales[i%cardHeightScales.length],cardAspect=CARD_ASPECT/heightScale;
       const geometry=new THREE.PlaneGeometry(1,CARD_HEIGHT*heightScale,64,12);
       const projectIndex=i%textures.length;
       const material=new THREE.ShaderMaterial({vertexShader:vertex,fragmentShader:fragment,side:THREE.DoubleSide,transparent:true,depthWrite:false,uniforms:{uTexture:{value:texture},uDisplacement:{value:displacement},uTexParallax:{value:isVideoProject(projectIndex)?centeredTextureOffset:texParallax},uTexScale:{value:1},uSelectFit:{value:isVideoProject(projectIndex)?1:.92},uOpacity:{value:0},uPathBend:{value:0},uPathAmp:{value:0},uPathTurns:{value:1.5},uHalfW:{value:1},uCenterX:{value:0},uSelectProgress:{value:0},uScaleDelay:{value:0},uDispAmount:{value:0},uAspect:{value:cardAspect},uImageAspect:{value:image?.videoWidth&&image?.videoHeight?image.videoWidth/image.videoHeight:image?.width&&image?.height?image.width/image.height:cardAspect},uVideoColorFix:{value:0}}});
-      const mesh=new THREE.Mesh(geometry,material);mesh.scale.set(cardScale,cardScale,1);mesh.userData.index=i;mesh.userData.projectIndex=i%textures.length;mesh.userData.col=i%columns;mesh.userData.row=Math.floor(i/columns);mesh.userData.introDelay=0;mesh.userData.cardAspect=cardAspect;group.add(mesh);cards.push(mesh);
+      const mesh=new THREE.Mesh(geometry,material);mesh.userData.index=i;mesh.userData.projectIndex=i%textures.length;mesh.userData.col=i%columns;mesh.userData.row=Math.floor(i/columns);mesh.userData.introDelay=0;mesh.userData.cardAspect=cardAspect;mesh.userData.heightScale=projectHeightScale(projectIndex);mesh.scale.set(cardScale,cardScale*mesh.userData.heightScale,1);group.add(mesh);cards.push(mesh);
     }
 
     const rtOptions={type:THREE.HalfFloatType,format:THREE.RGBAFormat,minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter,depthBuffer:false,stencilBuffer:false};
@@ -678,9 +679,10 @@
     const postMat=new THREE.ShaderMaterial({vertexShader:screenVertex,fragmentShader:postFragment,transparent:true,uniforms:{uScene:{value:sceneTarget.texture},uTrailMap:{value:trailA.texture},uAspect:{value:new THREE.Vector2(innerWidth/innerHeight,1)},uGlassRects:{value:Array.from({length:5},()=>new THREE.Vector4())},uFisheye:{value:-.5},uRgbAmount:{value:.12},uRgbBoost:{value:0},uBlur:{value:.045},uReveal:{value:0},uProjectMode:{value:0},uTime:{value:0}}});
     const postScene=new THREE.Scene();postScene.add(new THREE.Mesh(quadGeo,postMat));
 
-    let targetY=total/2,currentY=total/2,velocity=0,dragging=false,moved=false,lastY=0,downX=0,downY=0,hovered=null,selected=null,selection=0,closing=false,pointerMoved=false,trailHover=0,morphEnabled=true,effectStrength=1,videosPaused=false;
+    let targetY=total/2,currentY=total/2,velocity=0,dragging=false,moved=false,lastY=0,downX=0,downY=0,hovered=null,selected=null,selection=0,closing=false,pointerMoved=false,trailHover=0,morphEnabled=true,effectStrength=1,videosPaused=false,compactFilter=false,staticFilter=false,staticScrollMax=0;
     function wrap(v,size){return((v+size/2)%size+size)%size-size/2}
-    function layout(){if(selected)return;for(const card of cards){const x=(card.userData.col-(columns-1)/2)*spacingX;const stagger=morphEnabled?card.userData.col*spacingY*.34:0;card.position.set(x,wrap(card.userData.row*spacingY+stagger+currentY,total),0)}}
+    function setCardScale(card,size){card.scale.set(size,size*(card.userData.heightScale||1),1)}
+    function layout(){if(selected)return;for(const card of cards){const rowStart=card.userData.row*columns,itemsInRow=Math.min(columns,visibleCardCount-rowStart);const x=(card.userData.col-(itemsInRow-1)/2)*spacingX;const stagger=morphEnabled&&!staticFilter?card.userData.col*spacingY*.34:0;const y=compactFilter?.12:staticFilter?.42-card.userData.row*spacingY+currentY:wrap(card.userData.row*spacingY+stagger+currentY,total);card.position.set(x,y,0)}}
 
     const cursorEl=document.querySelector('.cursor'),cursorLabel=cursorEl.firstElementChild;let cursorMode='';
     function setCursor(mode){if(mode===cursorMode)return;cursorMode=mode;cursorLabel.textContent=mode==='close'?'×':'View';document.body.classList.toggle('hovering',mode==='view')}
@@ -743,8 +745,12 @@
       if(event.data?.type!=='portfolio-grid-filter')return;
       const indices=event.data.indices?.filter(index=>Number.isInteger(index)&&index>=0&&index<textures.length);
       if(!indices?.length)return;
-      visibleCardCount=indices.length<4?indices.length:cardCount;
+      const isAllFilter=event.data.filter==='all';
+      compactFilter=false;
+      staticFilter=!isAllFilter;
+      visibleCardCount=staticFilter?indices.length:cardCount;
       columns=Math.min(innerWidth<=768?2:3,visibleCardCount);
+      velocity=0;
       cards.forEach((card,i)=>{
         card.visible=i<visibleCardCount;
         card.userData.col=i%columns;
@@ -752,22 +758,27 @@
         if(!card.visible)return;
         const projectIndex=indices[i%indices.length],texture=projectIndex===2&&typeExperimentVideoStarted?typeExperimentVideo.texture:textures[projectIndex],image=texture.image;
         card.userData.projectIndex=projectIndex;
+        card.userData.heightScale=projectHeightScale(projectIndex);
+        setCardScale(card,cardScale);
         card.material.uniforms.uTexture.value=texture;
+        card.material.uniforms.uAspect.value=card.userData.cardAspect/card.userData.heightScale;
         card.material.uniforms.uTexParallax.value=isVideoProject(projectIndex)?centeredTextureOffset:texParallax;
         card.material.uniforms.uSelectFit.value=isVideoProject(projectIndex)?1:.92;
         card.material.uniforms.uImageAspect.value=image?.videoWidth&&image?.videoHeight?image.videoWidth/image.videoHeight:image?.width&&image?.height?image.width/image.height:card.userData.cardAspect;
         card.material.uniforms.uVideoColorFix.value=0;
       });
-      rows=Math.max(1,Math.ceil(visibleCardCount/columns));total=Math.max(spacingY,rows*spacingY);targetY=currentY=total/2;layout();
+      rows=Math.max(1,Math.ceil(visibleCardCount/columns));total=Math.max(spacingY,rows*spacingY);
+      const startOffset=isAllFilter?total/2-spacingY:0;
+      targetY=currentY=startOffset;resize();
     });
 
-    function resize(){renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();postMat.uniforms.uAspect.value.set(camera.aspect,1);const nextColumns=Math.min(innerWidth<=768?2:3,visibleCardCount);if(nextColumns!==columns){columns=nextColumns;rows=Math.max(1,Math.ceil(visibleCardCount/columns));for(let i=0;i<cards.length;i++){cards[i].userData.col=i%columns;cards[i].userData.row=Math.floor(i/columns)}}const visibleH=2*Math.tan(75*Math.PI/360)*camera.position.z,visibleW=visibleH*camera.aspect;cardScale=Math.min(.92,visibleW/(columns===2?2.25:3.35));spacingX=cardScale*1.04;spacingY=cardScale*CARD_HEIGHT+cardScale*.05;total=Math.max(spacingY,rows*spacingY);for(const card of cards)if(card!==selected&&introDone)card.scale.set(cardScale,cardScale,1);const p=Math.min(devicePixelRatio,2);sceneTarget.setSize(Math.max(1,innerWidth*p),Math.max(1,innerHeight*p));layout()}
+    function resize(){renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();postMat.uniforms.uAspect.value.set(camera.aspect,1);const nextColumns=Math.min(innerWidth<=768?2:3,visibleCardCount);if(nextColumns!==columns){columns=nextColumns;rows=Math.max(1,Math.ceil(visibleCardCount/columns));for(let i=0;i<cards.length;i++){cards[i].userData.col=i%columns;cards[i].userData.row=Math.floor(i/columns)}}const visibleH=2*Math.tan(75*Math.PI/360)*camera.position.z,visibleW=visibleH*camera.aspect,widthScale=visibleW/(columns===2?2.25:3.35);cardScale=Math.min(.92,widthScale);spacingX=cardScale*1.04;spacingY=cardScale*CARD_HEIGHT+cardScale*.05;total=Math.max(spacingY,rows*spacingY);staticScrollMax=staticFilter?Math.max(0,(rows-1)*spacingY-.28):0;if(staticFilter){targetY=THREE.MathUtils.clamp(targetY,0,staticScrollMax);currentY=THREE.MathUtils.clamp(currentY,0,staticScrollMax)}for(const card of cards)if(card!==selected&&introDone)setCardScale(card,cardScale);const p=Math.min(devicePixelRatio,2);sceneTarget.setSize(Math.max(1,innerWidth*p),Math.max(1,innerHeight*p));layout()}
     addEventListener('resize',resize);resize();
 
     function animate(){
       requestAnimationFrame(animate);
       const now=performance.now(),dt=Math.min(clock.getDelta(),.05);
-      if(!dragging&&!selected){targetY+=velocity;velocity*=.92;targetY+=.025*dt}
+      if(!dragging&&!selected){if(staticFilter){targetY=THREE.MathUtils.clamp(targetY+velocity,0,staticScrollMax);velocity*=.88}else{targetY+=velocity;velocity*=.92;targetY+=.025*dt}}
       currentY+=(targetY-currentY)*.08;layout();
 
       /* intro: cards rise in behind the opening lens, nearest the centre first */
@@ -779,9 +790,9 @@
           for(const card of cards){
             const p=Math.min(1,Math.max(0,(it-card.userData.introDelay)/introSec)),e=1-Math.pow(1-p,3);
             card.material.uniforms.uOpacity.value=e;
-            const s=cardScale*(.88+.12*e);card.scale.set(s,s,1);
+            const s=cardScale*(.88+.12*e);setCardScale(card,s);
           }
-          if(reveal>=1){introDone=true;reveal=1;document.body.classList.add('done');for(const card of cards){card.material.uniforms.uOpacity.value=1;card.scale.set(cardScale,cardScale,1)}setTimeout(()=>parent.postMessage('portfolio-loader-complete',location.origin),450)}
+          if(reveal>=1){introDone=true;reveal=1;document.body.classList.add('done');for(const card of cards){card.material.uniforms.uOpacity.value=1;setCardScale(card,cardScale)}setTimeout(()=>parent.postMessage('portfolio-loader-complete',location.origin),450)}
         }
       }
       if(introDone&&!videosPaused&&!typeExperimentVideoStarted&&typeExperimentVideo&&now-revealAt>revealMs+900){
