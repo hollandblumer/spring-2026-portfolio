@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Loader</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: transparent; }
+  body {
+    background: transparent;
+    color: #f4f2ee;
+    font: 400 16px/1.6 "Helvetica Neue", Inter, system-ui, sans-serif;
+  }
+  #page {
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 20px;
+    padding: 48px;
+    opacity: 0;
+    transition: opacity 600ms ease;
+  }
+  #page.is-revealed { opacity: 1; }
+  #page h1 { font-size: 28px; font-weight: 500; margin: 0; }
+  #page p { margin: 0; max-width: 42ch; color: #a8a5a0; }
+  button {
+    font: inherit;
+    font-size: 14px;
+    color: #f4f2ee;
+    background: transparent;
+    border: 1px solid #4a4a4a;
+    border-radius: 8px;
+    padding: 10px 18px;
+    cursor: pointer;
+  }
+  button:hover { background: #303030; }
+  #loader {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: transparent;
+  }
+  .loader-bg {
+    position: absolute;
+    inset: 0;
+    background: #272727;
+    transition: opacity 500ms ease;
+  }
+  #loader.is-exiting .loader-bg { opacity: 0; }
+  #loader.is-done { visibility: hidden; pointer-events: none; }
+  #loader canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+  #debug {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 200;
+    display: none;
+    flex-direction: column;
+    gap: 7px;
+    padding: 14px 16px;
+    background: rgba(20, 20, 20, 0.92);
+    border: 1px solid #444;
+    border-radius: 10px;
+    font-size: 12px;
+    color: #d8d5d0;
+  }
+  #debug.is-open { display: flex; }
+  #debug label { display: flex; align-items: center; gap: 10px; justify-content: space-between; }
+  #debug span { width: 34px; text-align: right; font-variant-numeric: tabular-nums; }
+  #debug input { width: 116px; }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+</style>
+</head>
+<body>
+
+<div id="page">
+  <h1>Loaded</h1>
+  <p>The loader dispatches a <code>loader:complete</code> event when its exit animation finishes. Press D while it runs to open the tuning panel.</p>
+  <button id="replay" type="button">Replay loader</button>
+</div>
+
+<div id="loader" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="loading">
+  <span class="sr-only" id="srStatus">loading 0 percent</span>
+  <div class="loader-bg"></div>
+  <canvas id="glcanvas" aria-hidden="true"></canvas>
+</div>
+
+<div id="debug" aria-hidden="true">
+  <label>lens size <input type="range" id="dRadius" min="20" max="120" step="1" value="62" /><span id="vRadius">0.62</span></label>
+  <label>refraction <input type="range" id="dThick" min="0" max="120" step="1" value="85" /><span id="vThick">0.85</span></label>
+  <label>index <input type="range" id="dIor" min="100" max="200" step="1" value="135" /><span id="vIor">1.35</span></label>
+  <label>dispersion <input type="range" id="dDisp" min="0" max="30" step="1" value="6" /><span id="vDisp">0.06</span></label>
+  <label>barrel <input type="range" id="dBarrel" min="0" max="110" step="1" value="25" /><span id="vBarrel">0.25</span></label>
+  <label>type size <input type="range" id="dSize" min="30" max="95" step="1" value="48" /><span id="vSize">0.48</span></label>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var CONFIG = {
+    label: "loading",
+    digits: 3,
+    background: [0.0, 0.0, 0.0],
+    text: [1.0, 1.0, 1.0],
+    fontStack: '"Helvetica Neue", Inter, system-ui, sans-serif',
+    fontWeight: 700,
+    glyphFill: 0.48,
+    lensRadius: 0.62,
+    thickness: 0.85,
+    ior: 1.35,
+    dispersion: 0.06,
+    barrel: 0.5,
+    compensate: 0.5,
+    vignette: 0.35,
+    splitStrength: 0.007,
+    swellMax: 0.55,
+    holdMs: 120,
+    entryMs: 720,
+    exitMs: 720,
+    simulateMs: 3200
+  };
+
+  var loaderEl = document.getElementById("loader");
+  var pageEl = document.getElementById("page");
+  var srEl = document.getElementById("srStatus");
+  var debugEl = document.getElementById("debug");
+  var canvas = document.getElementById("glcanvas");
+  var gl = canvas.getContext("webgl", { antialias: false, alpha: true, premultipliedAlpha: true });
+
+  if (!gl) {
+    loaderEl.classList.add("is-done");
+    pageEl.classList.add("is-revealed");
+    window.parent.postMessage("portfolio-lens-loader-complete", window.location.origin);
+    return;
+  }
+
+  var SCREEN_VS =
+    "attribute vec2 aPos; varying vec2 vUv;" +
+    "void main(){ vUv = aPos + 0.5; gl_Position = vec4(aPos * 2.0, 0.0, 1.0); }";
+
+  var LOADER_FS =
+    "precision highp float; varying vec2 vUv;" +
+    "uniform sampler2D uGlyph;" +
+    "uniform vec3 uBackground; uniform vec3 uText; uniform vec2 uParallax;" +
+    "uniform float uExit;" +
+    "void main(){" +
+    "vec2 uv = clamp(vUv + uParallax, 0.001, 0.999);" +
+    "vec3 color = uBackground;" +
+    "float glyph = texture2D(uGlyph, uv).a;" +
+    "color = mix(color, uText, glyph);" +
+    "color = mix(color, uBackground, uExit);" +
+    "float alpha = max(max(color.r, color.g), color.b);" +
+    "gl_FragColor = vec4(color, alpha); }";
+
+  var TRAIL_FS =
+    "precision highp float; varying vec2 vUv; uniform sampler2D uPrevious;" +
+    "uniform vec2 uPointer; uniform float uActive;" +
+    "void main(){ float previous = texture2D(uPrevious, vUv).r * 0.945;" +
+    "float stamp = (1.0 - smoothstep(0.0, 0.115, distance(vUv, uPointer))) * uActive;" +
+    "float value = max(previous, stamp); gl_FragColor = vec4(value, value, value, 1.0); }";
+
+  var POST_FS =
+    "precision highp float; varying vec2 vUv;" +
+    "uniform sampler2D uScene; uniform sampler2D uTrail;" +
+    "uniform float uExit; uniform float uBarrel; uniform float uCompensate;" +
+    "uniform float uSplit; uniform float uVignette; uniform float uAspect;" +
+    "uniform float uLensRadius; uniform float uThickness; uniform float uIor; uniform float uDispersion;" +
+    "vec2 lensOffset(vec3 normal, float eta, float scale) {" +
+    "  vec3 bent = refract(vec3(0.0, 0.0, -1.0), normal, eta);" +
+    "  return bent.xy * scale / vec2(uAspect, 1.0);" +
+    "}" +
+    "void main(){" +
+    "vec2 center = vUv - 0.5;" +
+    "float r2 = dot(center, center);" +
+    "float k = uBarrel + uExit * 0.85;" +
+    "float gain = mix(1.0, 1.0 / max(0.35, 1.0 - k * 0.5), uCompensate);" +
+    "vec2 buv = center * (1.0 - k * r2) * gain * (1.0 - uExit * 0.06) + 0.5;" +
+    "vec2 p = (buv - 0.5) * vec2(uAspect, 1.0) / max(0.05, uLensRadius);" +
+    "float d = length(p);" +
+    "vec2 offR = vec2(0.0); vec2 offG = vec2(0.0); vec2 offB = vec2(0.0);" +
+    "if (d < 1.0) {" +
+    "  float z = sqrt(max(0.0001, 1.0 - d * d));" +
+    "  vec3 normal = vec3(p, z);" +
+    "  float scale = uThickness * uLensRadius * (1.0 + uExit * 1.5);" +
+    "  offR = lensOffset(normal, 1.0 / max(1.001, uIor - uDispersion), scale);" +
+    "  offG = lensOffset(normal, 1.0 / max(1.001, uIor), scale);" +
+    "  offB = lensOffset(normal, 1.0 / max(1.001, uIor + uDispersion), scale);" +
+    "}" +
+    "float trail = texture2D(uTrail, vUv).r;" +
+    "float split = trail * uSplit + uExit * 0.016;" +
+    "vec2 rgbOffset = vec2(split, split * 0.45);" +
+    "float blur = trail * uSplit * 0.375;" +
+    "vec3 color;" +
+    "color.r = texture2D(uScene, clamp(buv + offR + rgbOffset, 0.001, 0.999)).r;" +
+    "color.g = texture2D(uScene, clamp(buv + offG, 0.001, 0.999)).g;" +
+    "color.b = texture2D(uScene, clamp(buv + offB - rgbOffset, 0.001, 0.999)).b;" +
+    "vec2 base = clamp(buv + offG, 0.001, 0.999);" +
+    "color += texture2D(uScene, clamp(base + vec2(blur, 0.0), 0.001, 0.999)).rgb;" +
+    "color += texture2D(uScene, clamp(base - vec2(blur, 0.0), 0.001, 0.999)).rgb;" +
+    "color += texture2D(uScene, clamp(base + vec2(0.0, blur), 0.001, 0.999)).rgb;" +
+    "color += texture2D(uScene, clamp(base - vec2(0.0, blur), 0.001, 0.999)).rgb;" +
+    "color /= 5.0;" +
+    "float rim = smoothstep(0.90, 1.0, d) * (1.0 - step(1.0, d));" +
+    "color += rim * 0.22 * (1.0 - uExit);" +
+    "color *= 1.0 - uVignette * smoothstep(0.05, 0.55, r2);" +
+    "float alpha = max(max(color.r, color.g), color.b);" +
+    "gl_FragColor = vec4(color, alpha); }";
+
+  function compile(vsSource, fsSource) {
+    function shader(type, source) {
+      var s = gl.createShader(type);
+      gl.shaderSource(s, source);
+      gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+        console.error(gl.getShaderInfoLog(s));
+      }
+      return s;
+    }
+    var program = gl.createProgram();
+    gl.attachShader(program, shader(gl.VERTEX_SHADER, vsSource));
+    gl.attachShader(program, shader(gl.FRAGMENT_SHADER, fsSource));
+    gl.linkProgram(program);
+    var wrapped = { program: program, u: {} };
+    var count = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
+    for (var i = 0; i < count; i++) {
+      var info = gl.getActiveUniform(program, i);
+      wrapped.u[info.name] = gl.getUniformLocation(program, info.name);
+    }
+    wrapped.aPos = gl.getAttribLocation(program, "aPos");
+    return wrapped;
+  }
+
+  var loaderProg = compile(SCREEN_VS, LOADER_FS);
+  var trailProg = compile(SCREEN_VS, TRAIL_FS);
+  var postProg = compile(SCREEN_VS, POST_FS);
+
+  var quad = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5]), gl.STATIC_DRAW);
+
+  function bindQuad(prog) {
+    gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+    gl.enableVertexAttribArray(prog.aPos);
+    gl.vertexAttribPointer(prog.aPos, 2, gl.FLOAT, false, 0, 0);
+  }
+
+  function makeTexture() {
+    var tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    return tex;
+  }
+
+  function makeFBO(width, height) {
+    var tex = makeTexture();
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    var fbo = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    return { fbo: fbo, tex: tex, w: width, h: height };
+  }
+
+  var trailA = makeFBO(256, 256);
+  var trailB = makeFBO(256, 256);
+  var sceneTarget = makeFBO(2, 2);
+
+  var glyphCanvas = document.createElement("canvas");
+  var glyphTex = makeTexture();
+
+  function drawGlyphs(text) {
+    var ctx = glyphCanvas.getContext("2d");
+    var width = glyphCanvas.width;
+    var height = glyphCanvas.height;
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = "#ffffff";
+    ctx.textBaseline = "alphabetic";
+
+    var probe = 400;
+    ctx.font = CONFIG.fontWeight + " " + probe + "px " + CONFIG.fontStack;
+
+    var cell = 0;
+    var digits = "0123456789";
+    for (var i = 0; i < digits.length; i++) {
+      cell = Math.max(cell, ctx.measureText(digits[i]).width);
+    }
+    var reference = ctx.measureText("8");
+    var glyphHeight = reference.actualBoundingBoxAscent + reference.actualBoundingBoxDescent;
+    if (!cell || !glyphHeight) return;
+
+    var scale = Math.min(
+      (width * CONFIG.glyphFill) / (cell * Math.max(text.length, CONFIG.digits)),
+      (height * CONFIG.glyphFill) / glyphHeight
+    );
+    var size = probe * scale;
+    var cellWidth = cell * scale;
+
+    ctx.font = CONFIG.fontWeight + " " + size + "px " + CONFIG.fontStack;
+    var fitted = ctx.measureText("8");
+    var baseline = height / 2 + (fitted.actualBoundingBoxAscent - fitted.actualBoundingBoxDescent) / 2;
+
+    var x = width / 2 - (cellWidth * text.length) / 2;
+    for (var k = 0; k < text.length; k++) {
+      var advance = ctx.measureText(text[k]).width;
+      ctx.fillText(text[k], x + (cellWidth - advance) / 2, baseline);
+      x += cellWidth;
+    }
+
+    gl.bindTexture(gl.TEXTURE_2D, glyphTex);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, glyphCanvas);
+  }
+
+  var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var MAX_TEXTURE_PIXELS = 2560;
+  var target = 0;
+  var displayed = 0;
+  var renderedPercent = -1;
+  var exit = 0;
+  var entry = 0;
+  var completeAt = 0;
+  var transitionSent = false;
+  var finished = false;
+  var running = false;
+  var manual = false;
+  var startedAt = 0;
+  var frameId = 0;
+  var previousTime = 0;
+  var aspect = 1;
+  var pointerX = 0.5;
+  var pointerY = 0.5;
+  var parX = 0;
+  var parY = 0;
+  var curParX = 0;
+  var curParY = 0;
+  var lastMove = -Infinity;
+  var trailActive = 0;
+  var displayedVelocity = 0;
+  var swellPosition = 0;
+  var swellVelocity = 0;
+
+  function spring(position, velocity, goal, frequency, delta) {
+    var friction = 1 + 2 * delta * frequency;
+    var frequencySquared = frequency * frequency;
+    var acceleration = delta * frequencySquared;
+    var nextVelocity =
+      (velocity + acceleration * (goal - position)) /
+      (friction + delta * acceleration);
+    return [position + delta * nextVelocity, nextVelocity];
+  }
+
+  function resize() {
+    var width = Math.max(1, loaderEl.clientWidth);
+    var height = Math.max(1, loaderEl.clientHeight);
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.round(width * dpr);
+    canvas.height = Math.round(height * dpr);
+    aspect = canvas.width / canvas.height;
+
+    var scale = Math.min(1, MAX_TEXTURE_PIXELS / Math.max(canvas.width, canvas.height));
+    var texWidth = Math.max(2, Math.round(canvas.width * scale));
+    var texHeight = Math.max(2, Math.round(canvas.height * scale));
+    glyphCanvas.width = texWidth;
+    glyphCanvas.height = texHeight;
+
+    sceneTarget.w = canvas.width;
+    sceneTarget.h = canvas.height;
+    gl.bindTexture(gl.TEXTURE_2D, sceneTarget.tex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, sceneTarget.w, sceneTarget.h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+
+    renderedPercent = -1;
+  }
+
+  window.addEventListener("resize", resize);
+
+  loaderEl.addEventListener("pointermove", function (event) {
+    var rect = loaderEl.getBoundingClientRect();
+    var x = (event.clientX - rect.left) / rect.width;
+    var y = (event.clientY - rect.top) / rect.height;
+    pointerX = x;
+    pointerY = 1 - y;
+    parX = Math.max(-0.012, Math.min(0.012, (x - 0.5) * 0.02));
+    parY = Math.max(-0.012, Math.min(0.012, (0.5 - y) * 0.02));
+    lastMove = performance.now();
+  });
+
+  function finish() {
+    finished = true;
+    running = false;
+    window.cancelAnimationFrame(frameId);
+    window.dispatchEvent(new CustomEvent("loader:complete"));
+    window.parent.postMessage("portfolio-lens-loader-complete", window.location.origin);
+  }
+
+  function frame() {
+    frameId = window.requestAnimationFrame(frame);
+    var now = performance.now();
+    var delta = Math.min((now - previousTime) / 1000, 0.05);
+    previousTime = now;
+
+    if (!manual) {
+      var t = Math.min(1, (now - startedAt) / CONFIG.simulateMs);
+      target = 1 - Math.pow(1 - t, 2.2);
+    }
+
+    var displayedSpring = spring(
+      displayed,
+      displayedVelocity,
+      target,
+      5.5,
+      delta,
+    );
+    displayed = Math.min(1, displayedSpring[0]);
+    displayedVelocity = displayedSpring[1];
+    if (target >= 1 && displayed > 0.9995) displayed = 1;
+
+    var percent = Math.round(displayed * 100);
+    if (percent !== renderedPercent) {
+      drawGlyphs(String(percent));
+      renderedPercent = percent;
+      loaderEl.setAttribute("aria-valuenow", percent);
+      srEl.textContent = CONFIG.label + " " + percent + " percent";
+    }
+
+    if (displayed >= 1 && !completeAt) completeAt = now + CONFIG.holdMs;
+    if (completeAt && now >= completeAt) {
+      if (!transitionSent) {
+        transitionSent = true;
+        loaderEl.classList.add("is-exiting");
+        window.parent.postMessage("portfolio-lens-loader-transition", window.location.origin);
+      }
+      exit = Math.min(1, exit + delta * (1000 / Math.max(1, CONFIG.exitMs)));
+    }
+    var easedExit = exit * exit * (3 - 2 * exit);
+
+    entry = Math.min(1, entry + delta * (1000 / Math.max(1, CONFIG.entryMs)));
+    var easedEntry = entry * entry * (3 - 2 * entry);
+    var burst = Math.max(reduceMotion ? 0 : 1 - easedEntry, easedExit);
+
+    var swellSpring = spring(
+      swellPosition,
+      swellVelocity,
+      Math.pow(displayed, 1.6) * CONFIG.swellMax,
+      3.2,
+      delta,
+    );
+    swellPosition = swellSpring[0];
+    swellVelocity = swellSpring[1];
+    var baseIntensity = reduceMotion
+      ? 0
+      : Math.max(1 - easedEntry, swellPosition);
+    var lensIntensity =
+      baseIntensity + (1 - baseIntensity) * easedExit;
+
+    var pointerActive = !reduceMotion && now - lastMove < 1200 ? 1 : 0;
+    if (!reduceMotion) {
+      if (!pointerActive) {
+        parX *= 0.94;
+        parY *= 0.94;
+      }
+      curParX += (parX - curParX) * 0.06;
+      curParY += (parY - curParY) * 0.06;
+    }
+    trailActive += (pointerActive - trailActive) * 0.08;
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, trailB.fbo);
+    gl.viewport(0, 0, trailB.w, trailB.h);
+    gl.useProgram(trailProg.program);
+    bindQuad(trailProg);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, trailA.tex);
+    gl.uniform1i(trailProg.u.uPrevious, 0);
+    gl.uniform2f(trailProg.u.uPointer, pointerX, pointerY);
+    gl.uniform1f(trailProg.u.uActive, trailActive);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    var swap = trailA; trailA = trailB; trailB = swap;
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, sceneTarget.fbo);
+    gl.viewport(0, 0, sceneTarget.w, sceneTarget.h);
+    gl.useProgram(loaderProg.program);
+    bindQuad(loaderProg);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, glyphTex);
+    gl.uniform1i(loaderProg.u.uGlyph, 0);
+    gl.uniform3fv(loaderProg.u.uBackground, CONFIG.background);
+    gl.uniform3fv(loaderProg.u.uText, CONFIG.text);
+    gl.uniform2f(loaderProg.u.uParallax, curParX, curParY);
+    gl.uniform1f(loaderProg.u.uExit, burst);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.useProgram(postProg.program);
+    bindQuad(postProg);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, sceneTarget.tex);
+    gl.uniform1i(postProg.u.uScene, 0);
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, trailA.tex);
+    gl.uniform1i(postProg.u.uTrail, 1);
+    gl.uniform1f(postProg.u.uExit, reduceMotion ? 0 : lensIntensity);
+    gl.uniform1f(postProg.u.uBarrel, CONFIG.barrel);
+    gl.uniform1f(postProg.u.uCompensate, CONFIG.compensate);
+    gl.uniform1f(postProg.u.uSplit, CONFIG.splitStrength);
+    gl.uniform1f(postProg.u.uVignette, CONFIG.vignette);
+    gl.uniform1f(postProg.u.uAspect, aspect);
+    gl.uniform1f(postProg.u.uLensRadius, CONFIG.lensRadius);
+    gl.uniform1f(postProg.u.uThickness, CONFIG.thickness);
+    gl.uniform1f(postProg.u.uIor, CONFIG.ior);
+    gl.uniform1f(postProg.u.uDispersion, CONFIG.dispersion);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+    if (exit >= 1 && !finished) finish();
+  }
+
+  function start() {
+    resize();
+    target = 0;
+    displayed = 0;
+    displayedVelocity = 0;
+    swellPosition = 0;
+    swellVelocity = 0;
+    exit = 0;
+    entry = 0;
+    completeAt = 0;
+    transitionSent = false;
+    finished = false;
+    renderedPercent = -1;
+    trailActive = 0;
+    lastMove = -Infinity;
+    startedAt = performance.now();
+    previousTime = startedAt;
+    loaderEl.classList.remove("is-done");
+    loaderEl.classList.remove("is-exiting");
+    pageEl.classList.remove("is-revealed");
+    if (!running) {
+      running = true;
+      frame();
+    }
+  }
+
+  window.Loader = {
+    start: start,
+    set: function (value) {
+      manual = true;
+      target = Math.min(1, Math.max(0, value));
+    },
+    complete: function () {
+      manual = true;
+      target = 1;
+    },
+    config: CONFIG
+  };
+
+  start();
+
+  document.getElementById("replay").addEventListener("click", function () {
+    manual = false;
+    running = false;
+    window.cancelAnimationFrame(frameId);
+    start();
+  });
+
+  function bindSlider(inputId, outputId, key, divisor, redraw) {
+    var input = document.getElementById(inputId);
+    var output = document.getElementById(outputId);
+    input.addEventListener("input", function () {
+      CONFIG[key] = Number(input.value) / divisor;
+      output.textContent = CONFIG[key].toFixed(2);
+      if (redraw) renderedPercent = -1;
+    });
+  }
+  bindSlider("dRadius", "vRadius", "lensRadius", 100, false);
+  bindSlider("dThick", "vThick", "thickness", 100, false);
+  bindSlider("dIor", "vIor", "ior", 100, false);
+  bindSlider("dDisp", "vDisp", "dispersion", 100, false);
+  bindSlider("dBarrel", "vBarrel", "barrel", 100, false);
+  bindSlider("dSize", "vSize", "glyphFill", 100, true);
+
+  window.addEventListener("keydown", function (event) {
+    if (event.key === "d" || event.key === "D") debugEl.classList.toggle("is-open");
+  });
+})();
+</script>
+</body>
+</html>

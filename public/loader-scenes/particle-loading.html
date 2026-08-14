@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Particle Gather Loading</title>
+  <style>
+    *{box-sizing:border-box}
+    html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#272727}
+    canvas{display:block;width:100%;height:100%}
+  </style>
+</head>
+<body>
+  <canvas id="scene" aria-label="Particles collecting to form the word loading"></canvas>
+  <script>
+    const canvas=document.getElementById("scene");
+    const ctx=canvas.getContext("2d");
+    const mask=document.createElement("canvas");
+    const mctx=mask.getContext("2d",{willReadFrequently:true});
+    const pattern=document.createElement("canvas");
+    const pctx=pattern.getContext("2d",{willReadFrequently:true});
+    const word=document.createElement("canvas");
+    const wctx=word.getContext("2d");
+    const COLORS=["#d7a72f","#f2df38","#cf90ce","#fa874c","#7150bd"];
+    let W=0,H=0,DPR=1,particles=[],dust=[],started=performance.now();
+
+    const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
+    const ease=v=>{const t=clamp(v);return 1-Math.pow(1-t,4)};
+    const hash=n=>Math.abs(Math.sin(n*127.1)*43758.5453)%1;
+
+    function build(){
+      DPR=Math.min(1.5,devicePixelRatio||1);
+      W=innerWidth;
+      H=innerHeight;
+      canvas.width=Math.round(W*DPR);
+      canvas.height=Math.round(H*DPR);
+      canvas.style.width=W+"px";
+      canvas.style.height=H+"px";
+      ctx.setTransform(DPR,0,0,DPR,0,0);
+
+      mask.width=W;
+      mask.height=H;
+      pattern.width=word.width=W;
+      pattern.height=word.height=H;
+      mctx.clearRect(0,0,W,H);
+      let fontSize=Math.min(W*.16,H*.22,190);
+      mctx.font=`900 ${fontSize}px "Arial Black",Impact,sans-serif`;
+      while(mctx.measureText("LOADING").width>W*.74&&fontSize>42){
+        fontSize-=2;
+        mctx.font=`900 ${fontSize}px "Arial Black",Impact,sans-serif`;
+      }
+      mctx.textAlign="center";
+      mctx.textBaseline="middle";
+      mctx.fillStyle="#fff";
+      mctx.fillText("LOADING",W/2,H/2);
+
+      pctx.fillStyle="#272727";
+      pctx.fillRect(0,0,W,H);
+      for(let index=0;index<18;index++){
+        const x=hash(index+701)*W;
+        const y=hash(index+801)*H;
+        const radius=Math.max(W,H)*(.08+hash(index+901)*.22);
+        const gradient=pctx.createRadialGradient(x,y,0,x,y,radius);
+        const color=COLORS[index%COLORS.length];
+        gradient.addColorStop(0,color);
+        gradient.addColorStop(.38,color+"cc");
+        gradient.addColorStop(1,"rgba(39,39,39,0)");
+        pctx.globalAlpha=.34+hash(index+1001)*.34;
+        pctx.fillStyle=gradient;
+        pctx.beginPath();
+        pctx.ellipse(
+          x,y,
+          radius*(.5+hash(index+1101)),
+          radius*(.22+hash(index+1201)*.58),
+          hash(index+1301)*Math.PI,
+          0,Math.PI*2
+        );
+        pctx.fill();
+      }
+      pctx.globalAlpha=1;
+
+      wctx.clearRect(0,0,W,H);
+      wctx.drawImage(pattern,0,0);
+      wctx.globalCompositeOperation="screen";
+      const wordInk=wctx.createLinearGradient(W*.2,0,W*.8,0);
+      COLORS.forEach((color,index)=>wordInk.addColorStop(index/(COLORS.length-1),color));
+      wctx.globalAlpha=.42;
+      wctx.fillStyle=wordInk;
+      wctx.fillRect(0,0,W,H);
+      wctx.globalAlpha=1;
+      wctx.globalCompositeOperation="destination-in";
+      wctx.drawImage(mask,0,0);
+      wctx.globalCompositeOperation="source-over";
+
+      const pixels=mctx.getImageData(0,0,W,H).data;
+      const patternPixels=pctx.getImageData(0,0,W,H).data;
+      const step=W<700?6:8;
+      const targets=[];
+      const left=Math.max(0,Math.floor(W/2-fontSize*2.8));
+      const right=Math.min(W,Math.ceil(W/2+fontSize*2.8));
+      const top=Math.max(0,Math.floor(H/2-fontSize*.62));
+      const bottom=Math.min(H,Math.ceil(H/2+fontSize*.62));
+      for(let y=top;y<bottom;y+=step){
+        for(let x=left;x<right;x+=step){
+          if(pixels[(y*W+x)*4+3]>40){
+            const pixelIndex=(y*W+x)*4;
+            targets.push({
+              x,y,
+              color:`rgb(${patternPixels[pixelIndex]},${patternPixels[pixelIndex+1]},${patternPixels[pixelIndex+2]})`
+            });
+          }
+        }
+      }
+
+      particles=targets.map((target,index)=>{
+        const angle=hash(index+3)*Math.PI*2;
+        const radius=Math.min(W,H)*(.08+hash(index+9)*.58);
+        return {
+          tx:target.x,
+          ty:target.y,
+          sx:W/2+Math.cos(angle)*radius,
+          sy:H/2+Math.sin(angle)*radius,
+          bendX:(hash(index+31)-.5)*W*.8,
+          bendY:(hash(index+41)-.5)*H*.55,
+          delay:hash(index+51)*.34,
+          size:1.4+hash(index+61)*3.4,
+          color:target.color
+        };
+      });
+
+      dust=Array.from({length:Math.min(320,Math.floor(W*H/3200))},(_,index)=>({
+        x:hash(index+101)*W,
+        y:hash(index+201)*H,
+        size:.3+hash(index+301)*1.2,
+        drift:(hash(index+401)-.5)*.18,
+        alpha:.018+hash(index+501)*.055
+      }));
+      started=performance.now();
+    }
+
+    function draw(now){
+      const elapsed=(now-started)/1000;
+      const gather=clamp((elapsed-.35)/3.15);
+      const settle=clamp((elapsed-3.45)/.75);
+
+      ctx.fillStyle=gather<.96?"rgba(39,39,39,.2)":"rgba(39,39,39,.44)";
+      ctx.fillRect(0,0,W,H);
+
+      ctx.save();
+      ctx.globalAlpha=.24*(1-settle*.45);
+      ctx.drawImage(pattern,0,0);
+      ctx.restore();
+
+      dust.forEach((point,index)=>{
+        point.y+=point.drift;
+        if(point.y<0)point.y=H;
+        if(point.y>H)point.y=0;
+        const pulse=.65+.35*Math.sin(elapsed*.7+index);
+        ctx.globalAlpha=point.alpha*pulse*(1-settle*.5);
+        ctx.fillStyle=index%7===0?"#ae8530":"#ddd6c8";
+        ctx.fillRect(point.x,point.y,point.size,point.size);
+      });
+
+      ctx.globalCompositeOperation="screen";
+      particles.forEach((particle,index)=>{
+        const local=ease((gather-particle.delay)/(1-particle.delay));
+        const inv=1-local;
+        const curve=Math.sin(local*Math.PI);
+        const x=particle.sx*inv+particle.tx*local+particle.bendX*curve;
+        const y=particle.sy*inv+particle.ty*local+particle.bendY*curve;
+        ctx.globalAlpha=.26+local*.62;
+        ctx.fillStyle=particle.color;
+        const size=particle.size*(1.25-local*.45);
+        ctx.fillRect(x-size/2,y-size/2,size,size);
+      });
+      ctx.globalCompositeOperation="source-over";
+
+      const wordReveal=ease((gather-.22)/.78);
+      if(wordReveal>0){
+        ctx.save();
+        ctx.globalAlpha=wordReveal*.3;
+        ctx.drawImage(word,0,0);
+        ctx.restore();
+        ctx.save();
+        ctx.globalAlpha=ease((wordReveal-.46)/.54);
+        ctx.drawImage(word,0,0);
+        ctx.restore();
+      }
+      ctx.globalAlpha=1;
+      requestAnimationFrame(draw);
+    }
+
+    addEventListener("resize",build);
+    build();
+    requestAnimationFrame(draw);
+  </script>
+</body>
+</html>

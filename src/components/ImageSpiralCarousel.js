@@ -79,6 +79,101 @@ export default function ImageSpiralCarousel({
     mount.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
+    const screenVertex = `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = vec4(position.xy, 0.0, 1.0);
+      }
+    `;
+    const trailFragment = `
+      varying vec2 vUv;
+      uniform sampler2D uPrevious;
+      uniform vec2 uPointer;
+      uniform float uActive;
+
+      void main() {
+        float previous = texture2D(uPrevious, vUv).r * 0.95;
+        float distanceFromPointer = distance(vUv, uPointer);
+        float stamp = (1.0 - smoothstep(0.0, 0.13, distanceFromPointer)) * uActive;
+        float value = max(previous, stamp);
+        gl_FragColor = vec4(value, value, value, 1.0);
+      }
+    `;
+    const postFragment = `
+      varying vec2 vUv;
+      uniform sampler2D uScene;
+      uniform sampler2D uTrail;
+      uniform float uMotion;
+
+      void main() {
+        vec2 center = vUv - 0.5;
+        float radius = dot(center, center);
+        vec2 warpedUv = center * (1.0 - (0.34 + uMotion * 0.2) * radius) + 0.5;
+        float trail = texture2D(uTrail, vUv).r;
+        float split = trail * 0.016 + uMotion * 0.002;
+        float blur = trail * 0.006;
+        vec2 rgbOffset = vec2(split, split * 0.5);
+
+        vec4 base = texture2D(uScene, warpedUv);
+        vec3 color;
+        color.r = texture2D(uScene, warpedUv + rgbOffset).r;
+        color.g = base.g;
+        color.b = texture2D(uScene, warpedUv - rgbOffset).b;
+        color += texture2D(uScene, warpedUv + vec2(blur, 0.0)).rgb;
+        color += texture2D(uScene, warpedUv - vec2(blur, 0.0)).rgb;
+        color += texture2D(uScene, warpedUv + vec2(0.0, blur)).rgb;
+        color += texture2D(uScene, warpedUv - vec2(0.0, blur)).rgb;
+        color /= 5.0;
+        gl_FragColor = vec4(color, base.a);
+        #include <colorspace_fragment>
+      }
+    `;
+    const targetOptions = {
+      type: THREE.HalfFloatType,
+      format: THREE.RGBAFormat,
+      minFilter: THREE.LinearFilter,
+      magFilter: THREE.LinearFilter,
+      depthBuffer: false,
+      stencilBuffer: false,
+    };
+    let trailA = new THREE.WebGLRenderTarget(256, 256, targetOptions);
+    let trailB = new THREE.WebGLRenderTarget(256, 256, targetOptions);
+    const sceneTarget = new THREE.WebGLRenderTarget(1, 1, {
+      ...targetOptions,
+      depthBuffer: true,
+    });
+    const screenCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    const screenGeometry = new THREE.PlaneGeometry(2, 2);
+    const trailMaterial = new THREE.ShaderMaterial({
+      vertexShader: screenVertex,
+      fragmentShader: trailFragment,
+      uniforms: {
+        uPrevious: { value: trailA.texture },
+        uPointer: { value: new THREE.Vector2(0.5, 0.5) },
+        uActive: { value: 0 },
+      },
+    });
+    const trailScene = new THREE.Scene();
+    trailScene.add(new THREE.Mesh(screenGeometry, trailMaterial));
+    const postMaterial = new THREE.ShaderMaterial({
+      vertexShader: screenVertex,
+      fragmentShader: postFragment,
+      transparent: true,
+      depthTest: false,
+      depthWrite: false,
+      uniforms: {
+        uScene: { value: sceneTarget.texture },
+        uTrail: { value: trailA.texture },
+        uMotion: { value: 0 },
+      },
+    });
+    const postScene = new THREE.Scene();
+    postScene.add(new THREE.Mesh(screenGeometry, postMaterial));
+    let pointerVisible = false;
+    let perspectivePointerTarget = 0;
+    let perspectivePointer = 0;
+
     const makeSpeckleField = () => {
       const isMobileViewport = window.innerWidth < 720;
       const speckCount = Math.min(
@@ -300,6 +395,9 @@ export default function ImageSpiralCarousel({
           uBend: { value: 0.18 },
           uBendDirection: { value: 1 },
           uWind: { value: 0 },
+          uPerspectiveTilt: { value: 0 },
+          uPerspectiveSide: { value: 0 },
+          uPerspectiveOpen: { value: 0 },
           uUvScale: { value: new THREE.Vector2(1, 1) },
           uUvOffset: { value: new THREE.Vector2(0, 0) },
         },
@@ -308,6 +406,9 @@ export default function ImageSpiralCarousel({
           uniform float uBend;
           uniform float uBendDirection;
           uniform float uWind;
+          uniform float uPerspectiveTilt;
+          uniform float uPerspectiveSide;
+          uniform float uPerspectiveOpen;
           varying vec2 vUv;
 
           void main() {
@@ -315,6 +416,16 @@ export default function ImageSpiralCarousel({
             vec3 p = position;
             float horizontal = (uv.x - 0.5) * 2.0;
             float vertical = (uv.y - 0.5) * 2.0;
+
+            // CSS-carousel-style perspective: side cards rotate around their
+            // inner edge and widen as the pointer moves toward that side.
+            float pivotX = -uPerspectiveSide * 0.5;
+            float fromPivot = position.x - pivotX;
+            float tiltAngle = uPerspectiveTilt * uPerspectiveSide;
+            float openedX = fromPivot * (1.0 + uPerspectiveOpen * 0.24);
+            p.x = pivotX + cos(tiltAngle) * openedX;
+            p.z += -sin(tiltAngle) * openedX;
+
             float edgeCurl = horizontal * horizontal * uBend;
             float centerCup = (1.0 - horizontal * horizontal) * (0.12 + uBend * 0.42);
             float verticalCup = (1.0 - vertical * vertical) * (0.04 + uBend * 0.12);
@@ -606,6 +717,16 @@ export default function ImageSpiralCarousel({
     };
 
     const handlePointerMove = (event) => {
+      trailMaterial.uniforms.uPointer.value.set(
+        event.clientX / window.innerWidth,
+        1 - event.clientY / window.innerHeight,
+      );
+      pointerVisible = true;
+      perspectivePointerTarget = THREE.MathUtils.clamp(
+        (event.clientX / window.innerWidth) * 2 - 1,
+        -1,
+        1,
+      );
       const drag = dragRef.current;
       if (!drag.active) return;
 
@@ -626,10 +747,20 @@ export default function ImageSpiralCarousel({
       if (event.clientX < window.innerWidth * 0.42) setFocus(focusRef.current - 1);
     };
 
+    const handlePointerLeave = () => {
+      pointerVisible = false;
+      perspectivePointerTarget = 0;
+    };
+
     const handleResize = () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
+      const pixelRatio = Math.min(window.devicePixelRatio, 2);
+      sceneTarget.setSize(
+        Math.max(1, window.innerWidth * pixelRatio * 0.9),
+        Math.max(1, window.innerHeight * pixelRatio * 0.9),
+      );
       speckles.material.uniforms.uPixelRatio.value = Math.min(
         window.devicePixelRatio,
         2,
@@ -650,6 +781,8 @@ export default function ImageSpiralCarousel({
     renderer.domElement.addEventListener("pointermove", handlePointerMove);
     renderer.domElement.addEventListener("pointerup", handlePointerUp);
     renderer.domElement.addEventListener("pointercancel", handlePointerUp);
+    renderer.domElement.addEventListener("pointerleave", handlePointerLeave);
+    handleResize();
 
     const animate = () => {
       frameRef.current = requestAnimationFrame(animate);
@@ -672,6 +805,8 @@ export default function ImageSpiralCarousel({
       visualFocusRef.current +=
         (targetFocusRef.current - visualFocusRef.current) * 0.12;
       const visualFocus = visualFocusRef.current;
+      perspectivePointer +=
+        (perspectivePointerTarget - perspectivePointer) * 0.075;
 
       meshesRef.current.forEach((poster) => {
         const index = poster.userData.index;
@@ -767,6 +902,20 @@ export default function ImageSpiralCarousel({
           isFocused || position.z >= 0 ? 1 : -1;
         image.uniforms.uWind.value =
           (isFocused ? 0.45 : 0.72) + Math.sin(windPhase) * 0.18;
+        const perspectiveSide = THREE.MathUtils.clamp(relativeIndex, -1, 1);
+        const pointerTowardCard = Math.max(
+          0,
+          perspectivePointer * perspectiveSide,
+        );
+        const tiltTarget = isFocused
+          ? 0
+          : THREE.MathUtils.lerp(0.72, 0.24, pointerTowardCard);
+        const openTarget = isFocused ? 0 : pointerTowardCard;
+        image.uniforms.uPerspectiveSide.value = perspectiveSide;
+        image.uniforms.uPerspectiveTilt.value +=
+          (tiltTarget - image.uniforms.uPerspectiveTilt.value) * 0.09;
+        image.uniforms.uPerspectiveOpen.value +=
+          (openTarget - image.uniforms.uPerspectiveOpen.value) * 0.09;
 
         const scaleBoost = THREE.MathUtils.clamp((position.z + 16) / 32, 0, 1);
         const scale =
@@ -797,7 +946,33 @@ export default function ImageSpiralCarousel({
         camera.lookAt(smoothLookRef.current);
       }
 
+      trailMaterial.uniforms.uActive.value +=
+        ((pointerVisible ? 1 : 0) - trailMaterial.uniforms.uActive.value) * 0.12;
+      trailMaterial.uniforms.uPrevious.value = trailA.texture;
+      renderer.setRenderTarget(trailB);
+      renderer.setClearColor(0x000000, 1);
+      renderer.render(trailScene, screenCamera);
+      [trailA, trailB] = [trailB, trailA];
+
+      renderer.setRenderTarget(sceneTarget);
+      renderer.setClearColor(0xe33003, 0);
+      renderer.clear();
       renderer.render(scene, camera);
+
+      postMaterial.uniforms.uScene.value = sceneTarget.texture;
+      postMaterial.uniforms.uTrail.value = trailA.texture;
+      const motionTarget = THREE.MathUtils.clamp(
+        Math.abs(targetScrollRef.current - currentScrollRef.current) * 0.45 +
+          vortexRef.current * 0.35,
+        0,
+        1,
+      );
+      postMaterial.uniforms.uMotion.value +=
+        (motionTarget - postMaterial.uniforms.uMotion.value) * 0.08;
+      renderer.setRenderTarget(null);
+      renderer.setClearColor(0xe33003, 0);
+      renderer.clear();
+      renderer.render(postScene, screenCamera);
     };
 
     animate();
@@ -810,6 +985,7 @@ export default function ImageSpiralCarousel({
       renderer.domElement.removeEventListener("pointermove", handlePointerMove);
       renderer.domElement.removeEventListener("pointerup", handlePointerUp);
       renderer.domElement.removeEventListener("pointercancel", handlePointerUp);
+      renderer.domElement.removeEventListener("pointerleave", handlePointerLeave);
 
       if (frameRef.current) {
         cancelAnimationFrame(frameRef.current);
@@ -839,6 +1015,12 @@ export default function ImageSpiralCarousel({
       scene.remove(speckles);
       speckles.geometry.dispose();
       speckles.material.dispose();
+      trailA.dispose();
+      trailB.dispose();
+      sceneTarget.dispose();
+      trailMaterial.dispose();
+      postMaterial.dispose();
+      screenGeometry.dispose();
       renderer.dispose();
       renderer.domElement.remove();
     };

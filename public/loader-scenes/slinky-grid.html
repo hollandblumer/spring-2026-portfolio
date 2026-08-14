@@ -561,12 +561,13 @@
     /* ---------- gallery ---------- */
     import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 
-    const textureUrls=['/videos/spring-poster.jpg','/poster-blueprint/snapshot.png','/videos/typeexperiments-poster.jpg','/videos/count-poster.jpg','/projects/3dmotionmarbling.png','/videos/templates-poster.jpg','/videos/noony-poster.jpg','/projects/checkerboard3d.jpeg','/projects/canvas-particles.jpeg','/projects/design-splash.jpeg','/projects/chargepoint.png','/projects/american-seasons.png'];
+    const textureUrls=['/videos/springcompilation.mp4','/poster-blueprint/snapshot.png','/videos/typeexperiments-poster.jpg','/videos/count.mp4','/projects/3dmotionmarbling.png','/videos/templates-optimized.mp4','/videos/noony-optimized.mp4','https://assets.codepen.io/9259849/5cc44ca4-52f5-4d90-98a1-0d993bc4b837.mp4','/videos/katiegrover.mp4','/projects/design-splash.jpeg','/videos/ccnyc-twist.mp4','/projects/chargepoint.png','/videos/seasons.mp4','/videos/Card Layout.mp4','/videos/slinkygrid.mp4','/videos/Rip open.mp4?v=2','/videos/Sign warp.mp4','/videos/cherylfudge.mp4','/videos/meredith.mp4'];
+    const videoPosterUrls=['/videos/spring-poster.jpg',null,null,'/videos/count-poster.jpg',null,'/videos/templates-poster.jpg','/videos/noony-poster.jpg','/projects/checkerboard3d.jpeg','/projects/canvas-particles.jpeg',null,'/videos/ccnyc-twist-poster.jpg',null,'/projects/american-seasons.png','/videos/card-layout-poster.jpg','/videos/slinkygrid-poster.jpg','/videos/Rip open.png','/videos/sign-warp-poster.jpg','/projects/cherylfudge.png','/videos/meredith-poster.jpg'];
     assetsTotal=textureUrls.length+1;
-    const renderer=new THREE.WebGLRenderer({antialias:false,alpha:true,powerPreference:'high-performance'});
+    const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'high-performance'});
     renderer.outputColorSpace=THREE.SRGBColorSpace;
     renderer.toneMapping=THREE.NoToneMapping;
-    renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(innerWidth,innerHeight);renderer.setClearColor(0xffffff,1);document.body.prepend(renderer.domElement);
+    renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.setClearColor(0xffffff,1);document.body.prepend(renderer.domElement);
     const camera=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,.1,100);camera.position.z=1.5;
     const scene=new THREE.Scene(),group=new THREE.Group();scene.add(group);
     const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2(-2,-2),clock=new THREE.Clock();
@@ -576,8 +577,8 @@
       uniform float uPathBend,uPathAmp,uPathTurns,uHalfW,uCenterX;
       void main(){vec3 pos=position;if(uPathBend>.001){float worldX=uCenterX+position.x;float invHalf=1./max(uHalfW,.0001);float phase=uPathTurns*3.14159265*worldX*invHalf;float s=sin(phase),c=cos(phase);float pathY=-uPathAmp*s*s*s;float dphase=uPathTurns*3.14159265*invHalf;float dydx=-uPathAmp*3.*s*s*c*dphase;vec2 n=normalize(vec2(-dydx,1.));float bentX=position.x+n.x*position.y;float bentY=pathY+n.y*position.y;pos.x=mix(position.x,bentX,uPathBend);pos.y=mix(position.y,bentY,uPathBend);}gl_Position=projectionMatrix*viewMatrix*modelMatrix*vec4(pos,1.);vUv=uv;}`;
     const fragment=`varying vec2 vUv;
-      uniform sampler2D uTexture,uDisplacement;uniform vec2 uTexParallax;uniform float uTexScale,uOpacity,uSelectProgress,uScaleDelay,uDispAmount,uAspect,uImageAspect;
-      void main(){vec2 cover=vec2(1.);if(uImageAspect>uAspect)cover.x=uAspect/uImageAspect;else cover.y=uImageAspect/uAspect;float selectFit=.92;vec2 para=uTexParallax;float scaleA=mix(uTexScale,selectFit,uSelectProgress);vec2 uvA=(vUv-.5)*cover*scaleA+.5+para;float scaleB=mix(uTexScale,selectFit,uScaleDelay);vec2 uvB=(vUv-.5)*cover*scaleB+.5+para;vec2 dispSample=texture2D(uDisplacement,vUv).rg-.5;vec2 dispOffset=dispSample*uDispAmount;vec2 radial=(vUv-.5)*uDispAmount*.35;vec4 layerA=texture2D(uTexture,clamp(uvA,0.,1.));vec4 layerB=texture2D(uTexture,clamp(uvB+dispOffset+radial,0.,1.));float mixAmt=smoothstep(0.,.12,abs(uDispAmount));vec3 color=mix(layerA.rgb,layerB.rgb,mixAmt*.72);color=mix(color,max(layerA.rgb,layerB.rgb),mixAmt*.28);gl_FragColor=vec4(color,layerA.a*uOpacity);}`;
+      uniform sampler2D uTexture,uDisplacement;uniform vec2 uTexParallax;uniform float uTexScale,uSelectFit,uOpacity,uSelectProgress,uScaleDelay,uDispAmount,uAspect,uImageAspect,uVideoColorFix;
+      void main(){vec2 cover=vec2(1.);if(uImageAspect>uAspect)cover.x=uAspect/uImageAspect;else cover.y=uImageAspect/uAspect;vec2 para=uTexParallax;float scaleA=mix(uTexScale,uSelectFit,uSelectProgress);vec2 uvA=(vUv-.5)*cover*scaleA+.5+para;float scaleB=mix(uTexScale,uSelectFit,uScaleDelay);vec2 uvB=(vUv-.5)*cover*scaleB+.5+para;vec2 dispSample=texture2D(uDisplacement,vUv).rg-.5;vec2 dispOffset=dispSample*uDispAmount;vec2 radial=(vUv-.5)*uDispAmount*.35;vec4 layerA=texture2D(uTexture,clamp(uvA,0.,1.));vec4 layerB=texture2D(uTexture,clamp(uvB+dispOffset+radial,0.,1.));float mixAmt=smoothstep(0.,.12,abs(uDispAmount));vec3 color=mix(layerA.rgb,layerB.rgb,mixAmt*.72);color=mix(color,max(layerA.rgb,layerB.rgb),mixAmt*.28);float luma=dot(color,vec3(.2126,.7152,.0722));vec3 corrected=mix(vec3(luma),color,1.12);corrected=(corrected-.5)*1.08+.5;color=mix(color,clamp(corrected,0.,1.),uVideoColorFix);gl_FragColor=vec4(color,layerA.a*uOpacity);}`;
     const screenVertex=`varying vec2 vUv;void main(){gl_Position=vec4(position.xy,0.,1.);vUv=uv;}`;
     const trailFragment=`varying vec2 vUv;uniform sampler2D uPrev;uniform vec2 uMouseUv;uniform float uHover,uRadius,uDecay;void main(){float prev=texture2D(uPrev,vUv).r*uDecay;float d=distance(vUv,uMouseUv);float stamp=(1.-smoothstep(0.,uRadius,d))*uHover;float value=max(prev,stamp);gl_FragColor=vec4(value,value,value,1.);}`;
     /* post pass now also owns the intro reveal: an fbm-wobbled circular lens
@@ -625,22 +626,47 @@
     const flat=(r,g,b)=>{const t=new THREE.DataTexture(new Uint8Array([r,g,b,255]),1,1);t.needsUpdate=true;return t};
     const fallbackCard=flat(22,22,22),fallbackDisp=flat(128,128,128);
     /* a failed texture resolves to a flat fallback so the counter can never stall */
-    const loadTexture=(url,fallback)=>new Promise(resolve=>loader.load(url,t=>{t.minFilter=THREE.LinearFilter;t.magFilter=THREE.LinearFilter;assetsDone++;resolve(t)},undefined,()=>{assetsDone++;resolve(fallback)}));
+    const loadTexture=(url,fallback)=>new Promise(resolve=>loader.load(url,t=>{t.minFilter=THREE.LinearMipmapLinearFilter;t.magFilter=THREE.LinearFilter;t.generateMipmaps=true;t.anisotropy=renderer.capabilities.getMaxAnisotropy();t.needsUpdate=true;assetsDone++;resolve(t)},undefined,()=>{assetsDone++;resolve(fallback)}));
+    const liveVideoSurfaces=[];
+    const loadVideoTexture=(url,posterUrl,projectIndex,fallback)=>new Promise(resolve=>{
+      const video=document.createElement('video'),canvas=document.createElement('canvas'),poster=new Image();canvas.width=2;canvas.height=2;
+      const context=canvas.getContext('2d',{alpha:false,colorSpace:'srgb'});
+      const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.minFilter=THREE.LinearFilter;texture.magFilter=THREE.LinearFilter;texture.generateMipmaps=false;
+      const surface={url,projectIndex,video,canvas,context,texture,loading:false,ready:false,wanted:false};
+      video.muted=true;video.loop=true;video.playsInline=true;video.preload='metadata';video.crossOrigin='anonymous';
+      const finish=()=>{liveVideoSurfaces.push(surface);assetsDone++;resolve(texture)};
+      poster.onload=()=>{const scale=Math.min(1,1600/Math.max(poster.naturalWidth,poster.naturalHeight));canvas.width=Math.max(1,Math.round(poster.naturalWidth*scale));canvas.height=Math.max(1,Math.round(poster.naturalHeight*scale));context.drawImage(poster,0,0,canvas.width,canvas.height);texture.needsUpdate=true;finish()};
+      poster.onerror=()=>{context.fillStyle='#161616';context.fillRect(0,0,2,2);texture.needsUpdate=true;finish()};
+      poster.src=posterUrl;
+    });
+    const drawCenteredVideo=surface=>{const {video,canvas,context}=surface;if(!canvas.width||!canvas.height||!video.videoWidth||!video.videoHeight)return;const scale=Math.max(canvas.width/video.videoWidth,canvas.height/video.videoHeight),width=video.videoWidth*scale,height=video.videoHeight*scale;context.drawImage(video,(canvas.width-width)/2,(canvas.height-height)/2,width,height)};
+    const ensureVideoSurface=surface=>{if(surface.loading)return;surface.loading=true;const {video,texture}=surface;video.addEventListener('loadeddata',()=>{drawCenteredVideo(surface);texture.needsUpdate=true;surface.ready=true;for(const card of cards)if(card.userData.projectIndex===surface.projectIndex){card.material.uniforms.uTexture.value=texture;card.material.uniforms.uVideoColorFix.value=0}if(surface.wanted)video.play().catch(()=>{})},{once:true});video.src=surface.url;video.load()};
+    const prepareDelayedVideo=url=>new Promise(resolve=>{
+      const video=document.createElement('video');video.muted=true;video.loop=true;video.playsInline=true;video.preload='auto';video.crossOrigin='anonymous';
+      video.addEventListener('loadeddata',()=>{const scale=Math.min(1,1600/Math.max(video.videoWidth,video.videoHeight));const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(video.videoWidth*scale));canvas.height=Math.max(1,Math.round(video.videoHeight*scale));const context=canvas.getContext('2d',{alpha:false,colorSpace:'srgb'});context.drawImage(video,0,0,canvas.width,canvas.height);const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.minFilter=THREE.LinearFilter;texture.magFilter=THREE.LinearFilter;texture.generateMipmaps=false;texture.anisotropy=renderer.capabilities.getMaxAnisotropy();resolve({texture,video,canvas,context})},{once:true});
+      video.addEventListener('error',()=>resolve(null),{once:true});video.src=url;video.load();
+    });
     const [textures,displacement]=await Promise.all([
-      Promise.all(textureUrls.map(async url=>{const t=await loadTexture(url,fallbackCard);t.colorSpace=THREE.SRGBColorSpace;return t})),
+      Promise.all(textureUrls.map(async (url,index)=>{const t=/\.(mp4|webm)(?:[?#]|$)/i.test(url)?await loadVideoTexture(url,videoPosterUrls[index],index,fallbackCard):await loadTexture(url,fallbackCard);t.colorSpace=THREE.SRGBColorSpace;return t})),
       loadTexture('https://experiments.ricardochance.com/displacement.png',fallbackDisp)
     ]);
     displacement.colorSpace=THREE.NoColorSpace;displacement.wrapS=displacement.wrapT=THREE.RepeatWrapping;
     assetsLoaded=true;
+    let typeExperimentVideo=null,typeExperimentVideoStarted=false;
+    prepareDelayedVideo('/videos/typeexperiments.mp4').then(result=>{typeExperimentVideo=result});
 
     const texParallax=new THREE.Vector2(),parallaxTarget=new THREE.Vector2();
+    const centeredTextureOffset=new THREE.Vector2();
+    const isVideoProject=index=>/\.(mp4|webm)(?:[?#]|$)/i.test(textureUrls[index]||'');
     const CARD_ASPECT=4/5,CARD_HEIGHT=1/CARD_ASPECT;
-    const geometry=new THREE.PlaneGeometry(1,CARD_HEIGHT,64,12),cards=[];
-    const cardCount=36;let columns=innerWidth<=768?2:3,rows=Math.ceil(cardCount/columns),cardScale=.92,spacingX=.95,spacingY=.57,total=rows*spacingY;
+    const cardHeightScales=Array(textureUrls.length).fill(1),cards=[];
+    const cardCount=36;let visibleCardCount=cardCount,columns=innerWidth<=768?2:3,rows=Math.ceil(visibleCardCount/columns),cardScale=.92,spacingX=.95,spacingY=.57,total=rows*spacingY;
     for(let i=0;i<cardCount;i++){
-      const texture=textures[i%textures.length],image=texture.image;
-      const material=new THREE.ShaderMaterial({vertexShader:vertex,fragmentShader:fragment,side:THREE.DoubleSide,transparent:true,depthWrite:false,uniforms:{uTexture:{value:texture},uDisplacement:{value:displacement},uTexParallax:{value:texParallax},uTexScale:{value:1},uOpacity:{value:0},uPathBend:{value:0},uPathAmp:{value:0},uPathTurns:{value:1.5},uHalfW:{value:1},uCenterX:{value:0},uSelectProgress:{value:0},uScaleDelay:{value:0},uDispAmount:{value:0},uAspect:{value:CARD_ASPECT},uImageAspect:{value:image?.width&&image?.height?image.width/image.height:CARD_ASPECT}}});
-      const mesh=new THREE.Mesh(geometry,material);mesh.scale.set(cardScale,cardScale,1);mesh.userData.index=i;mesh.userData.projectIndex=i%textures.length;mesh.userData.col=i%columns;mesh.userData.row=Math.floor(i/columns);mesh.userData.introDelay=0;group.add(mesh);cards.push(mesh);
+      const texture=textures[i%textures.length],image=texture.image,heightScale=cardHeightScales[i%cardHeightScales.length],cardAspect=CARD_ASPECT/heightScale;
+      const geometry=new THREE.PlaneGeometry(1,CARD_HEIGHT*heightScale,64,12);
+      const projectIndex=i%textures.length;
+      const material=new THREE.ShaderMaterial({vertexShader:vertex,fragmentShader:fragment,side:THREE.DoubleSide,transparent:true,depthWrite:false,uniforms:{uTexture:{value:texture},uDisplacement:{value:displacement},uTexParallax:{value:isVideoProject(projectIndex)?centeredTextureOffset:texParallax},uTexScale:{value:1},uSelectFit:{value:isVideoProject(projectIndex)?1:.92},uOpacity:{value:0},uPathBend:{value:0},uPathAmp:{value:0},uPathTurns:{value:1.5},uHalfW:{value:1},uCenterX:{value:0},uSelectProgress:{value:0},uScaleDelay:{value:0},uDispAmount:{value:0},uAspect:{value:cardAspect},uImageAspect:{value:image?.videoWidth&&image?.videoHeight?image.videoWidth/image.videoHeight:image?.width&&image?.height?image.width/image.height:cardAspect},uVideoColorFix:{value:0}}});
+      const mesh=new THREE.Mesh(geometry,material);mesh.scale.set(cardScale,cardScale,1);mesh.userData.index=i;mesh.userData.projectIndex=i%textures.length;mesh.userData.col=i%columns;mesh.userData.row=Math.floor(i/columns);mesh.userData.introDelay=0;mesh.userData.cardAspect=cardAspect;group.add(mesh);cards.push(mesh);
     }
 
     const rtOptions={type:THREE.HalfFloatType,format:THREE.RGBAFormat,minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter,depthBuffer:false,stencilBuffer:false};
@@ -652,7 +678,7 @@
     const postMat=new THREE.ShaderMaterial({vertexShader:screenVertex,fragmentShader:postFragment,transparent:true,uniforms:{uScene:{value:sceneTarget.texture},uTrailMap:{value:trailA.texture},uAspect:{value:new THREE.Vector2(innerWidth/innerHeight,1)},uGlassRects:{value:Array.from({length:5},()=>new THREE.Vector4())},uFisheye:{value:-.5},uRgbAmount:{value:.12},uRgbBoost:{value:0},uBlur:{value:.045},uReveal:{value:0},uProjectMode:{value:0},uTime:{value:0}}});
     const postScene=new THREE.Scene();postScene.add(new THREE.Mesh(quadGeo,postMat));
 
-    let targetY=total/2,currentY=total/2,velocity=0,dragging=false,moved=false,lastY=0,downX=0,downY=0,hovered=null,selected=null,selection=0,closing=false,pointerMoved=false,trailHover=0,morphEnabled=true,effectStrength=1;
+    let targetY=total/2,currentY=total/2,velocity=0,dragging=false,moved=false,lastY=0,downX=0,downY=0,hovered=null,selected=null,selection=0,closing=false,pointerMoved=false,trailHover=0,morphEnabled=true,effectStrength=1,videosPaused=false;
     function wrap(v,size){return((v+size/2)%size+size)%size-size/2}
     function layout(){if(selected)return;for(const card of cards){const x=(card.userData.col-(columns-1)/2)*spacingX;const stagger=morphEnabled?card.userData.col*spacingY*.34:0;card.position.set(x,wrap(card.userData.row*spacingY+stagger+currentY,total),0)}}
 
@@ -707,18 +733,35 @@
         postMat.uniforms.uGlassRects.value.forEach((uniform,index)=>{const rect=rects[index];uniform.set(...(Array.isArray(rect)&&rect.length===4?rect:[0,0,0,0]))});
         return;
       }
+      if(event.data?.type==='portfolio-grid-video-playback'){
+        videosPaused=event.data.paused===true;
+        if(videosPaused)for(const surface of liveVideoSurfaces)surface.video.pause();
+        if(videosPaused)typeExperimentVideo?.video.pause();
+        else if(typeExperimentVideoStarted)typeExperimentVideo?.video.play().catch(()=>{});
+        return;
+      }
       if(event.data?.type!=='portfolio-grid-filter')return;
       const indices=event.data.indices?.filter(index=>Number.isInteger(index)&&index>=0&&index<textures.length);
       if(!indices?.length)return;
+      visibleCardCount=indices.length<4?indices.length:cardCount;
+      columns=Math.min(innerWidth<=768?2:3,visibleCardCount);
       cards.forEach((card,i)=>{
-        const projectIndex=indices[i%indices.length],texture=textures[projectIndex],image=texture.image;
+        card.visible=i<visibleCardCount;
+        card.userData.col=i%columns;
+        card.userData.row=Math.floor(i/columns);
+        if(!card.visible)return;
+        const projectIndex=indices[i%indices.length],texture=projectIndex===2&&typeExperimentVideoStarted?typeExperimentVideo.texture:textures[projectIndex],image=texture.image;
         card.userData.projectIndex=projectIndex;
         card.material.uniforms.uTexture.value=texture;
-        card.material.uniforms.uImageAspect.value=image?.width&&image?.height?image.width/image.height:CARD_ASPECT;
+        card.material.uniforms.uTexParallax.value=isVideoProject(projectIndex)?centeredTextureOffset:texParallax;
+        card.material.uniforms.uSelectFit.value=isVideoProject(projectIndex)?1:.92;
+        card.material.uniforms.uImageAspect.value=image?.videoWidth&&image?.videoHeight?image.videoWidth/image.videoHeight:image?.width&&image?.height?image.width/image.height:card.userData.cardAspect;
+        card.material.uniforms.uVideoColorFix.value=0;
       });
+      rows=Math.max(1,Math.ceil(visibleCardCount/columns));total=Math.max(spacingY,rows*spacingY);targetY=currentY=total/2;layout();
     });
 
-    function resize(){renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();postMat.uniforms.uAspect.value.set(camera.aspect,1);const nextColumns=innerWidth<=768?2:3;if(nextColumns!==columns){columns=nextColumns;rows=Math.ceil(cardCount/columns);for(let i=0;i<cards.length;i++){cards[i].userData.col=i%columns;cards[i].userData.row=Math.floor(i/columns)}}const visibleH=2*Math.tan(75*Math.PI/360)*camera.position.z,visibleW=visibleH*camera.aspect;cardScale=Math.min(.92,visibleW/(columns===2?2.25:3.35));spacingX=cardScale*1.04;spacingY=cardScale*CARD_HEIGHT+cardScale*.05;total=rows*spacingY;for(const card of cards)if(card!==selected&&introDone)card.scale.set(cardScale,cardScale,1);const p=Math.min(devicePixelRatio,1.5);sceneTarget.setSize(Math.max(1,innerWidth*p*.85),Math.max(1,innerHeight*p*.85));layout()}
+    function resize(){renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();postMat.uniforms.uAspect.value.set(camera.aspect,1);const nextColumns=Math.min(innerWidth<=768?2:3,visibleCardCount);if(nextColumns!==columns){columns=nextColumns;rows=Math.max(1,Math.ceil(visibleCardCount/columns));for(let i=0;i<cards.length;i++){cards[i].userData.col=i%columns;cards[i].userData.row=Math.floor(i/columns)}}const visibleH=2*Math.tan(75*Math.PI/360)*camera.position.z,visibleW=visibleH*camera.aspect;cardScale=Math.min(.92,visibleW/(columns===2?2.25:3.35));spacingX=cardScale*1.04;spacingY=cardScale*CARD_HEIGHT+cardScale*.05;total=Math.max(spacingY,rows*spacingY);for(const card of cards)if(card!==selected&&introDone)card.scale.set(cardScale,cardScale,1);const p=Math.min(devicePixelRatio,2);sceneTarget.setSize(Math.max(1,innerWidth*p),Math.max(1,innerHeight*p));layout()}
     addEventListener('resize',resize);resize();
 
     function animate(){
@@ -741,6 +784,14 @@
           if(reveal>=1){introDone=true;reveal=1;document.body.classList.add('done');for(const card of cards){card.material.uniforms.uOpacity.value=1;card.scale.set(cardScale,cardScale,1)}setTimeout(()=>parent.postMessage('portfolio-loader-complete',location.origin),450)}
         }
       }
+      if(introDone&&!videosPaused&&!typeExperimentVideoStarted&&typeExperimentVideo&&now-revealAt>revealMs+900){
+        typeExperimentVideoStarted=true;typeExperimentVideo.video.play().catch(()=>{});
+        for(const card of cards)if(card.userData.projectIndex===2){card.material.uniforms.uTexture.value=typeExperimentVideo.texture;card.material.uniforms.uImageAspect.value=typeExperimentVideo.video.videoWidth/typeExperimentVideo.video.videoHeight;card.material.uniforms.uVideoColorFix.value=0}
+      }
+      if(!videosPaused&&typeExperimentVideoStarted&&typeExperimentVideo.video.readyState>=2){typeExperimentVideo.context.drawImage(typeExperimentVideo.video,0,0,typeExperimentVideo.canvas.width,typeExperimentVideo.canvas.height);typeExperimentVideo.texture.needsUpdate=true}
+      const visibleVideoProjects=new Set();
+      for(const card of cards)if(card.visible&&Math.abs(card.position.y)<2.2&&card.material.uniforms.uOpacity.value>.01)visibleVideoProjects.add(card.userData.projectIndex);
+      for(const surface of liveVideoSurfaces){const wanted=!videosPaused&&visibleVideoProjects.has(surface.projectIndex);surface.wanted=wanted;if(wanted){ensureVideoSurface(surface);if(surface.ready&&surface.video.paused)surface.video.play().catch(()=>{});if(surface.ready&&surface.video.readyState>=2){drawCenteredVideo(surface);surface.texture.needsUpdate=true}}else if(!surface.video.paused)surface.video.pause()}
       postMat.uniforms.uProjectMode.value=0;
       postMat.uniforms.uReveal.value=introDone?1:reveal;
       postMat.uniforms.uTime.value=now*.001;

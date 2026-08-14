@@ -1,0 +1,1005 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>0% → 100% — continuous marble loading</title>
+<style>
+  :root{ --ink:#252525; --dim:#686868; --rule:#aaa; --stock:#cfcfcf; }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;background:var(--stock)}
+  body{font:400 10px/1.5 ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+  canvas{display:block;width:100vw;height:100vh}
+  #bar{position:fixed;top:14px;right:14px;z-index:4;display:flex;gap:6px}
+  button{background:rgba(14,13,11,.8);border:1px solid var(--rule);color:var(--dim);
+    font:inherit;letter-spacing:.14em;text-transform:uppercase;padding:7px 10px;
+    border-radius:2px;cursor:pointer;backdrop-filter:blur(8px)}
+  button:hover{color:var(--ink);border-color:#4b4941}
+  button:focus-visible,input:focus-visible{outline:1px solid var(--ink);outline-offset:2px}
+  button[aria-pressed=true]{color:var(--ink);border-color:#4b4941}
+  #panel{position:fixed;top:50px;right:14px;z-index:4;width:250px;max-height:calc(100vh - 70px);
+    overflow:auto;background:rgba(14,13,11,.92);border:1px solid var(--rule);border-radius:3px;
+    padding:14px;backdrop-filter:blur(10px);color:var(--ink)}
+  #panel[hidden]{display:none}
+  h2{margin:16px 0 9px;font-size:9px;letter-spacing:.22em;color:var(--dim);text-transform:uppercase;
+    border-top:1px solid var(--rule);padding-top:11px;font-weight:400}
+  h2:first-child{margin-top:0;border-top:0;padding-top:0}
+  .r{margin-bottom:10px}
+  label{display:flex;justify-content:space-between;color:var(--dim);letter-spacing:.13em;
+    text-transform:uppercase;margin-bottom:4px}
+  label b{color:var(--ink);font-weight:400;font-variant-numeric:tabular-nums}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:1px;
+    background:var(--rule);outline:none;margin:5px 0}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:9px;height:9px;
+    border-radius:50%;background:var(--ink);cursor:pointer}
+  input[type=range]::-moz-range-thumb{width:9px;height:9px;border:0;border-radius:50%;
+    background:var(--ink);cursor:pointer}
+  input[type=text]{width:100%;background:#000;border:1px solid var(--rule);color:var(--ink);
+    font:inherit;font-size:12px;letter-spacing:.22em;padding:6px 8px;border-radius:2px;
+    text-transform:uppercase}
+  input[type=text]::placeholder{color:var(--dim);opacity:.7}
+  #drop{display:block;border:1px dashed var(--rule);color:var(--dim);text-align:center;
+    padding:10px;border-radius:2px;cursor:pointer;letter-spacing:.12em;text-transform:uppercase}
+  #drop:hover{color:var(--ink);border-color:#4b4941}
+  #file{position:absolute;width:1px;height:1px;opacity:0}
+  #err{position:fixed;inset:0;display:none;place-items:center;color:#c8c2b2;padding:24px;
+    text-align:center;font-size:12px;letter-spacing:.1em}
+  /* Embedded homepage loader: the portfolio owns the navigation and card grid. */
+  #bar,#panel,#cards,#navIcon,#navMenu,#snapLayer{display:none!important}
+  #c{position:fixed;inset:0;transition:opacity .22s ease}
+  #snapLayer{display:none}
+  #ambientMask{fill-opacity:1;transition:fill-opacity 1.2s cubic-bezier(.55,0,.2,1)}
+  #cards{position:fixed;inset:0;z-index:3;width:100vw;height:100vh;display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:minmax(260px,1fr);
+    gap:clamp(10px,1.4vw,18px);padding:clamp(12px,2vw,28px);
+    overflow-y:auto;pointer-events:none}
+  .card{min-width:0;opacity:0;transition:opacity .32s ease calc(var(--delay) + 1050ms)}
+  .card-turn{position:relative;width:100%;height:100%}
+  .card-face{position:absolute;inset:0;overflow:hidden;box-shadow:0 15px 42px rgba(0,0,0,.38)}
+  .marble-face{display:none}
+  .image-face{transform:none}
+  .image-face img{width:100%;height:100%;display:block;object-fit:cover;filter:saturate(.88) contrast(1.04)}
+  body.cards-stage #c{opacity:1}
+  body.background-snapped #ambientMask{fill-opacity:.16}
+  body.cards-stage #cards{pointer-events:auto}
+  body.cards-stage .card{opacity:1}
+  #navIcon{position:fixed;left:14px;top:12px;z-index:8;width:48px;height:48px;padding:0;
+    border:0;background:transparent;backdrop-filter:none;opacity:0;pointer-events:none;
+    transition:opacity .35s ease}
+  body.cards-stage #navIcon{opacity:1;pointer-events:auto}
+  #navIcon:hover{border:0}
+  #navIcon canvas{display:block;width:48px;height:48px}
+  #navMenu{position:fixed;inset:0;z-index:7;display:grid;place-items:center;background:rgba(7,7,6,.72);
+    backdrop-filter:blur(12px);opacity:0;pointer-events:none;transition:opacity .35s ease}
+  #navMenu.open{opacity:1;pointer-events:auto}
+  #navMenu ul{list-style:none;margin:0;padding:0;text-align:center}
+  #navMenu li+li{margin-top:18px}
+  #navMenu a{color:var(--ink);text-decoration:none;font:800 clamp(28px,5vw,62px)/1
+    "Helvetica Neue",Inter,Helvetica,Arial,sans-serif;letter-spacing:-.035em}
+  @media(max-width:700px){
+    #cards{grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:minmax(240px,42vh);
+      gap:10px;padding:12px}
+  }
+</style>
+</head>
+<body>
+
+<button id="navIcon" type="button" aria-label="Open navigation" aria-expanded="false">
+  <canvas width="48" height="48" aria-hidden="true"></canvas>
+</button>
+<nav id="navMenu" aria-hidden="true">
+  <ul>
+    <li><a href="#">Home</a></li>
+    <li><a href="#">Work</a></li>
+    <li><a href="#">About</a></li>
+    <li><a href="mailto:hollandblumer6@icloud.com">Contact</a></li>
+  </ul>
+</nav>
+<canvas id="c"></canvas>
+<svg id="snapLayer" viewBox="0 0 1 1" preserveAspectRatio="none" aria-hidden="true">
+  <defs>
+    <mask id="snapMask" maskUnits="userSpaceOnUse" x="0" y="0" width="1" height="1">
+      <rect id="ambientMask" x="0" y="0" width="1" height="1" fill="#fff"></rect>
+      <g id="cardMasks"></g>
+    </mask>
+  </defs>
+  <image id="snapImage" x="0" y="0" width="1" height="1" preserveAspectRatio="none"
+    mask="url(#snapMask)"></image>
+</svg>
+<div id="cards" aria-label="Project cards">
+  <article class="card" style="--delay:0ms"><div class="card-turn"><div class="card-face marble-face"></div><div class="card-face image-face"><img src="https://picsum.photos/seed/studio-ebru-1/480/640" alt="Project 1"></div></div></article>
+  <article class="card" style="--delay:70ms"><div class="card-turn"><div class="card-face marble-face"></div><div class="card-face image-face"><img src="https://picsum.photos/seed/studio-ebru-2/480/640" alt="Project 2"></div></div></article>
+  <article class="card" style="--delay:140ms"><div class="card-turn"><div class="card-face marble-face"></div><div class="card-face image-face"><img src="https://picsum.photos/seed/studio-ebru-3/480/640" alt="Project 3"></div></div></article>
+  <article class="card" style="--delay:210ms"><div class="card-turn"><div class="card-face marble-face"></div><div class="card-face image-face"><img src="https://picsum.photos/seed/studio-ebru-4/480/640" alt="Project 4"></div></div></article>
+  <article class="card" style="--delay:280ms"><div class="card-turn"><div class="card-face marble-face"></div><div class="card-face image-face"><img src="https://picsum.photos/seed/studio-ebru-5/480/640" alt="Project 5"></div></div></article>
+  <article class="card" style="--delay:350ms"><div class="card-turn"><div class="card-face marble-face"></div><div class="card-face image-face"><img src="https://picsum.photos/seed/studio-ebru-6/480/640" alt="Project 6"></div></div></article>
+  <article class="card" style="--delay:420ms"><div class="card-turn"><div class="card-face marble-face"></div><div class="card-face image-face"><img src="https://picsum.photos/seed/studio-ebru-7/480/640" alt="Project 7"></div></div></article>
+  <article class="card" style="--delay:490ms"><div class="card-turn"><div class="card-face marble-face"></div><div class="card-face image-face"><img src="https://picsum.photos/seed/studio-ebru-8/480/640" alt="Project 8"></div></div></article>
+  <article class="card" style="--delay:560ms"><div class="card-turn"><div class="card-face marble-face"></div><div class="card-face image-face"><img src="https://picsum.photos/seed/studio-ebru-9/480/640" alt="Project 9"></div></div></article>
+</div>
+<div id="bar">
+  <button id="playBtn" aria-pressed="true">Pause</button>
+  <button id="seedBtn">Re-marble</button>
+  <button id="cfgBtn" aria-expanded="false" aria-controls="panel">Controls</button>
+</div>
+
+<div id="panel" hidden>
+  <h2>Letterform</h2>
+  <div class="r"><label for="word">Sequence</label>
+    <input id="word" type="text" value="0%" readonly aria-label="Animated loading counter from 0% to 100%"></div>
+  <div class="r"><label for="rugged">Ragged edge <b id="v-rugged"></b></label>
+    <input id="rugged" type="range" min="0" max="1" step="0.01" value="0.42"></div>
+  <div class="r"><label for="track">Tracking <b id="v-track"></b></label>
+    <input id="track" type="range" min="-0.05" max="0.4" step="0.005" value="0.03"></div>
+  <div class="r"><label for="fill">Width <b id="v-fill"></b></label>
+    <input id="fill" type="range" min="0.12" max="0.95" step="0.01" value="0.22"></div>
+  <div class="r"><label for="pullr">Catchment <b id="v-pullr"></b></label>
+    <input id="pullr" type="range" min="0.05" max="0.7" step="0.01" value="0.30"></div>
+  <div class="r"><label for="feather">Edge feather <b id="v-feather"></b></label>
+    <input id="feather" type="range" min="0" max="0.05" step="0.001" value="0.004"></div>
+
+  <h2>Diagonal smear</h2>
+  <div class="r"><label for="smear">Smear angle <b id="v-smear"></b></label>
+    <input id="smear" type="range" min="0" max="360" step="1" value="218"></div>
+  <div class="r"><label for="axis">Axis grip <b id="v-axis"></b></label>
+    <input id="axis" type="range" min="0" max="1" step="0.01" value="0.64"></div>
+  <div class="r"><label for="fan">Fan <b id="v-fan"></b></label>
+    <input id="fan" type="range" min="0" max="0.2" step="0.005" value="0.028"></div>
+  <div class="r"><label for="hold">Marble hold <b id="v-hold"></b></label>
+    <input id="hold" type="range" min="0" max="1" step="0.01" value="0.78"></div>
+  <div class="r"><label for="stretch">Taffy stretch <b id="v-stretch"></b></label>
+    <input id="stretch" type="range" min="0" max="4" step="0.05" value="2.7"></div>
+  <div class="r"><label for="fillin">Fill-in <b id="v-fillin"></b></label>
+    <input id="fillin" type="range" min="0" max="1" step="0.01" value="0.95"></div>
+
+  <h2>Plies</h2>
+  <div class="r"><label for="split">Separation <b id="v-split"></b></label>
+    <input id="split" type="range" min="0" max="0.4" step="0.005" value="0.115"></div>
+  <div class="r"><label for="stagger">Peel stagger <b id="v-stagger"></b></label>
+    <input id="stagger" type="range" min="0" max="0.3" step="0.005" value="0.17"></div>
+  <div class="r"><label for="spin">Divergence <b id="v-spin"></b></label>
+    <input id="spin" type="range" min="0" max="1.4" step="0.01" value="0.09"></div>
+  <div class="r"><label for="counter">Counter-throw <b id="v-counter"></b></label>
+    <input id="counter" type="range" min="0" max="2.5" step="0.01" value="1.12"></div>
+
+  <h2>Tether</h2>
+  <div class="r"><label for="tether">Base grip <b id="v-tether"></b></label>
+    <input id="tether" type="range" min="0" max="1" step="0.01" value="0.62"></div>
+  <div class="r"><label for="veil">Release at peak <b id="v-veil"></b></label>
+    <input id="veil" type="range" min="0" max="1" step="0.01" value="1"></div>
+  <div class="r"><label for="root">Root depth <b id="v-root"></b></label>
+    <input id="root" type="range" min="0.02" max="0.6" step="0.01" value="0.18"></div>
+  <div class="r"><label for="neck">Necking <b id="v-neck"></b></label>
+    <input id="neck" type="range" min="0" max="1" step="0.01" value="0.28"></div>
+  <div class="r"><label for="lane">Cord count <b id="v-lane"></b></label>
+    <input id="lane" type="range" min="2" max="46" step="1" value="11"></div>
+  <div class="r"><label for="snap">Snap <b id="v-snap"></b></label>
+    <input id="snap" type="range" min="0" max="1" step="0.01" value="0.18"></div>
+
+  <h2>Streamlines</h2>
+  <div class="r"><label for="wave">Waviness <b id="v-wave"></b></label>
+    <input id="wave" type="range" min="0" max="1.5" step="0.01" value="0.30"></div>
+  <div class="r"><label for="contrast">Strand contrast <b id="v-contrast"></b></label>
+    <input id="contrast" type="range" min="1" max="16" step="0.1" value="5.0"></div>
+
+  <h2>Gather</h2>
+  <div class="r"><label for="gather">Suction <b id="v-gather"></b></label>
+    <input id="gather" type="range" min="0" max="0.6" step="0.005" value="0.20"></div>
+  <div class="r"><label for="clamp">Clamp <b id="v-clamp"></b></label>
+    <input id="clamp" type="range" min="0.02" max="0.6" step="0.01" value="0.24"></div>
+
+  <h2>Field</h2>
+  <div class="r"><label for="reach">Turbulent reach <b id="v-reach"></b></label>
+    <input id="reach" type="range" min="0" max="0.5" step="0.005" value="0.30"></div>
+  <div class="r"><label for="thin">Spread thinness <b id="v-thin"></b></label>
+    <input id="thin" type="range" min="0.2" max="0.92" step="0.01" value="0.55"></div>
+  <div class="r"><label for="grain">Filament scale <b id="v-grain"></b></label>
+    <input id="grain" type="range" min="1" max="14" step="0.1" value="4.0"></div>
+  <div class="r"><label for="turb">Turbulence <b id="v-turb"></b></label>
+    <input id="turb" type="range" min="0.4" max="7" step="0.1" value="2.6"></div>
+  <div class="r"><label for="base">Sweep angle <b id="v-base"></b></label>
+    <input id="base" type="range" min="0" max="360" step="1" value="218"></div>
+  <div class="r"><label for="range">Angle spread <b id="v-range"></b></label>
+    <input id="range" type="range" min="0" max="720" step="5" value="200"></div>
+  <div class="r"><label for="shear">Shear <b id="v-shear"></b></label>
+    <input id="shear" type="range" min="0" max="1" step="0.01" value="0.8"></div>
+
+  <h2>Open ground</h2>
+  <div class="r"><label for="open">Blank area <b id="v-open"></b></label>
+    <input id="open" type="range" min="0" max="0.9" step="0.01" value="0.42"></div>
+  <div class="r"><label for="openscale">Patch scale <b id="v-openscale"></b></label>
+    <input id="openscale" type="range" min="0.4" max="5" step="0.05" value="1.8"></div>
+
+  <h2>Settle</h2>
+  <div class="r"><label for="settle">Marble recovery <b id="v-settle"></b></label>
+    <input id="settle" type="range" min="0" max="1" step="0.01" value="0.92"></div>
+  <div class="r"><label for="platezoom">Plate crop <b id="v-platezoom"></b></label>
+    <input id="platezoom" type="range" min="0.25" max="1.4" step="0.01" value="1.18"></div>
+
+  <h2>Cycle</h2>
+  <div class="r"><label for="cycle">Seconds <b id="v-cycle"></b></label>
+    <input id="cycle" type="range" min="1.5" max="20" step="0.1" value="5.2"></div>
+  <div class="r"><label for="scrub">Scrub <b id="v-scrub"></b></label>
+    <input id="scrub" type="range" min="0" max="1" step="0.001" value="0"></div>
+
+  <h2>Print</h2>
+  <div class="r"><label for="dot">Screen pitch <b id="v-dot"></b></label>
+    <input id="dot" type="range" min="1.5" max="12" step="0.1" value="3.4"></div>
+  <div class="r"><label for="dotmix">Screen strength <b id="v-dotmix"></b></label>
+    <input id="dotmix" type="range" min="0" max="1" step="0.01" value="0"></div>
+  <div class="r"><label for="dotrest">Screen at rest <b id="v-dotrest"></b></label>
+    <input id="dotrest" type="range" min="0" max="1" step="0.01" value="0"></div>
+  <div class="r"><label for="plate">Own artwork</label>
+    <span id="drop" role="button" tabindex="0">Use my own image</span>
+    <input id="file" type="file" accept="image/*"></div>
+</div>
+<div id="err">WebGL isn’t available in this browser, so the plate can’t render.</div>
+
+<script>
+const cv = document.getElementById('c');
+const gl = cv.getContext('webgl', {antialias:false, alpha:false});
+if (!gl){ document.getElementById('err').style.display='grid'; cv.style.display='none'; }
+const cardEls=[...document.querySelectorAll('.card')];
+const navIcon=document.getElementById('navIcon');
+const navMenu=document.getElementById('navMenu');
+const navCanvas=navIcon.querySelector('canvas');
+const navCtx=navCanvas.getContext('2d');
+const snapLayer=document.getElementById('snapLayer');
+const snapImage=document.getElementById('snapImage');
+const ambientMask=document.getElementById('ambientMask');
+const cardMasks=document.getElementById('cardMasks');
+let cardsQueued=false;
+
+function drawNavTexture(){
+  if(!cv.width||!cv.height) return;
+  navCtx.clearRect(0,0,48,48);
+  const crop=Math.min(cv.width,cv.height)*0.42;
+  const sx=(cv.width-crop)/2, sy=(cv.height-crop)/2;
+  for(const y of [11,22,33]){
+    navCtx.save();
+    navCtx.beginPath();
+    navCtx.roundRect(7,y,34,5,2.5);
+    navCtx.clip();
+    navCtx.drawImage(cv,sx,sy,crop,crop,0,0,48,48);
+    navCtx.restore();
+  }
+}
+
+function setNav(open){
+  navMenu.classList.toggle('open',open);
+  navMenu.setAttribute('aria-hidden',String(!open));
+  navIcon.setAttribute('aria-expanded',String(open));
+}
+navIcon.addEventListener('click',()=>setNav(!navMenu.classList.contains('open')));
+navMenu.addEventListener('click',e=>{ if(e.target===navMenu||e.target.closest('a')) setNav(false); });
+
+function resetCards(){
+  cardsQueued=false;
+  setNav(false);
+  document.body.classList.remove('cards-stage','background-snapped');
+  snapImage.removeAttribute('href');
+  cardMasks.replaceChildren();
+}
+
+function showCards(snapshot){
+  const vw=innerWidth, vh=innerHeight;
+  snapLayer.setAttribute('viewBox',`0 0 ${vw} ${vh}`);
+  ambientMask.setAttribute('width',String(vw));
+  ambientMask.setAttribute('height',String(vh));
+  snapImage.setAttribute('width',String(vw));
+  snapImage.setAttribute('height',String(vh));
+  if(snapshot) snapImage.setAttribute('href',snapshot);
+  cardMasks.replaceChildren();
+  cardEls.forEach(card=>{
+    const rect=card.getBoundingClientRect();
+    const maskRect=document.createElementNS('http://www.w3.org/2000/svg','rect');
+    maskRect.setAttribute('x',String(rect.left));
+    maskRect.setAttribute('y',String(rect.top));
+    maskRect.setAttribute('width',String(rect.width));
+    maskRect.setAttribute('height',String(rect.height));
+    maskRect.setAttribute('fill','#fff');
+    cardMasks.append(maskRect);
+  });
+  document.body.classList.add('cards-stage');
+  requestAnimationFrame(()=>requestAnimationFrame(()=>
+    document.body.classList.add('background-snapped')));
+}
+
+const VS = `attribute vec2 a; varying vec2 vUv;
+void main(){ vUv = a*0.5+0.5; gl_Position = vec4(a,0.,1.); }`;
+
+const NOISE = `
+float hash21(vec2 p){ p = fract(p*vec2(123.34,456.21)); p += dot(p,p+45.32); return fract(p.x*p.y); }
+float vn(vec2 p){ vec2 i=floor(p),f=fract(p); f=f*f*(3.0-2.0*f);
+  return mix(mix(hash21(i),hash21(i+vec2(1,0)),f.x), mix(hash21(i+vec2(0,1)),hash21(i+vec2(1,1)),f.x), f.y); }
+float fbm(vec2 p){ float a=0.5,s=0.0; for(int i=0;i<4;i++){ s+=a*vn(p); p*=2.07; a*=0.5; } return s; }`;
+
+function sh(t,src){ const s=gl.createShader(t); gl.shaderSource(s,src); gl.compileShader(s);
+  if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; }
+function prog(fs){ const p=gl.createProgram();
+  gl.attachShader(p,sh(gl.VERTEX_SHADER,VS)); gl.attachShader(p,sh(gl.FRAGMENT_SHADER,fs));
+  gl.bindAttribLocation(p,0,'a'); gl.linkProgram(p);
+  if(!gl.getProgramParameter(p,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+  p.u = new Proxy({}, {get:(c,n)=>(c[n] ??= gl.getUniformLocation(p,n))}); return p; }
+function makeTex(filter,wrap){ const t=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D,t);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,wrap); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,wrap);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,filter); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,filter);
+  return t; }
+
+/* ─── 1. marbling plate ───
+   Every drop belongs to one of three plies, each owning its own corner of the palette:
+       ply 0  green + ochre
+       ply 1  vermilion + shell white  (and the white ground of the bath)
+       ply 2  ultramarine + carbon
+   The ply id is written into the plate's ALPHA channel as a band centre (1/6, 1/2, 5/6),
+   so the composite pass can pull the three sheets apart without a second texture. */
+// Match the supplied smear reference: fewer, broader drops create recognizable
+// colored sheets that remain legible as the three plies pull apart.
+const NDROP = 42, NRAKE = 3;
+const MARBLE_FS = `
+precision highp float;
+varying vec2 vUv;
+uniform vec2 uRes; uniform vec4 uDrop[${NDROP}]; uniform vec3 uPal[6];
+uniform float uPalL[6]; uniform float uGroundL;
+uniform vec4 uRake[${NRAKE}]; uniform vec3 uRakeK; uniform vec3 uPaper;
+void main(){
+  vec2 p = vUv * uRes / uRes.y;
+  for(int k=${NRAKE-1};k>=0;k--){
+    vec2 o=uRake[k].xy, d=normalize(uRake[k].zw);
+    p -= d * uRakeK.x * exp(-abs(dot(p-o, vec2(-d.y,d.x))) / uRakeK.y);
+  }
+  vec3 ink = uPaper; float lay = uGroundL; bool hit = false;
+  for(int i=${NDROP-1};i>=0;i--){
+    if(hit) break;
+    vec2 c=uDrop[i].xy; float r=uDrop[i].z; vec2 v=p-c; float L=length(v);
+    if(L<=r){ int idx=int(uDrop[i].w);
+      for(int j=0;j<6;j++){ if(j==idx){ ink=uPal[j]; lay=uPalL[j]; } }
+      hit=true; }
+    else p = c + v*sqrt(1.0-(r*r)/(L*L));
+  }
+  // Laminar fore-edge marbling: fold a dense stack of narrow color strata
+  // through a slowly changing field. Broad domain warps create the pooled turns
+  // and corner-like bends in the reference, while the high-frequency coordinate
+  // keeps individual paint layers thin and clearly separated.
+  vec2 d = p;
+  float basin = fbm(d*0.72 + vec2(3.7,9.1));
+  float turn = smoothstep(0.38,0.66,basin);
+  float warpA = fbm(d*1.35 + vec2(17.0,4.0)) - 0.5;
+  float warpB = fbm(d*2.8 + vec2(2.0,23.0)) - 0.5;
+  float foldedAxis = mix(d.x, d.y, turn);
+  float strata = foldedAxis*24.0
+               + warpA*13.0
+               + warpB*3.8
+               + sin(d.y*7.0 + basin*11.0)*1.25;
+  float stripeId = floor(strata);
+  float stripeCell = fract(strata);
+  float paletteId = mod(stripeId + floor(basin*11.0), 6.0);
+  vec3 stripeInk = uPaper;
+  float stripeLay = uGroundL;
+  for(int j=0;j<6;j++){
+    if(abs(paletteId-float(j))<0.5){
+      stripeInk=uPal[j];
+      stripeLay=uPalL[j];
+    }
+  }
+  float fineEdge = smoothstep(0.025,0.10,stripeCell)
+                 * (1.0-smoothstep(0.90,0.975,stripeCell));
+  float poolMix = smoothstep(0.18,0.82,fbm(d*1.05 + vec2(29.0,6.0)));
+  ink = mix(ink, stripeInk, mix(0.72,1.0,poolMix)*fineEdge);
+  lay = mix(lay, stripeLay, fineEdge);
+  gl_FragColor = vec4(ink,lay);
+}`;
+
+const FLOW_FS = `
+precision highp float; varying vec2 vUv;
+uniform float uFreq,uSeed,uBase,uRange,uSpdVar;
+${NOISE}
+void main(){
+  float n = fbm(vUv*uFreq + uSeed);
+  float a = uBase + (n-0.5)*uRange;
+  float spd = (1.0-uSpdVar) + uSpdVar*2.0*fbm(vUv*uFreq*1.7 + 19.0);
+  gl_FragColor = vec4(vec2(cos(a),sin(a))*spd*0.5+0.5, 0.0, 1.0);
+}`;
+
+/* ─── 2. composite ───
+   phase 0 = gathered (the numeral sits solid, surroundings drained)
+   phase 1 = released (three marbled sheets smeared off down one diagonal)
+
+   THE DIAGONAL. Everything directional shares one axis, uSmear:
+     · DRIFT — all three plies slide along that single axis, ply 0 up it, ply 1 anchored,
+       ply 2 down it, so they trail off one another like sheets sliding off a stack
+       instead of flying apart on three separate headings. A small perpendicular Fan
+       keeps them from stacking exactly on top of each other.
+     · STREAMLINES — the outward direction is a blend of "away from the letterform"
+       (the pull field) and the smear axis, mixed by Axis grip.
+
+   THE TETHER (uTether / uNeck). The catchment channel of the pull field is ≈1 on the
+   strokes and tapers outward, so scaling each ply's drift by (1 - grip) welds the sheet
+   to the numeral and lets it tear free only further out.
+
+   THE RELEASE (uVeil) — this is what hides the digits. The tether is exactly the thing
+   that keeps the numeral legible: it holds pigment in the glyph's shape, it relaxes the
+   colour bands over the strokes, and it stops the taffy compression inside them, which
+   leaves an un-stretched island in the marble in the shape of the numeral even after the
+   sharp glyph itself has gone. So the weld itself is faded out across the top of the
+   phase: by peak everything on screen is one uniform smear with no memory of the shape,
+   which is where each old percentage is swapped for the next one. On the recoil the weld comes back and the new
+   numeral condenses out of the same pigment.
+
+   RAGGED LETTERFORM (uRugged): two bites applied to the resting glyph only —
+     · the sharp glyph is sampled at a noise-displaced uv, tearing the contour;
+     · coverage is thinned by an fbm gate whose threshold falls with catchment depth,
+       so stroke cores stay inked while rims go dry.
+
+   OPEN GROUND (uOpen / uOpenSc) — the finished background should not be a wall-to-wall
+   sheet. As the expansion runs, a large soft noise field eats voids out of the pigment
+   so the plate settles as islands of marble on bare stock. The void noise is deliberately
+   ply-INDEPENDENT: if each sheet lost different regions, ply 1 would simply fill in
+   ply 0's holes and nothing would open up.
+
+   SETTLE (uSettle / uPlateZoom) — the expansion's own taffy stretch is what destroys the
+   marbling: by the end, uStretch is high enough that every pixel is fetching from a
+   compressed sliver of the plate, which reads as directionless streaking rather than as
+   ebru. So the COLOUR fetch — and only the colour fetch — is folded back onto a coherent
+   crop of the bath as the sheets come to rest. Coverage still comes from the advected
+   glyph, so the torn island shapes the expansion produced are kept intact; they simply
+   get printed with real marbling again instead of smear. The colour bands relax at the
+   same time, so the settled sheet shows the whole palette rather than one ply's slice. */
+const MAIN_FS = `
+precision highp float;
+varying vec2 vUv;
+uniform sampler2D uPlate, uGlyph, uField, uFlow;
+uniform vec2 uRes;
+uniform float uPhase, uReach, uGather, uAspect, uThin, uGrainSc, uRugged;
+uniform float uSplit, uStagger, uSpin, uBands;
+uniform float uSmear, uAxisGrip, uFan, uHold, uStretch, uFillIn, uCounter;
+uniform float uPostStretch;
+uniform float uOpen, uOpenSc;
+uniform float uSettle, uPlateZoom;
+uniform float uTether, uVeil, uRoot, uNeck, uLane;
+uniform float uWave, uContrast, uClamp;
+uniform float uDot, uDotMix, uDotRest;
+uniform vec3 uPaper;
+${NOISE}
+
+/* Colour separation between plies. The bands are deliberately WIDE and softly
+   shouldered — a hard 1/3 partition gave each sheet a thresholded, posterised slice
+   of the plate that read as noise rather than as marbling. With this much overlap
+   every ply carries most of the tonal range, so each sheet is recognisably the same
+   marbled paper, just tipped toward its own end of the palette. */
+float band(float key, float i){
+  float lo = i/3.0 - 0.055, hi = (i+1.0)/3.0 + 0.055, w = 0.03;
+  float a = i < 0.5 ? 1.0 : smoothstep(lo, lo+w, key);
+  float b = i > 1.5 ? 1.0 : 1.0 - smoothstep(hi-w, hi, key);
+  return a*b;
+}
+
+vec4 ply(float i, float ph){
+  float delay = uStagger * i;
+  float phL   = clamp((ph - delay) / max(1.0 - delay, 0.001), 0.0, 1.0);
+  float gth   = 1.0 - phL;
+
+  float rot = uSpin * (i - 1.0);
+  float cr = cos(rot), sr = sin(rot);
+  mat2  R  = mat2(cr, -sr, sr, cr);
+
+  vec2 axis = vec2(cos(uSmear), sin(uSmear));
+  vec2 perp = vec2(-axis.y, axis.x);
+  float lead = i - 1.0;                       // -1, 0, +1
+  float upAxis  = step(lead, -0.5);
+  float dirGain = mix(1.0, uCounter, upAxis);
+
+  // Use the reference smear's broad catchment field as the weld. This keeps each
+  // colored sheet attached to the numeral while its free edge pulls down the axis.
+  // The loader-only veil releases that weld at the peak so the digits can swap.
+  float held0 = texture2D(uGlyph, clamp(vUv,0.0,1.0)).a;
+  float heldField = texture2D(uField, clamp(vUv,0.0,1.0)).b;
+  float veil  = uVeil * smoothstep(0.50, 0.94, phL);
+  float release = 1.0 - veil;
+  float fieldWeld = smoothstep(0.01, max(uRoot,0.05), heldField);
+  float fieldGap = smoothstep(0.01, uRoot*1.5, heldField);
+  float grip = uTether * fieldWeld * release;
+  float gap = 1.0 - fieldGap * release;
+  vec2  drift = (axis * uSplit * lead * 1.35 * dirGain + perp * uFan * lead) * (1.0 - grip);
+  // After 100%, add a balanced horizontal pull. Ply 0 travels left and
+  // ply 2 travels right while the middle ply keeps the central connection.
+  drift += vec2(lead*uPostStretch*0.48*uAspect,0.0)*(1.0-grip);
+
+  // rest-frame coordinates on the smear axis, used by the necking and by the coherent
+  // pigment fetch further down
+  vec2  dA0 = vec2((vUv.x-0.5)*uAspect, vUv.y-0.5);
+  float al0 = dot(dA0, axis), ac0 = dot(dA0, perp);
+
+  float spd = (1.0 + 0.34*abs(lead)) * dirGain;
+  vec2  asp = vec2(1.0/uAspect, 1.0);
+
+  // Sub-step dither: nudge each pixel's start along the axis so the 24-step march
+  // doesn't quantise into stripes running across the smear.
+  float jit = hash21(gl_FragCoord.xy*0.997 + i*23.0) - 0.5;
+  vec2 q = vUv - axis * jit * (uReach*spd*2.2*phL/24.0) * asp;
+  float acc = 0.0, srcHit = 0.0, srcSum = 0.0;
+  for(int s=0;s<24;s++){
+    vec2 sq   = vec2(q.x*uAspect, q.y);
+    vec2 f    = texture2D(uFlow, sq*0.62 + vec2(i*0.17)).rg*2.0 - 1.0;
+    f = R * mix(f, -f, upAxis);
+    vec2 pull = texture2D(uField, clamp(q,0.0,1.0)).rg*2.0 - 1.0;
+    float th  = (fbm(sq*1.7 + i*7.0) - 0.5)*uWave*2.8
+              + (fbm(sq*5.5 + i*3.0) - 0.5)*uWave*1.3;
+    float cw = cos(th), sw = sin(th);
+    vec2 bent   = mat2(cw,-sw,sw,cw) * pull;
+    vec2 stream = mix(bent, axis*dot(bent, axis), uAxisGrip);
+    q -= ((-stream*uReach*spd*2.2 + f*uReach*spd*0.35 + drift)*phL
+          + pull*uGather*gth) * asp / 24.0;
+    float g = texture2D(uGlyph, clamp(q,0.0,1.0)).a;
+    srcHit = max(srcHit, g);
+    srcSum += g;
+    acc += vn(q*uGrainSc*60.0 + 5.0 + i*37.0);
+  }
+
+  // ragged resting letterform: torn contour + dry rims, per ply
+  vec2  su   = vec2(vUv.x*uAspect, vUv.y);
+  vec2  jr   = vec2(fbm(su*6.5 + 3.0 + i*5.0), fbm(su*6.5 + 21.0 + i*5.0)) - 0.5;
+  float edgeFibre = fbm(su*28.0 + i*17.0) - 0.5;
+  vec2 edgePull = jr*0.026 + vec2(edgeFibre, -edgeFibre)*0.009;
+  float sharpG = texture2D(uGlyph, vUv + edgePull*uRugged*asp).a;
+  float wideAt = held0;
+  float rough  = clamp((fbm(su*11.0 + i*11.0) - 0.5)*2.4 + 0.5, 0.0, 1.0);
+  float t      = uRugged*(1.05 - 0.70*wideAt) - 0.05;
+  float bite   = mix(1.0, smoothstep(t, t + 0.12, rough), min(uRugged*4.0, 1.0));
+  sharpG *= bite;
+
+  // ── coverage ──
+  float emission = smoothstep(0.015, 0.92, phL);
+
+  // ── layered density and necking ──
+  // Each ply keeps its own raked grain, then thins into long connected cords
+  // as tension increases away from the numeral's tether.
+  float fv = clamp((acc/24.0 - 0.5)*uContrast + 0.5, 0.0, 1.0);
+  float pulled = phL * (1.0 - grip) * clamp(abs(lead) + 0.35, 0.0, 1.0);
+  float tension = gap * pulled;
+  float lane   = fbm(vec2(ac0*uLane, al0*uLane*0.14 + i*9.0));
+  float thin = uThin + uNeck*tension*(0.55 - 0.65*lane);
+  float strand = smoothstep(thin, thin + 0.085, fv);
+  float dense = mix(strand, clamp(0.45 + 0.75*fv, 0.0, 1.0), uFillIn);
+  dense *= 1.0 - uNeck*tension*smoothstep(0.62, 0.08, lane);
+
+  float dwell = srcSum/24.0;
+  float span = uReach*2.4 + uSplit*1.6 + 0.20;
+  float tail = 1.0 - smoothstep(span*0.60, span*1.35, length(dA0));
+  float reach = smoothstep(0.02, 0.30, srcHit)
+              * mix(0.14, 1.0, smoothstep(0.0, 0.24, dwell));
+  float emitted = dense * reach * emission * mix(1.0, tail, 0.85);
+
+  // ── the numeral: solid at rest, raking out into its own smear ──
+  // The handoff from sharp glyph to smear is slow enough to read as the letterform
+  // being dragged apart, and complete well before peak, so nothing legible survives
+  // into the swap.
+  float body      = mix(1.0, dense, smoothstep(0.0, uClamp, phL) * (1.0 - grip*0.85));
+  float numberInk = sharpG * body * mix(1.0, 0.72 + 0.28*grip, smoothstep(0.0, 0.55, phL));
+  numberInk *= 1.0 - smoothstep(0.08, 0.62, ph);
+  float gate      = max(numberInk, emitted);
+
+  // ── colour fetch: a COHERENT shear of the plate, not the turbulent endpoint ──
+  float al  = al0 / (1.0 + uStretch*phL*mix(0.18, 1.0, gap));
+  vec2  dS  = axis*al + perp*ac0;
+  vec2  qH  = 0.5 + vec2(dS.x/uAspect, dS.y) - drift*phL*asp;
+  vec2  qc  = mix(q, qH, uHold * smoothstep(0.0, 0.30, phL));
+  // At rest, show one clean, coherent crop of the marble inside the numeral.
+  // Release that crop as the peel begins so it can flow into the transition.
+  float plateLock = held0 * (1.0 - smoothstep(0.02, 0.32, phL));
+  qc = mix(qc, vUv, plateLock);
+
+  // ── settle: put the marbling back ──
+  // An undistorted crop of the bath, offset slightly per ply so the three sheets read
+  // as separate pieces of paper rather than one flat print. Coverage is untouched —
+  // only where the pigment's colour comes from changes.
+  vec2 qSet = 0.5 + (vUv - 0.5)*uPlateZoom + drift*0.10 + vec2(lead*0.05, lead*0.028);
+  // Use a wider crop so the same bath reads at a finer scale in the background,
+  // then rake that crop again so it retains the warped ebru character visible
+  // inside the loading numerals instead of settling into broad flat circles.
+  vec2 settleFlow = texture2D(uFlow, qSet*0.78 + vec2(i*0.13)).rg*2.0 - 1.0;
+  float settleComb = sin((qSet.y + settleFlow.y*0.08)*38.0 + qSet.x*7.0);
+  qSet += settleFlow*0.085 + vec2(settleComb*0.022, 0.0);
+  qc = mix(qc, qSet, uSettle);
+
+  // Keep the plate sample crisp inside the numerals. The earlier five-tap
+  // blur washed the narrow ribbons together and hid the marbling.
+  vec4  pl  = texture2D(uPlate, clamp(qc,0.0,1.0));
+  vec3  ink = pl.rgb;
+  float lum = dot(ink, vec3(0.299,0.587,0.114));
+  ink = mix(vec3(lum), ink, 1.22);
+  ink = clamp((ink - 0.5)*1.08 + 0.5, 0.0, 1.0);
+
+  float key = mix(clamp(lum,0.0,0.999), pl.a, uBands);   // own artwork: split by tone
+  // at the weld the bands relax open, so all three plies print their own colour on the
+  // same pixels and the roots read as the original un-separated marble
+  // Recombine all colour plies inside the settled numeral. Without this,
+  // narrow strokes show disconnected colour fragments rather than one
+  // recognizable marble sheet.
+  // The same relaxation applies once the sheets settle: a single ply's tonal slice
+  // does not read as ebru, the full palette does.
+  float sel = mix(band(key, i), 1.0, max(max(grip*0.90, plateLock), uSettle*0.92));
+  float a   = gate * sel;
+
+  // ── open ground ──
+  // Large soft voids eaten out of the sheet as it expands, so the finished
+  // background reads as islands of marble on bare stock rather than wall-to-wall
+  // pigment. The noise is deliberately ply-independent: all three sheets must
+  // lose the same regions, or ply 1 just fills in ply 0's holes.
+  if(uOpen > 0.0){
+    vec2 vp = vec2(vUv.x*uAspect, vUv.y);
+    vp += (texture2D(uFlow, vp*0.35).rg - 0.5) * 0.30;   // break up the stencil look
+    float pool = mix(fbm(vp*uOpenSc + 11.3), fbm(vp*uOpenSc*2.4 + 41.0), 0.30);
+    pool = clamp((pool - 0.24)/0.52, 0.0, 1.0);
+    a *= smoothstep(uOpen - 0.10, uOpen + 0.10, pool);
+  }
+
+  // ── print screen ──
+  // Modulates the pigment's TONE, never its coverage, so the rosette never punches
+  // holes down to the stock.
+  float sang = 0.42 + i*0.52;
+  float ca = cos(sang), sa = sin(sang);
+  vec2  hp = mat2(ca,-sa,sa,ca) * gl_FragCoord.xy / uDot;
+  float dd = length(fract(hp)-0.5);
+  float rad = mix(0.30,0.52,lum);
+  float dm  = mix(uDotRest, uDotMix, smoothstep(0.0,0.45,phL));
+  ink *= mix(1.0, mix(0.74, 1.10, smoothstep(rad+0.10, rad-0.10, dd)), dm);
+
+  return vec4(ink, clamp(a,0.0,1.0));
+}
+
+void main(){
+  // Flat stock. The marbling is the only texture in this plate.
+  vec3 col = uPaper;
+  vec4 L;
+  L = ply(0.0, uPhase); col = mix(col, L.rgb, L.a);
+  L = ply(1.0, uPhase); col = mix(col, L.rgb, L.a);
+  L = ply(2.0, uPhase); col = mix(col, L.rgb, L.a);
+  gl_FragColor = vec4(col,1.0);
+}`;
+
+let pMarble,pFlow,pMain, texPlate,texFlow,texGlyph,texField, fboPlate,fboFlow;
+const PAPER=[0.81,0.81,0.81];
+//         0 green            1 vermilion       2 ochre
+//         3 ultramarine      4 shell white     5 carbon
+const PAL=[[0.42,0.60,0.23],[0.79,0.24,0.14],[0.91,0.79,0.28],
+           [0.12,0.24,0.50],[0.95,0.94,0.90],[0.07,0.07,0.06]];
+const PLY_OF   = [0,1,0,2,1,2];              // which ply owns each colour
+const PLY_PICK = [[0,2,0.66],[1,4,0.60],[3,5,0.74]];
+const bandOf = l => (l+0.5)/3;
+
+if (gl){
+  const vb=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,vb);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
+  pMarble=prog(MARBLE_FS); pFlow=prog(FLOW_FS); pMain=prog(MAIN_FS);
+  texPlate=makeTex(gl.LINEAR,gl.CLAMP_TO_EDGE);
+  texGlyph=makeTex(gl.LINEAR,gl.CLAMP_TO_EDGE);
+  texField=makeTex(gl.LINEAR,gl.CLAMP_TO_EDGE);
+  texFlow =makeTex(gl.LINEAR,gl.REPEAT);
+  gl.bindTexture(gl.TEXTURE_2D,texFlow);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,512,512,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
+  fboFlow=gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER,fboFlow);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,texFlow,0);
+  gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+}
+
+let seed=1, seedFlow=3.1, usingOwnPlate=false;
+const rnd=()=>(seed=(seed*1664525+1013904223)>>>0)/4294967296;
+
+function bakePlate(w,h){
+  if (usingOwnPlate) return;
+  const drops=new Float32Array(NDROP*4), pal=new Float32Array(18);
+  PAL.forEach((c,i)=>{pal[i*3]=c[0];pal[i*3+1]=c[1];pal[i*3+2]=c[2];});
+  const ar=w/h;
+  for(let i=0;i<NDROP;i++){
+    const set=PLY_PICK[i%3];
+    drops[i*4]=(0.10+rnd()*0.80)*ar; drops[i*4+1]=0.10+rnd()*0.80;
+    drops[i*4+2]=0.055+rnd()*rnd()*0.20;
+    drops[i*4+3]=rnd()<set[2] ? set[0] : set[1];
+  }
+  const rake=new Float32Array(NRAKE*4);
+  for(let k=0;k<NRAKE;k++){ const a=rnd()*Math.PI*2;
+    rake[k*4]=rnd()*ar; rake[k*4+1]=rnd(); rake[k*4+2]=Math.cos(a); rake[k*4+3]=Math.sin(a); }
+  fboPlate=fboPlate||gl.createFramebuffer();
+  gl.bindTexture(gl.TEXTURE_2D,texPlate);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,w,h,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
+  gl.bindFramebuffer(gl.FRAMEBUFFER,fboPlate);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,texPlate,0);
+  gl.viewport(0,0,w,h); gl.useProgram(pMarble);
+  gl.uniform2f(pMarble.u.uRes,w,h);
+  gl.uniform4fv(pMarble.u.uDrop,drops); gl.uniform3fv(pMarble.u.uPal,pal);
+  gl.uniform1fv(pMarble.u.uPalL,new Float32Array(PLY_OF.map(bandOf)));
+  gl.uniform1f(pMarble.u.uGroundL, bandOf(1));
+  gl.uniform4fv(pMarble.u.uRake,rake); gl.uniform3f(pMarble.u.uRakeK,0.055,0.16,0.0);
+  gl.uniform3f(pMarble.u.uPaper,...PAL[4]);
+  gl.drawArrays(gl.TRIANGLES,0,3);
+  gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+}
+
+function bakeFlow(){
+  gl.bindFramebuffer(gl.FRAMEBUFFER,fboFlow); gl.viewport(0,0,512,512);
+  gl.useProgram(pFlow);
+  gl.uniform1f(pFlow.u.uFreq,P.turb); gl.uniform1f(pFlow.u.uSeed,seedFlow);
+  gl.uniform1f(pFlow.u.uBase,P.base*Math.PI/180);
+  gl.uniform1f(pFlow.u.uRange,P.range*Math.PI/180);
+  gl.uniform1f(pFlow.u.uSpdVar,P.shear);
+  gl.drawArrays(gl.TRIANGLES,0,3);
+  gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+}
+
+/* glyph + pull field.
+   The pull field is the gradient of a heavily blurred letterform: it points toward the
+   strokes from far off and goes slack inside them. Its BLUE channel — normalised
+   catchment — sets how wide the gather reaches. */
+const gc=document.createElement('canvas'), gx=gc.getContext('2d',{willReadFrequently:true});
+const fc=document.createElement('canvas'), fx=fc.getContext('2d',{willReadFrequently:true});
+
+function bakeGlyph(w,h,textIn,tracking,fillFrac,catch_,feather){
+  gc.width=w; gc.height=h;
+  const text=(textIn||' ').toUpperCase();
+  const FONT=s=>`800 ${s}px "Helvetica Neue",Inter,Helvetica,Arial,sans-serif`;
+  let size=h*0.1; gx.font=FONT(size);
+  const span=s=>gx.measureText(s).width + tracking*size*Math.max(0,s.length-1);
+  // Use the widest stage as the permanent sizing reference. Shorter values
+  // keep the same font size instead of expanding to fill the target width.
+  size *= (w*fillFrac)/Math.max(1,span('100%'));
+  size = Math.min(size, h*0.28);
+  gx.font=FONT(size); gx.clearRect(0,0,w,h);
+  gx.textAlign='left'; gx.textBaseline='middle'; gx.fillStyle='#fff';
+  gx.filter = feather>0 ? `blur(${(feather*size).toFixed(2)}px)` : 'none';
+  const tr=tracking*size;
+  const total=gx.measureText(text).width + tr*Math.max(0,text.length-1);
+  let x=(w-total)/2;
+  for(const ch of text){ gx.fillText(ch,x,h/2); x+=gx.measureText(ch).width+tr; }
+  gx.filter='none';
+
+  gl.bindTexture(gl.TEXTURE_2D,texGlyph);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,gc);
+
+  const fw=Math.max(64,Math.min(640,w>>1)), fh=Math.max(64,Math.round(fw*h/w));
+  fc.width=fw; fc.height=fh;
+  fx.clearRect(0,0,fw,fh);
+  fx.filter=`blur(${(2*catch_*size*fw/w).toFixed(2)}px)`;
+  fx.drawImage(gc,0,0,fw,fh);
+  fx.filter='none';
+  const src=fx.getImageData(0,0,fw,fh).data;
+  const out=fx.createImageData(fw,fh), od=out.data;
+  const gxs=new Float32Array(fw*fh), gys=new Float32Array(fw*fh);
+  let gmax=1e-6, wmax=1e-6;
+  for(let i=0;i<fw*fh;i++) if(src[i*4+3]>wmax) wmax=src[i*4+3];
+  for(let y=1;y<fh-1;y++) for(let x2=1;x2<fw-1;x2++){
+    const i=y*fw+x2;
+    const dx=(src[(i+1)*4+3]-src[(i-1)*4+3])*0.5;
+    const dy=(src[(i+fw)*4+3]-src[(i-fw)*4+3])*0.5;
+    gxs[i]=dx; gys[i]=-dy;                      // negate dy: canvas y is down, uv y is up
+    const m=Math.hypot(dx,dy); if(m>gmax) gmax=m;
+  }
+  for(let i=0;i<fw*fh;i++){
+    const m=Math.hypot(gxs[i],gys[i]);
+    const s=m>1e-6 ? Math.min(1,m/gmax)/m : 0;    // unit direction × tapered magnitude
+    od[i*4  ]=Math.round((gxs[i]*s*0.5+0.5)*255);
+    od[i*4+1]=Math.round((gys[i]*s*0.5+0.5)*255);
+    od[i*4+2]=Math.round(Math.min(255, src[i*4+3]*255/wmax));   // normalised catchment
+    od[i*4+3]=255;
+  }
+  fx.putImageData(out,0,0);
+  gl.bindTexture(gl.TEXTURE_2D,texField);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,fc);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
+}
+
+/* ─── controls ─── */
+const ids=['rugged','track','fill','pullr','feather','smear','axis','fan','hold','stretch','fillin',
+           'split','stagger','spin','counter','tether','veil','root','neck','lane','snap','wave','contrast',
+           'gather','clamp','reach','thin','grain','turb','base','range','shear',
+           'open','openscale','settle','platezoom',
+           'cycle','scrub','dot','dotmix','dotrest'];
+const el=Object.fromEntries(ids.map(i=>[i,document.getElementById(i)]));
+const wordEl=document.getElementById('word');
+const DEG=['base','range','smear'];
+const P={};
+function readAll(){ for(const i of ids){ P[i]=parseFloat(el[i].value);
+  document.getElementById('v-'+i).textContent=
+    DEG.includes(i)?P[i]+'°':(i==='feather')?P[i].toFixed(3)
+    :(i==='lane')?P[i].toFixed(0):P[i].toFixed(2); } }
+readAll();
+const restingSplit=P.split;
+const restingReach=P.reach;
+addEventListener('message',event=>{
+  if(event.data?.type!=='home-card-hover') return;
+  const active=Boolean(event.data.active);
+  P.split=active?Math.min(.4,restingSplit+.19):restingSplit;
+  P.reach=active?Math.min(.5,restingReach+.12):restingReach;
+  needsRender=true;
+});
+
+const START_TEXT='0%';
+let sequenceText=START_TEXT;
+const displayText=()=>sequenceText;
+function reGlyph(){ bakeGlyph(W,H,displayText(),P.track,P.fill,P.pullr,P.feather); }
+function setSequenceText(next){
+  if(sequenceText===next) return;
+  sequenceText=next;
+  wordEl.value=next;
+  if(W&&H) reGlyph();
+}
+
+for(const i of ids) el[i].addEventListener('input',()=>{ readAll(); needsRender=true;
+  if(i==='turb'||i==='base'||i==='range'||i==='shear') bakeFlow();
+  if(i==='track'||i==='fill'||i==='pullr'||i==='feather') reGlyph();
+  if(i==='scrub'){ playing=false; setPlay(); } });
+let playing=true, needsRender=true, expansionComplete=false;
+const playBtn=document.getElementById('playBtn');
+function setPlay(){ playBtn.textContent=playing?'Pause':'Play'; playBtn.setAttribute('aria-pressed',String(playing)); }
+playBtn.addEventListener('click',()=>{
+  if(!playing && expansionComplete){
+    resetCards();
+    expansionComplete=false;
+    clock=0; P.scrub=0; el.scrub.value='0'; setSequenceText(START_TEXT);
+  }
+  playing=!playing; needsRender=true; setPlay();
+});
+document.getElementById('seedBtn').addEventListener('click',()=>{
+  seed=(Math.random()*1e9)|0; seedFlow=Math.random()*40; usingOwnPlate=false;
+  document.getElementById('drop').textContent='Use my own image';
+  bakePlate(W,H); bakeFlow(); needsRender=true;
+});
+const cfgBtn=document.getElementById('cfgBtn'), panel=document.getElementById('panel');
+cfgBtn.addEventListener('click',()=>{ panel.hidden=!panel.hidden;
+  cfgBtn.setAttribute('aria-expanded',String(!panel.hidden)); });
+const fileEl=document.getElementById('file'), dropEl=document.getElementById('drop');
+dropEl.addEventListener('click',()=>fileEl.click());
+dropEl.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();fileEl.click();} });
+fileEl.addEventListener('change',()=>{
+  const f=fileEl.files[0]; if(!f) return;
+  const img=new Image();
+  img.onload=()=>{ usingOwnPlate=true;
+    gl.bindTexture(gl.TEXTURE_2D,texPlate);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,img);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
+    dropEl.textContent=f.name.slice(0,22); needsRender=true; URL.revokeObjectURL(img.src); };
+  img.src=URL.createObjectURL(f);
+});
+
+/* Two passes through this envelope keep the continuously advancing
+   0% → 100% counter peeling and retracting through the loading cycle.
+
+   The plateau in the middle is the whole point of the retime. The old keys held full
+   smear for 6% of the cycle and swapped the digits at u=0.50, which landed on the way
+   DOWN — the numeral was already re-condensing during a swap. Now
+   the peak is a real hold where the tether has fully let go and there is no
+   glyph-shaped structure left on screen.
+
+   The return leg is elastic rather than a mirror of the peel: a fast power curve hauls
+   the sheets most of the way back, then a damped ripple overshoots register a couple of
+   times before it settles. Snap scales the ripple. */
+const KEYS=[0.02,0.30,0.46,0.88];
+const easeOut=x=>1-Math.pow(1-x,2.6);
+function recoil(x){
+  const base = 1-Math.pow(1-x,3.2);
+  const ring = P.snap * Math.exp(-5.5*x) * Math.sin(x*Math.PI*3.4) * (1-x);
+  return base + ring;
+}
+function envelope(u){
+  if(u<KEYS[0]) return 0;
+  if(u<KEYS[1]) return easeOut((u-KEYS[0])/(KEYS[1]-KEYS[0]));
+  if(u<KEYS[2]) return 1;
+  if(u<KEYS[3]) return Math.max(0,Math.min(1,1-recoil((u-KEYS[2])/(KEYS[3]-KEYS[2]))));
+  return 0;
+}
+
+let W=0,H=0;
+function resize(){
+  if(!gl) return;
+  // Cap the internal render size on large displays. CSS scales the canvas
+  // back to the viewport while the shader processes far fewer fragments.
+  const fit=Math.min(1,1600/innerWidth,1000/innerHeight);
+  const dpr=Math.min(window.devicePixelRatio||1,1)*fit;
+  W=Math.round(innerWidth*dpr); H=Math.round(innerHeight*dpr);
+  cv.width=W; cv.height=H;
+  bakePlate(W,H); reGlyph(); needsRender=true;
+}
+addEventListener('resize',resize);
+
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const EXPAND_SECONDS=2.6;
+let clock=0,last=performance.now();
+let flowDirection=-1;
+
+function frame(now){
+  requestAnimationFrame(frame);
+  if(!gl) return;
+  const dt=Math.min((now-last)/1000,0.05); last=now;
+  const live = playing && !reduce;
+  if(!live && !needsRender) return;
+  if(live) clock+=dt;
+  const u = live ? Math.min(clock/P.cycle,1) : P.scrub;
+  const expandTime = reduce ? 1 : Math.max(0,Math.min(1,(clock-P.cycle)/EXPAND_SECONDS));
+  // Stop the physical stretch before its full shader extent instead of
+  // masking the page edges with a vignette.
+  const expand=expandTime*0.72;
+  const finalPeel = expand>0 ? easeOut(Math.min(1,expand/0.72)) : 0;
+  // The marbling comes back over the second half of the expansion, after the sheets
+  // have travelled far enough for the torn island shapes to be established.
+  const settle = P.settle * easeOut(Math.max(0,(expandTime-0.34)/0.66));
+  const stageU = u < 0.5 ? u*2.0 : (u-0.5)*2.0;
+  // Alternate the two numeral pulls across opposing diagonals:
+  // bottom-left → top-right, then bottom-right → top-left.
+  const sequenceAngle = u < 0.5 ? 45 : 135;
+  const sequenceSmear = sequenceAngle * Math.PI / 180;
+  if(sequenceAngle!==flowDirection){
+    flowDirection=sequenceAngle;
+    P.base=sequenceAngle;
+    bakeFlow();
+  }
+  const percent=Math.min(100,Math.floor(u*101));
+  setSequenceText(percent+'%');
+  if(live){
+    P.scrub=u;
+    el.scrub.value=u.toFixed(3);
+    document.getElementById('v-scrub').textContent=u.toFixed(2);
+    if(expandTime>=1){ expansionComplete=true; playing=false; setPlay(); }
+  }
+
+  gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+  gl.viewport(0,0,W,H);
+  gl.useProgram(pMain);
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,texPlate); gl.uniform1i(pMain.u.uPlate,0);
+  gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D,texGlyph); gl.uniform1i(pMain.u.uGlyph,1);
+  gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D,texField); gl.uniform1i(pMain.u.uField,2);
+  gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D,texFlow);  gl.uniform1i(pMain.u.uFlow, 3);
+  gl.uniform2f(pMain.u.uRes,W,H);
+  gl.uniform1f(pMain.u.uPhase,expand>0 ? finalPeel : envelope(stageU));
+  gl.uniform1f(pMain.u.uReach,P.reach+expandTime*1.10);
+  gl.uniform1f(pMain.u.uGather,P.gather);
+  gl.uniform1f(pMain.u.uAspect,W/H);
+  gl.uniform1f(pMain.u.uThin,P.thin);
+  gl.uniform1f(pMain.u.uGrainSc,P.grain);
+  gl.uniform1f(pMain.u.uRugged,P.rugged);
+  gl.uniform1f(pMain.u.uSplit,P.split+expandTime*0.35);
+  gl.uniform1f(pMain.u.uStagger,P.stagger);
+  gl.uniform1f(pMain.u.uSpin,P.spin);
+  gl.uniform1f(pMain.u.uSmear,sequenceSmear);
+  gl.uniform1f(pMain.u.uAxisGrip,P.axis);
+  gl.uniform1f(pMain.u.uFan,P.fan+expandTime*0.16);
+  gl.uniform1f(pMain.u.uHold,P.hold);
+  gl.uniform1f(pMain.u.uStretch,P.stretch+expandTime*6.5);
+  gl.uniform1f(pMain.u.uFillIn,P.fillin);
+  gl.uniform1f(pMain.u.uCounter,P.counter);
+  gl.uniform1f(pMain.u.uPostStretch,expandTime);
+  gl.uniform1f(pMain.u.uOpen,P.open*easeOut(expandTime));
+  gl.uniform1f(pMain.u.uOpenSc,P.openscale);
+  gl.uniform1f(pMain.u.uSettle,settle);
+  gl.uniform1f(pMain.u.uPlateZoom,P.platezoom);
+  gl.uniform1f(pMain.u.uTether,P.tether);
+  gl.uniform1f(pMain.u.uVeil,P.veil);
+  gl.uniform1f(pMain.u.uRoot,P.root);
+  gl.uniform1f(pMain.u.uNeck,P.neck);
+  gl.uniform1f(pMain.u.uLane,P.lane);
+  gl.uniform1f(pMain.u.uWave,P.wave);
+  gl.uniform1f(pMain.u.uContrast,P.contrast);
+  gl.uniform1f(pMain.u.uClamp,P.clamp);
+  gl.uniform1f(pMain.u.uBands, usingOwnPlate?0:1);
+  gl.uniform1f(pMain.u.uDot,P.dot*Math.min(window.devicePixelRatio||1,1));
+  gl.uniform1f(pMain.u.uDotMix,P.dotmix);
+  gl.uniform1f(pMain.u.uDotRest,P.dotrest);
+  gl.uniform3f(pMain.u.uPaper,...PAPER);
+  gl.drawArrays(gl.TRIANGLES,0,3);
+  drawNavTexture();
+  if(expandTime>=1 && !cardsQueued){
+    cardsQueued=true;
+    let snapshot='';
+    try{ snapshot=cv.toDataURL('image/jpeg',0.88); }catch(_){}
+    window.marbleNavTexture=snapshot;
+    setTimeout(()=>showCards(snapshot),360);
+  }
+  needsRender=false;
+}
+
+if(gl){ setPlay(); resize(); bakeFlow(); requestAnimationFrame(frame); }
+</script>
+</body>
+</html>

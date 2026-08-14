@@ -11,6 +11,7 @@ export default function Preloader({
   effectStrength = 1,
   glassRects = [],
   projectOpen = false,
+  videosPaused = false,
   canExit = false,
 }) {
   const frameRef = useRef(null);
@@ -77,6 +78,14 @@ export default function Preloader({
       window.location.origin,
     );
   }, [glassRects]);
+
+  useEffect(() => {
+    if (!frameLoadedRef.current) return;
+    frameRef.current?.contentWindow?.postMessage(
+      { type: "portfolio-grid-video-playback", paused: videosPaused },
+      window.location.origin,
+    );
+  }, [videosPaused]);
 
   useEffect(() => {
     if (!frameLoadedRef.current || projectOpen) return;
@@ -153,6 +162,10 @@ export default function Preloader({
       { type: "portfolio-grid-glass-rects", rects: glassRects },
       window.location.origin,
     );
+    frameRef.current?.contentWindow?.postMessage(
+      { type: "portfolio-grid-video-playback", paused: videosPaused },
+      window.location.origin,
+    );
   };
 
   const forwardGridInput = (kind, event) => {
@@ -194,7 +207,7 @@ export default function Preloader({
     >
       <iframe
         ref={frameRef}
-        src="/loader-scenes/slinky-grid.html"
+        src="/loader-scenes/slinky-grid.html?v=short-filter-layout-9"
         title="Loading portfolio"
         className="portfolio-grid-frame absolute inset-0 h-full w-full border-0"
         onLoad={handleLoad}

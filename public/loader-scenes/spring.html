@@ -1,0 +1,762 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Spring Text — Pull & Release</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow: hidden;
+        background: #8b93d6;
+      }
+      canvas {
+        display: block;
+        transform: translateY(-660px);
+      }
+      #panel {
+        position: fixed;
+        top: 12px;
+        left: 12px;
+        z-index: 10;
+        background: rgba(0, 0, 0, 0.55);
+        color: #fff;
+        font-family: "Courier New", monospace;
+        padding: 12px 14px;
+        border-radius: 8px;
+        font-size: 12px;
+        line-height: 1.7;
+        max-width: 230px;
+        backdrop-filter: blur(4px);
+      }
+      #panel.hide {
+        display: none;
+      }
+      #panel label {
+        display: block;
+        margin-top: 6px;
+        opacity: 0.85;
+      }
+      #panel input[type="text"],
+      #panel input[type="range"] {
+        width: 100%;
+      }
+      #panel input[type="color"] {
+        width: 40px;
+        height: 20px;
+        vertical-align: middle;
+        border: none;
+        padding: 0;
+      }
+      #panel button {
+        width: 100%;
+        margin-top: 10px;
+        background: rgba(255, 255, 255, 0.18);
+        color: #fff;
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        padding: 8px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-family: "Courier New", monospace;
+        font-size: 12px;
+      }
+
+      #toggle {
+        position: fixed;
+        top: 12px;
+        right: 12px;
+        z-index: 10;
+        background: rgba(0, 0, 0, 0.55);
+        color: #fff;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 12px;
+        font-family: "Courier New", monospace;
+      }
+      #fullscreen-btn {
+        position: fixed;
+        bottom: 12px;
+        right: 12px;
+        z-index: 10;
+        background: rgba(0, 0, 0, 0.55);
+        color: #fff;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 12px;
+        font-family: "Courier New", monospace;
+      }
+      #panel,
+      #toggle,
+      #fullscreen-btn {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body id="page-body">
+    <button id="toggle">controls</button>
+    <button id="fullscreen-btn">fullscreen</button>
+    <div id="panel">
+      <label
+        >text
+        <input type="text" id="text" />
+      </label>
+      <label
+        >coil turns <span id="curlTurnsVal"></span>
+        <input type="range" id="curl-turns" min="1" max="24" step="0.5" />
+      </label>
+      <label
+        >coil radius <span id="curlRadiusVal"></span>
+        <input type="range" id="curl-radius" min="0.3" max="3" step="0.05" />
+      </label>
+      <label
+        >tightness <span id="curlTaperVal"></span>
+        <input type="range" id="curl-taper" min="0.1" max="3" step="0.05" />
+      </label>
+      <label
+        >coil length <span id="curlLengthVal"></span>
+        <input type="range" id="curl-length" min="2" max="16" step="0.1" />
+      </label>
+      <label
+        >reveal point <span id="cutStartVal"></span>
+        <input type="range" id="cut-start" min="0.15" max="0.85" step="0.01" />
+      </label>
+      <label
+        >pull charge time (s) <span id="chargeTimeVal"></span>
+        <input type="range" id="charge-time" min="0.2" max="3" step="0.1" />
+      </label>
+      <label
+        >stiffness <span id="stiffnessVal"></span>
+        <input type="range" id="stiffness" min="20" max="220" step="1" />
+      </label>
+      <label
+        >damping <span id="dampingVal"></span>
+        <input type="range" id="damping" min="0.5" max="20" step="0.1" />
+      </label>
+      <label
+        >pull strength <span id="pullAmpVal"></span>
+        <input type="range" id="pull-amp" min="0.1" max="1.2" step="0.02" />
+      </label>
+      <label
+        >coil reveal <span id="revealAmpVal"></span>
+        <input type="range" id="reveal-amp" min="0" max="0.7" step="0.01" />
+      </label>
+      <label
+        >background color <input type="color" id="background-color"
+      /></label>
+      <label>letter color <input type="color" id="foreground-color" /></label>
+      <label>back color <input type="color" id="back-color" /></label>
+      <button id="trigger-spring" type="button">re-trigger spring</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+      // ---------- state ----------
+      let text = "LOADING";
+      let font = "Impact, Arial Narrow, sans-serif";
+      let cutStart = 0.54; // how much of the coil is revealed at rest
+      let curlTurns = 4.5;
+      let curlRadius = 0.3;
+      let curlTaper = 3.0;
+      let curlLength = 16.0;
+
+      // grab / spring-release physics
+      let chargeTime = 0.35; // seconds of holding to reach a full pull — quick, doesn't need a long hold
+      let stiffness = 110; // spring constant (higher = snappier)
+      let damping = 5.5; // damping (higher = settles faster, less overshoot)
+      let pullAmp = 0.55; // visual strength of the pull (scale + position)
+      let revealAmp = 0.32; // how much the coil itself uncurls/recoils as it's pulled
+
+      // periwinkle background, dark maroon/brown letters, matching the reference art
+      let bgColor = "#8b93d6";
+      let textColor = "#2b0f0c"; // dark maroon front face
+      let backColor = "#d9cfc9"; // soft off-white back face
+
+      // ---------- text texture ----------
+      const TEX_W = 4096,
+        TEX_H = 2048;
+      const textCanvas = document.createElement("canvas");
+      textCanvas.width = TEX_W;
+      textCanvas.height = TEX_H;
+      const tctx = textCanvas.getContext("2d");
+
+      const texture = new THREE.CanvasTexture(textCanvas);
+      texture.needsUpdate = true;
+
+      // separate white-letter mask for the back face, so its tint color renders
+      // clean instead of being multiplied against the front face's letter color
+      const maskCanvas = document.createElement("canvas");
+      maskCanvas.width = TEX_W;
+      maskCanvas.height = TEX_H;
+      const mctx = maskCanvas.getContext("2d");
+      const maskTexture = new THREE.CanvasTexture(maskCanvas);
+      maskTexture.needsUpdate = true;
+
+      function drawTextTexture() {
+        tctx.clearRect(0, 0, TEX_W, TEX_H);
+        tctx.fillStyle = textColor;
+        tctx.textAlign = "center";
+        tctx.textBaseline = "middle";
+        tctx.font = `bold ${1040}px ${font}`;
+        tctx.fillText(text, TEX_W / 2, TEX_H / 2, TEX_W - 40);
+        texture.needsUpdate = true;
+
+        mctx.clearRect(0, 0, TEX_W, TEX_H);
+        mctx.fillStyle = "#ffffff";
+        mctx.textAlign = "center";
+        mctx.textBaseline = "middle";
+        mctx.font = `bold ${1040}px ${font}`;
+        mctx.fillText(text, TEX_W / 2, TEX_H / 2, TEX_W - 40);
+        maskTexture.needsUpdate = true;
+      }
+      drawTextTexture();
+
+      // ---------- three.js scene ----------
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(bgColor);
+      scene.fog = new THREE.FogExp2(new THREE.Color(bgColor).getHex(), 0.01);
+
+      const CANVAS_SHIFT_PX = 660; // must match the CSS translateY on canvas
+      const BASE_VFOV_DEG = 36;
+
+      // Extend the vertical FOV proportionally to the extra canvas height so the
+      // added rows show more scene (filling the bottom gap) instead of stretching
+      // the existing image. Horizontal framing is mathematically unchanged.
+      function computeExtendedVFov(origHeight, shiftPx) {
+        const newHeight = origHeight + shiftPx;
+        const origVFovRad = (BASE_VFOV_DEG * Math.PI) / 180;
+        const newVFovRad =
+          2 * Math.atan((newHeight / origHeight) * Math.tan(origVFovRad / 2));
+        return (newVFovRad * 180) / Math.PI;
+      }
+
+      const camera = new THREE.PerspectiveCamera(
+        computeExtendedVFov(window.innerHeight, CANVAS_SHIFT_PX),
+        window.innerWidth / (window.innerHeight + CANVAS_SHIFT_PX),
+        0.1,
+        200,
+      );
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight + CANVAS_SHIFT_PX);
+      renderer.setClearColor(new THREE.Color(bgColor).getHex());
+      document.body.appendChild(renderer.domElement);
+
+      const maxAniso = renderer.capabilities.getMaxAnisotropy();
+      for (const tex of [texture, maskTexture]) {
+        tex.anisotropy = maxAniso;
+        tex.generateMipmaps = false;
+        tex.minFilter = THREE.LinearFilter;
+        tex.magFilter = THREE.LinearFilter;
+        tex.needsUpdate = true;
+      }
+
+      // ---------- geometry: a plane that bends into a helix (spring coil) below the cut line ----------
+      const PLANE_W = 8,
+        PLANE_H = 4;
+      const TEXT_Y_OFFSET = 3.0;
+      const FLAT_ROWS = 50; // resolution of the untouched top card (fixed, independent of cutStart)
+      const CURL_ROWS = 260; // resolution of the spiraling section (higher = smoother coil)
+      const COLS = 50;
+
+      let planeGeo;
+      let frontMesh, backMesh, springGroup;
+
+      // Builds the mesh ONCE per shape-parameter change (coil turns/radius/taper/length).
+      // The curled section's shape never depends on cutStart (only its position does),
+      // so we bake a "baseline" (as if cutStart were 0) here and shift it cheaply per frame.
+      function buildGeometry() {
+        const positions = [];
+        const uvs = [];
+        const indices = [];
+        const flatFrac = []; // flat verts: row fraction (0 top -> 1 bottom of full card); curl verts: 0 (unused)
+        const curlT = []; // curl verts: t (0 seam -> 1 tip); flat verts: 0 (unused)
+
+        const flatRows = FLAT_ROWS;
+        const curlRows = CURL_ROWS;
+        const totalRows = flatRows + curlRows;
+
+        const UP = new THREE.Vector3(0, 1, 0);
+        const EPS = 1e-4;
+
+        const SEAM_EASE_T0 = 0.08; // fraction of the curl over which the spin ramps up from zero, to match the flat card's straight-down tangent at the seam
+        function helixPoint(t) {
+          const omega = curlTurns * Math.PI * 2;
+          let angle;
+          if (t < SEAM_EASE_T0) {
+            const t0 = SEAM_EASE_T0;
+            angle = omega * ((2 * t * t) / t0 - (t * t * t) / (t0 * t0));
+          } else {
+            angle = omega * t;
+          }
+          const radius = curlRadius * Math.pow(Math.max(0, 1 - t), curlTaper);
+
+          // The spiral must start centered at x = -curlRadius (so it's tangent to
+          // the flat card at the seam), but holding that fixed for the whole coil
+          // makes it hang off to the left the entire way down. Ease this axis back
+          // toward 0 as t grows, so the coil re-centers itself as it descends
+          // instead of permanently orbiting an off-axis point.
+          const axisOffset = -curlRadius * (1 - t);
+
+          const y = -t * curlLength; // baseline as if cutStart were 0; shifted by -cutStart*PLANE_H at runtime
+          return new THREE.Vector3(
+            radius * Math.cos(angle) + axisOffset,
+            y,
+            radius * Math.sin(angle),
+          );
+        }
+
+        // flat, untouched card — full potential height; the current cutStart determines
+        // how much of it is shown, applied per-frame via applyCutStart()
+        for (let r = 0; r <= flatRows; r++) {
+          const rowFrac = r / flatRows;
+          for (let c = 0; c <= COLS; c++) {
+            const cu = c / COLS;
+            positions.push((cu - 0.5) * PLANE_W, 0, 0);
+            uvs.push(cu, 1);
+            flatFrac.push(rowFrac);
+            curlT.push(0);
+          }
+        }
+
+        // curling section below the cut line — orientation comes from an analytic
+        // tangent crossed with world-up, which stays smooth and never flips
+        const BLEND_RANGE = 0.08; // fraction of the curl over which orientation eases in from flat, avoiding a seam crease
+        function smoothstep01(x) {
+          const c = Math.min(1, Math.max(0, x));
+          return c * c * (3 - 2 * c);
+        }
+        const FLAT_BINORMAL = new THREE.Vector3(1, 0, 0);
+
+        let prevBinormal = new THREE.Vector3(1, 0, 0);
+        for (let i = 0; i <= curlRows; i++) {
+          const t = i / curlRows;
+          const center = helixPoint(t);
+          const tBack = Math.max(0, t - EPS);
+          const tFwd = Math.min(1, t + EPS);
+          const tangent = helixPoint(tFwd).sub(helixPoint(tBack)).normalize();
+
+          let binormal = new THREE.Vector3().crossVectors(tangent, UP);
+          if (binormal.lengthSq() < 1e-6) {
+            binormal = prevBinormal.clone();
+          } else {
+            binormal.normalize();
+            if (binormal.dot(prevBinormal) < 0) binormal.negate(); // keep orientation continuous
+          }
+          prevBinormal = binormal;
+
+          // ease the cross-section orientation from the flat card's own (1,0,0)
+          // into the natural curl frame, so the seam has no twist
+          const blend = smoothstep01(t / BLEND_RANGE);
+          const orientBinormal = FLAT_BINORMAL.clone()
+            .lerp(binormal, blend)
+            .normalize();
+
+          const width = PLANE_W * (1 - t * 0.2);
+          for (let c = 0; c <= COLS; c++) {
+            const cu = c / COLS;
+            const offset = (cu - 0.5) * width;
+            const p = center.clone().addScaledVector(orientBinormal, offset);
+            positions.push(p.x, p.y, p.z); // p.y is the cutStart=0 baseline; shifted per-frame
+            uvs.push(cu, 1 - t); // baseline; scaled by (1-cutStart) per-frame
+            flatFrac.push(0);
+            curlT.push(t);
+          }
+        }
+
+        for (let r = 0; r < totalRows; r++) {
+          for (let c = 0; c < COLS; c++) {
+            const a = r * (COLS + 1) + c;
+            const b = a + 1;
+            const cIdx = a + (COLS + 1);
+            const d = cIdx + 1;
+            indices.push(a, cIdx, b, b, cIdx, d);
+          }
+        }
+
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute(
+          "position",
+          new THREE.Float32BufferAttribute(positions, 3),
+        );
+        geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+        geo.setIndex(indices);
+        geo.userData.flatFrac = new Float32Array(flatFrac);
+        geo.userData.curlT = new Float32Array(curlT);
+        geo.userData.curlBaseY = new Float32Array(
+          positions.filter((_, idx) => idx % 3 === 1),
+        ); // baked Y baseline (cutStart=0) for every vertex
+        geo.userData.flatVertCount = (flatRows + 1) * (COLS + 1);
+        applyCutStart(geo, cutStart);
+        return geo;
+      }
+
+      // Cheap per-frame update: repositions/re-UVs the existing buffers for a new
+      // cutStart value with plain arithmetic — no geometry rebuild, no allocation.
+      function applyCutStart(geo, cs) {
+        const pos = geo.attributes.position;
+        const uv = geo.attributes.uv;
+        const flatFrac = geo.userData.flatFrac;
+        const curlT = geo.userData.curlT;
+        const curlBaseY = geo.userData.curlBaseY;
+        const flatVertCount = geo.userData.flatVertCount;
+        const n = pos.count;
+        const yShift = -cs * PLANE_H;
+
+        for (let v = 0; v < n; v++) {
+          if (v < flatVertCount) {
+            const rowFrac = flatFrac[v];
+            pos.setY(v, -rowFrac * cs * PLANE_H);
+            uv.setY(v, 1 - rowFrac * cs);
+          } else {
+            const t = curlT[v];
+            pos.setY(v, curlBaseY[v] + yShift);
+            uv.setY(v, (1 - cs) * (1 - t));
+          }
+        }
+        pos.needsUpdate = true;
+        uv.needsUpdate = true;
+      }
+
+      const frontMat = new THREE.MeshBasicMaterial({
+        map: texture,
+        side: THREE.FrontSide,
+        transparent: true,
+        depthWrite: true,
+        alphaTest: 0.06,
+      });
+      const backMat = new THREE.MeshBasicMaterial({
+        map: maskTexture,
+        side: THREE.BackSide,
+        transparent: true,
+        depthWrite: true,
+        alphaTest: 0.06,
+        color: backColor,
+      });
+
+      function rebuild() {
+        const newGeo = buildGeometry();
+        if (planeGeo) planeGeo.dispose();
+        planeGeo = newGeo;
+        if (!frontMesh) {
+          frontMesh = new THREE.Mesh(planeGeo, frontMat);
+          backMesh = new THREE.Mesh(planeGeo, backMat);
+          springGroup = new THREE.Group();
+          springGroup.position.y = TEXT_Y_OFFSET;
+          springGroup.add(frontMesh, backMesh);
+          scene.add(springGroup);
+        } else {
+          frontMesh.geometry = planeGeo;
+          backMesh.geometry = planeGeo;
+        }
+      }
+      rebuild();
+
+      // ---------- orbit camera (drag + wheel, no external controls needed) ----------
+      let camAngle = 0,
+        camElev = 0,
+        camDist = 9;
+      let dragging = false,
+        lastX = 0,
+        lastY = 0;
+
+      renderer.domElement.addEventListener("pointerdown", (e) => {
+        dragging = true;
+        lastX = e.clientX;
+        lastY = e.clientY;
+      });
+      window.addEventListener("pointerup", () => (dragging = false));
+      window.addEventListener("pointermove", (e) => {
+        if (!dragging) return;
+        camAngle -= (e.clientX - lastX) * 0.006;
+        camElev = Math.max(
+          -0.4,
+          Math.min(0.7, camElev + (e.clientY - lastY) * 0.004),
+        );
+        lastX = e.clientX;
+        lastY = e.clientY;
+      });
+      renderer.domElement.addEventListener(
+        "wheel",
+        (e) => {
+          camDist = Math.max(3, Math.min(20, camDist + e.deltaY * 0.01));
+        },
+        { passive: true },
+      );
+
+      const CAM_TARGET_Y = 1.3; // roughly the vertical center of the flat text at rest
+
+      function updateCamera() {
+        camera.position.x = Math.sin(camAngle) * camDist;
+        camera.position.z = Math.cos(camAngle) * camDist;
+        camera.position.y = CAM_TARGET_Y + camElev * camDist;
+        camera.lookAt(0, CAM_TARGET_Y, 0);
+      }
+
+      // ---------- grab / pull / release spring physics ----------
+      // "stretch" is a unitless displacement: 0 = at rest, 1 = fully pulled down.
+      // While holding, it's driven straight toward a target (charging up the pull).
+      // On release, it's handed off to a damped spring-mass simulation so it
+      // snaps back, overshoots past rest, and rings out — a real "let go" boing.
+      let holding = false;
+      let holdStartTime = 0;
+      let stretch = 0;
+      let stretchVel = 0;
+
+      function startHold() {
+        holding = true;
+        holdStartTime = performance.now();
+      }
+      function endHold() {
+        if (!holding) return;
+        holding = false;
+        // velocity stays whatever it was (0, since held motion is driven directly) —
+        // the spring simulation takes over from here every frame.
+      }
+      window.addEventListener("pointerup", endHold);
+      window.addEventListener("pointercancel", endHold);
+
+      let triggerTimeout;
+      function triggerSpring() {
+        clearTimeout(triggerTimeout);
+        stretch = 0;
+        stretchVel = 0;
+        startHold();
+        triggerTimeout = setTimeout(endHold, chargeTime * 1000);
+      }
+
+      // play one pull-and-release automatically as soon as the page loads,
+      // so the spring animation is visible immediately without waiting on input
+      triggerSpring();
+
+      function stepPhysics(dt) {
+        if (holding) {
+          const held = (performance.now() - holdStartTime) / 1000;
+          const target = Math.min(1, held / chargeTime);
+          // ease straight toward the charging target while held
+          stretch += (target - stretch) * Math.min(1, dt * 8);
+          stretchVel = 0;
+        } else {
+          // damped harmonic oscillator: pulls stretch back toward 0, with
+          // enough energy left over from a big pull to overshoot and ring out
+          const accel = -stiffness * stretch - damping * stretchVel;
+          stretchVel += accel * dt;
+          stretch += stretchVel * dt;
+          // clean up floating point dust so it doesn't jitter forever
+          if (Math.abs(stretch) < 0.0005 && Math.abs(stretchVel) < 0.0005) {
+            stretch = 0;
+            stretchVel = 0;
+          }
+        }
+
+        const scaleY = 1 + stretch * pullAmp;
+        const scaleXZ = 1 - stretch * pullAmp * 0.55;
+        springGroup.scale.set(scaleXZ, scaleY, scaleXZ);
+        springGroup.position.y = TEXT_Y_OFFSET - stretch * pullAmp * 2.2;
+
+        // this is the part that actually makes it look like a spring: pulling
+        // uncurls more of the coil (lower cutStart = more revealed), and on
+        // release it recoils back up, even overshooting into a tighter coil
+        // than at rest before it settles — same physics driving both effects.
+        let effectiveCutStart = cutStart - stretch * revealAmp;
+        effectiveCutStart = Math.max(0.08, Math.min(0.92, effectiveCutStart));
+        applyCutStart(planeGeo, effectiveCutStart);
+      }
+
+      const clock = new THREE.Clock();
+
+      function loop() {
+        requestAnimationFrame(loop);
+        const dt = Math.min(0.05, clock.getDelta());
+        stepPhysics(dt);
+        updateCamera();
+        renderer.render(scene, camera);
+      }
+
+      window.addEventListener("resize", () => {
+        camera.aspect =
+          window.innerWidth / (window.innerHeight + CANVAS_SHIFT_PX);
+        camera.fov = computeExtendedVFov(window.innerHeight, CANVAS_SHIFT_PX);
+        camera.updateProjectionMatrix();
+        renderer.setSize(
+          window.innerWidth,
+          window.innerHeight + CANVAS_SHIFT_PX,
+        );
+      });
+
+      // ---------- controls wiring ----------
+      function bindRange(id, setter, labelId, fmt) {
+        const el = document.getElementById(id);
+        const label = document.getElementById(labelId);
+        el.addEventListener("input", (e) => {
+          const v = parseFloat(e.target.value);
+          setter(v);
+          if (label) label.textContent = fmt(v);
+          rebuild();
+        });
+        return el;
+      }
+
+      document.getElementById("text").value = text;
+      document.getElementById("text").addEventListener("input", (e) => {
+        text = e.target.value;
+        drawTextTexture();
+      });
+
+      const cutStartEl = document.getElementById("cut-start");
+      const cutStartLabel = document.getElementById("cutStartVal");
+      cutStartEl.value = cutStart;
+      cutStartLabel.textContent = cutStart.toFixed(2);
+      cutStartEl.addEventListener("input", (e) => {
+        cutStart = parseFloat(e.target.value);
+        cutStartLabel.textContent = cutStart.toFixed(2);
+        applyCutStart(planeGeo, cutStart);
+      });
+
+      const curlTurnsEl = bindRange(
+        "curl-turns",
+        (v) => (curlTurns = v),
+        "curlTurnsVal",
+        (v) => v.toFixed(1),
+      );
+      curlTurnsEl.value = curlTurns;
+      document.getElementById("curlTurnsVal").textContent =
+        curlTurns.toFixed(1);
+
+      const curlRadiusEl = bindRange(
+        "curl-radius",
+        (v) => (curlRadius = v),
+        "curlRadiusVal",
+        (v) => v.toFixed(2),
+      );
+      curlRadiusEl.value = curlRadius;
+      document.getElementById("curlRadiusVal").textContent =
+        curlRadius.toFixed(2);
+
+      const curlTaperEl = bindRange(
+        "curl-taper",
+        (v) => (curlTaper = v),
+        "curlTaperVal",
+        (v) => v.toFixed(2),
+      );
+      curlTaperEl.value = curlTaper;
+      document.getElementById("curlTaperVal").textContent =
+        curlTaper.toFixed(2);
+
+      const curlLengthEl = bindRange(
+        "curl-length",
+        (v) => (curlLength = v),
+        "curlLengthVal",
+        (v) => v.toFixed(1),
+      );
+      curlLengthEl.value = curlLength;
+      document.getElementById("curlLengthVal").textContent =
+        curlLength.toFixed(1);
+
+      const chargeTimeEl = document.getElementById("charge-time");
+      const chargeTimeLabel = document.getElementById("chargeTimeVal");
+      chargeTimeEl.value = chargeTime;
+      chargeTimeLabel.textContent = chargeTime.toFixed(1);
+      chargeTimeEl.addEventListener("input", (e) => {
+        chargeTime = parseFloat(e.target.value);
+        chargeTimeLabel.textContent = chargeTime.toFixed(1);
+      });
+
+      const stiffnessEl = document.getElementById("stiffness");
+      const stiffnessLabel = document.getElementById("stiffnessVal");
+      stiffnessEl.value = stiffness;
+      stiffnessLabel.textContent = stiffness.toFixed(0);
+      stiffnessEl.addEventListener("input", (e) => {
+        stiffness = parseFloat(e.target.value);
+        stiffnessLabel.textContent = stiffness.toFixed(0);
+      });
+
+      const dampingEl = document.getElementById("damping");
+      const dampingLabel = document.getElementById("dampingVal");
+      dampingEl.value = damping;
+      dampingLabel.textContent = damping.toFixed(1);
+      dampingEl.addEventListener("input", (e) => {
+        damping = parseFloat(e.target.value);
+        dampingLabel.textContent = damping.toFixed(1);
+      });
+
+      const pullAmpEl = document.getElementById("pull-amp");
+      const pullAmpLabel = document.getElementById("pullAmpVal");
+      pullAmpEl.value = pullAmp;
+      pullAmpLabel.textContent = pullAmp.toFixed(2);
+      pullAmpEl.addEventListener("input", (e) => {
+        pullAmp = parseFloat(e.target.value);
+        pullAmpLabel.textContent = pullAmp.toFixed(2);
+      });
+
+      const revealAmpEl = document.getElementById("reveal-amp");
+      const revealAmpLabel = document.getElementById("revealAmpVal");
+      revealAmpEl.value = revealAmp;
+      revealAmpLabel.textContent = revealAmp.toFixed(2);
+      revealAmpEl.addEventListener("input", (e) => {
+        revealAmp = parseFloat(e.target.value);
+        revealAmpLabel.textContent = revealAmp.toFixed(2);
+      });
+
+      const bgInput = document.getElementById("background-color");
+      bgInput.value = bgColor;
+      bgInput.addEventListener("input", (e) => {
+        bgColor = e.target.value;
+        scene.background = new THREE.Color(bgColor);
+        scene.fog = new THREE.FogExp2(new THREE.Color(bgColor).getHex(), 0.01);
+        renderer.setClearColor(new THREE.Color(bgColor).getHex());
+        document.getElementById("page-body").style.background = bgColor;
+      });
+
+      const fgInput = document.getElementById("foreground-color");
+      fgInput.value = textColor;
+      fgInput.addEventListener("input", (e) => {
+        textColor = e.target.value;
+        drawTextTexture();
+      });
+
+      const backInput = document.getElementById("back-color");
+      backInput.value = backColor;
+      backInput.addEventListener("input", (e) => {
+        backColor = e.target.value;
+        backMat.color.set(backColor);
+      });
+
+      document.getElementById("trigger-spring").addEventListener("click", (e) => {
+        e.stopPropagation();
+        triggerSpring();
+      });
+
+      const panel = document.getElementById("panel");
+      const fullscreenBtn = document.getElementById("fullscreen-btn");
+
+      document.getElementById("toggle").addEventListener("click", (e) => {
+        e.stopPropagation();
+        panel.classList.toggle("hide");
+      });
+
+      function enterFullscreen() {
+        if (!document.fullscreenElement) {
+          const target = document.documentElement;
+          if (target.requestFullscreen) target.requestFullscreen();
+        }
+      }
+
+      fullscreenBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        enterFullscreen();
+      });
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "f") enterFullscreen();
+      });
+
+      loop();
+    </script>
+  </body>
+</html>

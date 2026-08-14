@@ -605,13 +605,13 @@ nextjs-portal {
 }
 
 .elastic-line__base {
-  stroke: #fff;
+  stroke: rgb(255 255 255 / 92%);
   stroke-width: 2.5px;
 }
 
 .elastic-menu-close-x path {
   fill: none;
-  stroke: #fff;
+  stroke: rgb(255 255 255 / 92%);
   stroke-width: 2.5px;
   stroke-linecap: round;
 }

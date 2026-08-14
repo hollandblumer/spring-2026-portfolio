@@ -14,25 +14,34 @@ const LINKEDIN_URL = "https://linkedin.com/in/hollandblumer";
 const PROJECT_FILTERS = [
   { value: "all", label: "All" },
   { value: "typography", label: "Typography" },
+  { value: "generative-art", label: "Generative Art" },
   { value: "grid-layouts", label: "Grid Layouts" },
   { value: "fullstack-projects", label: "Fullstack Projects" },
   { value: "cms-websites", label: "CMS Websites" },
 ];
 
 const FILTER_PROJECT_INDICES = {
-  all: Array.from({ length: 12 }, (_, index) => index),
-  typography: [0, 2, 3, 6],
-  "grid-layouts": [1, 5, 7, 9],
-  "fullstack-projects": [1, 4, 10],
-  "cms-websites": [5, 8, 11],
+  all: [
+    ...Array.from({ length: 19 }, (_, index) => index).filter(
+      (index) => index !== 6 && index !== 11,
+    ),
+    11,
+  ],
+  typography: [0, 2, 10, 3, 6, 15],
+  "generative-art": [7, 9],
+  "grid-layouts": [13, 14],
+  "fullstack-projects": [4, 11],
+  "cms-websites": [5, 8, 12, 17],
 };
 const PROJECTS = [
   {
     id: "spiral-experiment",
     title: "Spiral Experiment",
     type: "video",
-    src: "/videos/spring.mp4",
+    src: "/videos/springcompilation.mp4",
     poster: "/videos/spring-poster.jpg",
+    blurb:
+      "Inspired by the way lemon peels curl into loose spirals, I started experimenting with forms that twist, overlap, and unfold through space. I wanted the movement to feel organic rather than mechanically perfect, as if each ribbon had been cut from the surface of a fruit and was slowly finding its own shape.\n\nThe piece became an exploration of repetition, depth, and rhythm. Each spiral bends and passes through the composition at a slightly different pace, creating moments where the forms gather into something dense before opening back up again. The bright color and continuous motion keep it playful, while the changing perspective turns a familiar everyday shape into something more abstract.",
   },
   {
     id: "poster-blueprint",
@@ -100,7 +109,7 @@ const PROJECTS = [
     id: "canvas-particles",
     title: "Canvas Particles",
     type: "video",
-    src: "https://cdn.dribbble.com/userupload/43826090/file/original-8a677209789bca38ccbf0b3c835cccc6.mp4",
+    src: "/videos/katiegrover.mp4",
     poster: "/projects/canvas-particles.jpeg",
     blurb:
       "Concept\nFor Katie, founder of Katherine Grover Fine Jewelry, I created a custom canvas particle animation using her own jewelry designs as the particles. She wanted an animation she could use across email marketing and Instagram ads that maintained a clean, elevated feel while introducing movement.\n\nApproach\nI designed the system so the particles form around the shape of Nantucket Island rather than filling it in. Katie's logo sits in the negative space at the center, giving the composition a clear focal point while keeping the overall layout minimal.\n\nImplementation\nThe animation is built with a custom canvas particle system adapted from an interactive logo tutorial. I reversed the particle coverage logic, used a base64 island image as a reference mask, and mapped high-resolution jewelry images across the canvas using getImageData(). The motion responds to mouse and touch, runs on GSAP's ticker for smooth performance, and stays sharp on retina displays.\n\nOutcome\nThe final animation gave Katie a flexible, high-impact visual she could use across marketing channels. She was thrilled with the result.",
@@ -115,22 +124,85 @@ const PROJECTS = [
       "Concept\nThis generative art project began as an exploration of circles within circles. While playing with the forms, I landed on a color palette that felt reminiscent of olives, which became the visual anchor for the piece. From there, the idea shifted toward creating a calm, design-led composition. I was inspired by Okazz and Andor Saga on OpenProcessing, especially their use of centrally clustered forms.\n\nExecution\nI introduced subtle motion using p5.js to bring variation and life into the composition, keeping the movement slow and controlled so the shapes and color relationships stayed front and center.\n\nOutcome\nThe project was featured on the official p5.js Instagram account through their Instagram stories and was later selected by CodePen and shared in a LinkedIn article reflecting on the intersection of visual design and creative coding.",
   },
   {
+    id: "ccnyc-twist",
+    title: "CCNYC Twist",
+    type: "video",
+    src: "/videos/ccnyc-twist.mp4",
+    poster: "/videos/ccnyc-twist-poster.jpg",
+  },
+  {
     id: "chargepoint",
-    title: "Charge Point",
+    title: "Automated Quality Assurance Dashboard for ChargePoint",
     type: "image",
     src: "/projects/chargepoint.png",
     poster: "/projects/chargepoint.png",
+    gallery: [
+      {
+        src: "/photos/chargepoint/original-8f10aad278ebf69990949bc646b948a4.webp",
+        alt: "ChargePoint quality assurance dashboard showing production metrics and recurring errors",
+        afterHeading: "Dashboard and workflow",
+      },
+      {
+        src: "/photos/chargepoint/original-c9980180dca46e3e7448f6690554d6f8.webp",
+        alt: "ChargePoint dashboard showing recent capture data and a detailed charger inspection view",
+        afterHeading: "Dashboard and workflow",
+      },
+    ],
     blurb:
-      "As part of ENGG 199 - Special Topics in Engineering Sciences, I worked on a full-stack development project focused on improving manufacturing quality assurance for ChargePoint. This course provided an opportunity to apply software development, cloud infrastructure, and computer vision techniques in a real-world setting. The goal was to automate defect detection for EV chargers using a React-based dashboard and AWS services.\n\nProblem\nManufacturing high-quality EV chargers requires rigorous quality control, but the existing process relied heavily on manual inspections, leading to delays, incomplete data, and inefficiencies. ChargePoint needed an automated system to capture defect data in real time, reduce inspection time per unit, and improve traceability for defect analysis.\n\nSolution\nI built a React-powered dashboard that integrates computer vision, cloud computing, and real-time analytics to monitor key production metrics, including first pass yield, retest and rework rates, final yield, cycle time, and takt time. The dashboard allows users to search and filter quality control data by serial number, factory location, and pass or fail status, providing engineers with instant access to critical insights.\n\nImpact\nThis project merged hardware, software, and cloud technologies, improving production efficiency, defect traceability, and real-time quality monitoring. By automating quality control processes, the system reduced inspection time per unit and provided engineers with actionable insights to improve manufacturing performance.",
+      "Understanding the customer\nI approached this project from the manufacturing engineer's point of view. The team did not simply need another dashboard; they needed a faster way to understand what failed, where it failed, how often the same problem was happening, and which unit required attention next. Every extra manual step slowed the inspection process, while fragmented records made it harder to connect a defect to a charger, factory, image, or moment in production. The experience therefore had to make complex quality data feel immediate, trustworthy, and useful on a busy factory floor.\n\nProblem\nChargePoint's EV chargers require rigorous quality control, but a process dependent on manual inspection created delays, incomplete records, and limited visibility across production. Engineers needed real-time defect capture, reliable unit-level traceability, and a clear view of recurring issues without spending valuable time piecing information together across systems. The core challenge was reducing inspection time without losing the evidence and context required to make confident quality decisions.\n\nProduct approach\nAs part of ENGG 199 - Special Topics in Engineering Sciences, I helped create a full-stack quality-assurance system that connects inspection hardware, computer vision, cloud infrastructure, and a React dashboard. I organized the experience around the questions an engineer is most likely to ask: Is this unit passing? What caused the failure? Is this an isolated event or a pattern? How is the line performing overall? This kept the interface focused on decisions rather than simply displaying all of the available data.\n\nDashboard and workflow\nThe dashboard presents recent inspection captures alongside detailed charger records, allowing a user to move from a production overview to the evidence behind an individual result. Engineers can search and filter by serial number, factory location, and pass or fail status, making it easier to investigate a specific charger or compare patterns across the line. Inspection images and error details stay connected to each unit, preserving the traceability that a quality team needs when reviewing failures or planning rework.\n\nCloud infrastructure\nWe migrated the data layer from MongoDB to AWS Amplify and used Amazon Cognito for managed authentication. AWS AppSync provided a GraphQL interface for responsive access to inspection records, while Amazon S3 stored inspection images securely. This architecture reduced custom backend maintenance and gave the dashboard a dependable path to current production data.\n\nComputer vision\nThe inspection workflow captured barcode and component images so that every result could remain associated with the correct charger. Python-based image processing, including SIFT feature matching, helped identify component defects and automate checks that previously required more manual review. The goal was not to remove the engineer from the process, but to surface likely problems sooner and give the team better evidence for the final decision.\n\nMetrics and analysis\nThe interface tracks first pass yield, retest and rework rates, final yield, cycle time, takt time, and units per hour. First pass yield shows how many chargers succeed on their initial inspection, while retest and final-yield figures reveal the cost and effectiveness of rework. Cycle-time and throughput calculations use inspection timestamps to show production pace. Recharts visualizations make recurring error frequencies easy to compare, helping engineers distinguish one-off failures from systemic issues that deserve investigation.\n\nImpact\nThe completed system brought hardware, software, computer vision, and cloud services into one quality workflow. It reduced the time required to inspect and investigate a unit, improved defect traceability, and gave engineers a real-time view of both individual failures and broader manufacturing performance. Most importantly, it transformed raw inspection data into answers the team could act on.\n\nConfidentiality\nThis overview focuses on the product thinking, workflow, and technical architecture that can be shared publicly. Additional implementation details are available upon request where permitted by the project's confidentiality requirements.",
   },
   {
     id: "american-seasons",
     title: "American Seasons",
     type: "video",
-    src: "https://cdn.dribbble.com/userupload/43999509/file/original-cb29508e406a48e6a079f3f13d1283e3.mp4",
+    src: "/videos/seasons.mp4",
     poster: "/projects/american-seasons.png",
     blurb:
       "Neil, the owner and head chef of American Seasons, reached out looking for more dynamic Instagram content ahead of their seasonal opening on Nantucket.\n\nInspired by the bee in their logo, I created a custom SVG tracer animation using JavaScript to animate a curly pollen path. I pulled everything together in Canva to produce an Instagram reel that brings their logo to life.",
+  },
+  {
+    id: "card-layout",
+    title: "Card Layout",
+    type: "video",
+    src: "/videos/Card Layout.mp4",
+    poster: "/videos/card-layout-poster.jpg",
+  },
+  {
+    id: "slinky-grid",
+    title: "Slinky Grid",
+    type: "video",
+    src: "/videos/slinkygrid.mp4",
+    poster: "/videos/slinkygrid-poster.jpg",
+  },
+  {
+    id: "rip-open",
+    title: "Rip Open",
+    type: "video",
+    src: "/videos/Rip open.mp4?v=2",
+    poster: "/videos/Rip open.png",
+  },
+  {
+    id: "warping-stuff",
+    title: "Warping Stuff",
+    type: "video",
+    src: "/videos/Sign warp.mp4",
+    poster: "/videos/sign-warp-poster.jpg",
+  },
+  {
+    id: "cheryl-fudge",
+    title: "Cheryl Fudge",
+    type: "video",
+    src: "/videos/cherylfudge.mp4",
+    poster: "/projects/cherylfudge.png",
+    blurb:
+      "Overview\nI designed a website that brings Cheryl Fudge's modern, dynamic artwork together with a clear sense of Nantucket and the coast. The goal was to create a digital home that could support the range of her practice without flattening its personality: expressive enough to feel like Cheryl, but calm enough to let the artwork lead.\n\nInspiration\nCheryl and I had our first website meeting on a beach in Nantucket, looking toward the harbor. When I asked what inspired her, she pointed directly to the water. That moment became the foundation for the site. I collected imagery connected to the places and textures that move her, then paired it with her artwork, interiors, and earlier work to build a visual direction rooted in fluidity, atmosphere, and the coast.\n\nVisual direction\nI knew early on that the palette should lean blue. I chose a muted, cool base that could balance the many colors in Cheryl's art rather than compete with them. The working palette combines #326696, #295279, #6898C1, #F1FBFD, #1A2B3B, and #9FC4DE. Smoky lines from Cheryl's paintings influenced the About page, while sand, water, and coastal movement shaped the broader system.\n\nCreative development\nWith those references in mind, I explored CodePen and Pinterest for interactions that felt fluid and coastal. Generative art experiments, sandy flow fields, and SVG filters became important references for backgrounds and transitions. These techniques helped the interface feel alive while remaining connected to the movement already present in Cheryl's work.\n\nPages and content\nThe site includes an interiors page for Cheryl's interior-design work, an About page inspired by the smoky lines she paints, and a home-page gallery that brings together work across disciplines. Each section uses the same visual language while giving its content enough room to establish a distinct rhythm.\n\nGallery approach\nI was inspired by gallery-wall layouts, particularly spatial compositions built with Three.js, but wanted Cheryl's gallery to feel softer and more like water. After testing several ways to present the work, I created the final composition with CSS. That choice preserved the fluid character of the layout while improving browser compatibility and keeping the experience easier to maintain.\n\nOutcome\nThe finished direction balances coastal calm with contemporary movement. It gives Cheryl a flexible framework for adding new work while translating the color, texture, and energy of her physical practice into an accessible web experience.",
+  },
+  {
+    id: "meredith-norvell",
+    title: "Meredith Norvell",
+    type: "video",
+    src: "/videos/meredith.mp4",
+    poster: "/videos/meredith-poster.jpg",
   },
 ];
 
@@ -222,10 +294,8 @@ const bricolage = Bricolage_Grotesque({
 
 function AboutCard() {
   return (
-    <div
-      className={`mx-auto flex w-full max-w-[32rem] flex-col items-center text-center text-[#705208] ${bricolage.className}`}
-    >
-      <p className="max-w-[30rem] text-lg leading-8 text-[rgba(112,82,8,0.88)] sm:text-[1.45rem] sm:leading-10">
+    <div className="mx-auto flex w-full max-w-[32rem] flex-col items-center text-center text-[#705208]">
+      <p className={`max-w-[30rem] text-lg leading-8 text-[rgba(112,82,8,0.88)] sm:text-[1.45rem] sm:leading-10 ${bricolage.className}`}>
         Holland Blumer is a Brooklyn-based creative technologist and computer
         scientist who builds design-driven, interactive digital experiences.
         With a background in engineering, design, robotics, and full-stack
@@ -301,7 +371,8 @@ export default function Home() {
   const [projectFilter, setProjectFilter] = useState("all");
   const [filterOpen, setFilterOpen] = useState(false);
   const gridMorphEnabled = true;
-  const [gridEffectStrength, setGridEffectStrength] = useState(1);
+  const [gridEffectStrength, setGridEffectStrength] = useState(1.3);
+  const [gridVideosPaused, setGridVideosPaused] = useState(false);
   const [glassButtonRects, setGlassButtonRects] = useState([]);
   const effectDemoRanRef = useRef(false);
   const filterRef = useRef(null);
@@ -357,14 +428,15 @@ export default function Home() {
     if (!preloaderAnimationDone || effectDemoRanRef.current) return undefined;
     effectDemoRanRef.current = true;
     const delay = window.setTimeout(() => {
-      const targetStrength = window.matchMedia("(max-width: 640px)").matches ? 0.4 : 0.5;
+      const startStrength = 1.3;
+      const targetStrength = 0.4;
       const startedAt = performance.now();
       const duration = 700;
       let frame;
       const animate = (now) => {
         const progress = Math.min(1, (now - startedAt) / duration);
         const eased = 1 - Math.pow(1 - progress, 3);
-        setGridEffectStrength(1 - eased * (1 - targetStrength));
+        setGridEffectStrength(startStrength - eased * (startStrength - targetStrength));
         if (progress < 1) frame = requestAnimationFrame(animate);
       };
       frame = requestAnimationFrame(animate);
@@ -390,10 +462,15 @@ export default function Home() {
     const resizeObserver = typeof ResizeObserver === "function"
       ? new ResizeObserver(scheduleGlassUpdate)
       : null;
-    document.querySelectorAll("[data-grid-glass]").forEach((element) => {
-      resizeObserver?.observe(element);
-    });
-    scheduleGlassUpdate();
+    const observeGlassControls = () => {
+      document.querySelectorAll("[data-grid-glass]").forEach((element) => {
+        resizeObserver?.observe(element);
+      });
+      scheduleGlassUpdate();
+    };
+    const mutationObserver = new MutationObserver(observeGlassControls);
+    mutationObserver.observe(document.body, { childList: true, subtree: true });
+    observeGlassControls();
     [120, 500, 1200].forEach((delay) => {
       followupTimers.push(window.setTimeout(scheduleGlassUpdate, delay));
     });
@@ -403,6 +480,7 @@ export default function Home() {
       cancelAnimationFrame(frame);
       followupTimers.forEach((timer) => window.clearTimeout(timer));
       resizeObserver?.disconnect();
+      mutationObserver.disconnect();
       removeEventListener("resize", scheduleGlassUpdate);
       removeEventListener("orientationchange", scheduleGlassUpdate);
     };
@@ -449,6 +527,11 @@ export default function Home() {
   const handleOpenGridProject = (index) => {
     const project = PROJECTS[index];
     if (!project) return;
+
+    if (project.id === "templates") {
+      router.push(project.href);
+      return;
+    }
 
     setActiveIndex(index);
     setCurrentSlide(index + 1);
@@ -725,11 +808,24 @@ export default function Home() {
 
               <div className="mx-auto w-full max-w-[1500px] px-5 pb-20 sm:px-8 sm:pb-28">
                 <div className="flex min-h-[calc(100dvh-5rem)] items-center justify-center py-8 sm:min-h-[calc(100dvh-6rem)] sm:py-10">
-                  <img
-                    src={gridProject.poster}
-                    alt={gridProject.title}
-                    className="project-page-reveal__image block h-[calc(100dvh-9rem)] w-[calc(100vw-40px)] max-w-[1100px] bg-black/5 object-contain sm:h-[calc(100dvh-11rem)] sm:w-[calc(100vw-64px)]"
-                  />
+                  {gridProject.type === "video" ? (
+                    <video
+                      src={gridProject.src}
+                      poster={gridProject.poster}
+                      aria-label={gridProject.title}
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      className="project-page-reveal__image block h-[calc(100dvh-9rem)] w-[calc(100vw-40px)] max-w-[1100px] bg-black/5 object-contain sm:h-[calc(100dvh-11rem)] sm:w-[calc(100vw-64px)]"
+                    />
+                  ) : (
+                    <img
+                      src={gridProject.poster}
+                      alt={gridProject.title}
+                      className="project-page-reveal__image block h-[calc(100dvh-9rem)] w-[calc(100vw-40px)] max-w-[1100px] bg-black/5 object-contain sm:h-[calc(100dvh-11rem)] sm:w-[calc(100vw-64px)]"
+                    />
+                  )}
                 </div>
 
                 <div className="grid gap-8 border-y border-black/15 py-10 md:grid-cols-[minmax(0,1fr)_auto] md:items-end sm:py-14">
@@ -746,10 +842,47 @@ export default function Home() {
                     Project overview
                   </p>
                   <div>
-                    {gridProject.blurb && (
+                    {gridProject.blurb && !gridProject.gallery?.length && (
                       <p className={`max-w-3xl whitespace-pre-line text-base leading-7 sm:text-lg sm:leading-8 ${bricolage.className}`}>
                         {gridProject.blurb}
                       </p>
+                    )}
+                    {gridProject.blurb && gridProject.gallery?.length > 0 && (
+                      <div className={`grid gap-10 sm:gap-14 ${bricolage.className}`}>
+                        {gridProject.blurb.split("\n\n").map((section) => {
+                          const [heading, ...bodyLines] = section.split("\n");
+                          const sectionImages = gridProject.gallery.filter(
+                            (image) => image.afterHeading === heading,
+                          );
+
+                          return (
+                            <section key={heading} className="grid gap-5">
+                              <div className="max-w-3xl">
+                                <h2 className="mb-3 text-xs uppercase tracking-[0.16em] text-black/50">
+                                  {heading}
+                                </h2>
+                                <p className="text-base leading-7 sm:text-lg sm:leading-8">
+                                  {bodyLines.join("\n")}
+                                </p>
+                              </div>
+                              {sectionImages.map((image) => (
+                                <figure
+                                  key={image.src}
+                                  className="mt-2 overflow-hidden border border-black/10 bg-white"
+                                >
+                                  <img
+                                    src={image.src}
+                                    alt={image.alt}
+                                    className="block h-auto w-full"
+                                    loading="lazy"
+                                    decoding="async"
+                                  />
+                                </figure>
+                              ))}
+                            </section>
+                          );
+                        })}
+                      </div>
                     )}
                     {gridProject.href && (
                       <button
@@ -984,6 +1117,26 @@ export default function Home() {
           {showAboutCard && (
             <AboutOverlay onClose={() => setShowAboutCard(false)} />
           )}
+
+          {isGridMode && !gridProject && (
+            <div className="fixed bottom-5 right-5 z-[1100] sm:bottom-6 sm:right-6">
+              <button
+                type="button"
+                onClick={() => setGridVideosPaused((paused) => !paused)}
+                className="portfolio-social-button"
+                data-grid-glass
+                aria-label={gridVideosPaused ? "Play grid videos" : "Pause grid videos"}
+                aria-pressed={gridVideosPaused}
+                title={gridVideosPaused ? "Play videos" : "Pause videos"}
+              >
+                {gridVideosPaused ? (
+                  <span aria-hidden="true" className="ml-0.5 block h-0 w-0 border-y-[6px] border-l-[9px] border-y-transparent border-l-current" />
+                ) : (
+                  <span aria-hidden="true" className="flex gap-1"><span className="h-4 w-[2px] bg-current" /><span className="h-4 w-[2px] bg-current" /></span>
+                )}
+              </button>
+            </div>
+          )}
         </>
       )}
 
@@ -1011,6 +1164,7 @@ export default function Home() {
           effectStrength={gridEffectStrength}
           glassRects={glassButtonRects}
           projectOpen={Boolean(gridProject)}
+          videosPaused={gridVideosPaused}
         />
       </div>
     </main>
