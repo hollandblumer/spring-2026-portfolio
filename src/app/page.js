@@ -266,6 +266,8 @@ const PROJECTS = [
     type: "video",
     src: "/videos/aj-integrated.mp4",
     poster: "/videos/aj-integrated-poster.jpg",
+    blurb:
+      "Designing the logo, custom animations, and website for a sports marketing firm.\n\nThe client was looking for a professional logo and custom website to showcase their expertise in brand partnerships, highlighting past successes, core services, and case studies. They wanted something more engaging and compelling than standard templated websites, with a playful aspect inspired by their six-year-old daughter.\n\nBeginnings\nI started with a blank style guide I created from my work with clients. It helps get the ball rolling in the first meetings by visualizing the possibilities for the creative direction. I also organized a dedicated project folder and Pinterest board for the client.\n\nInspiration\nOnce the mood board was together, I began searching for logo inspiration. Nothing stood out until I came across a logo on Pinterest that became the starting point for the client’s identity. I ultimately decided to merge the form with a J and worked with a designer to perfect it.\n\nI wanted to make the branding more playful, so I returned to a website I had archived that used Matter.js in a clever way. Because the business is centered on sports, I found suitable balls that could move around the page and interact with the logo. The physics-based animation gave the identity energy while connecting directly to the client’s industry.\n\nIt’s all in the details\nThe split text in the hero section creates a sharp, dynamic feel. The background animation adds depth, and the callouts are positioned strategically. Every detail contributes to the flow, making the design feel intentional and connected.\n\nFinal thoughts\nThis project was about more than building a website. It was about crafting an experience. The physics-based animations and bold branding reinforce the idea of momentum, allowing the sports consulting platform to express its story through interaction as well as content.",
   },
   {
     id: "collwick-rotation",
@@ -289,6 +291,14 @@ const PROJECTS = [
     type: "image",
     src: "/videos/divot-logo.jpeg",
     poster: "/videos/divot-logo.jpeg",
+    blurb:
+      "A web app built with React and AWS (Amplify, Cognito, Lambda, DynamoDB) for people to help their favorite brands become more eco-friendly.\n\nDivot was created with a focus on sustainability, addressing the hesitations that surfaced with every purchase I made. When I seek answers about the impact of my purchases, the information can be overwhelming, superficial, and difficult to track. At the same time, some brands are making genuine efforts that often get overshadowed. This platform aims to bridge the gap between brands and consumers, fostering transparency and communication while also showcasing eco-friendly brand efforts.\n\nI first learned how to use AWS Amplify and React during a project at Dartmouth, and that experience sparked my interest in building something on my own. Post-graduation, I was eager to continue learning, so I made the difficult decision to tell the amazing team at Hyundai that I wasn’t coming back to work in automotive. Instead, I set out to build this app from scratch—not just as a personal project, but as a way to refine my skills and explore my passion for technology and sustainability.\n\nI developed Divot using React for the frontend and AWS Amplify for authentication and backend services, implementing role-based access to differentiate between brands and consumers. Users could create profiles, submit verified sustainability suggestions, and track their contributions over time. I personally reviewed and approved these suggestions to ensure accuracy, creating a system that rewarded engaged users with milestones while maintaining transparency.\n\nThis project was a deep dive into GraphQL, AWS Lambda, IAM roles, and state management, pushing me to problem-solve across different aspects of full-stack development. More than just a technical exercise, building Divot reinforced my commitment to creating technology that makes information more accessible and actionable—especially in a space as crucial as sustainability.",
+    links: [
+      {
+        label: "View GitHub",
+        href: "https://github.com/hollandblumer6/version4/blob/main/divot/src/components/follower/SuggestionSupporterBrand.jsx",
+      },
+    ],
   },
   {
     id: "floating-books",
