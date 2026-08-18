@@ -12,7 +12,7 @@ import ProjectPageTransition from "../components/ProjectPageTransition";
 const INSTAGRAM_URL = "https://instagram.com/hollandblumer";
 const LINKEDIN_URL = "https://linkedin.com/in/hollandblumer";
 const PROJECT_FILTERS = [
-  { value: "all", label: "All" },
+  { value: "all", label: "Featured" },
   { value: "creative-coding", label: "Creative Coding" },
   { value: "fullstack-projects", label: "Fullstack Projects" },
   { value: "cms-websites", label: "CMS Websites" },
@@ -21,11 +21,11 @@ const PROJECT_FILTERS = [
 const FILTER_PROJECT_INDICES = {
   all: [
     ...Array.from({ length: 25 }, (_, index) => index).filter(
-      (index) => ![4, 6, 11, 19, 20, 21, 23, 24].includes(index),
+      (index) => ![4, 6, 11, 14, 19, 20, 21, 23, 24].includes(index),
     ),
     11,
   ],
-  "creative-coding": [0, 2, 13, 10, 3, 6, 15, 7, 9, 14, 5],
+  "creative-coding": [0, 2, 13, 10, 3, 6, 15, 7, 9, 5],
   "fullstack-projects": [1, 4, 11, 22, 23],
   "cms-websites": [8, 18, 12, 17, 19, 20, 24, 21],
 };
@@ -47,6 +47,8 @@ const PROJECTS = [
     poster: "/poster-blueprint/snapshot.png",
     href: "/poster-blueprint/",
     displayWidthMultiplier: 2.15,
+    blurb:
+      "Reflecting on my talk with Brooklyn Web Workers about channeling pre-internet 60s/70s counterculture design through modern creative tools, I wanted to build something that extended those ideas beyond the presentation itself. After consolidating all the research from the talk, I started thinking about what it would look like if AI could actually help identify and recreate visual design elements from posters. I also wanted an excuse to revisit some of the image processing and ML concepts I worked with in grad school, especially things like edge detection and SIFT.\n\nThe project started as a monorepo with a React frontend and a FastAPI/Python backend. My original idea was to combine three things together: image analysis, my own design research archive, and LLM reasoning. I had accumulated a huge amount of references from the talk, including experiments, notes, shaders, equations, and creative coding studies, so I organized everything into a “blueprints” library that the backend could reference alongside uploaded images.\n\nFrom there, I built a pipeline where a user uploads a poster and the backend analyzes it while simultaneously feeding Gemini contextual information from my research library. The goal was not just “describe this image,” but rather: break down the visual language of the poster and suggest how it could be recreated today through code using tools like p5.js, Three.js, GLSL shaders, SVG filters, procedural geometry, or mathematical systems like logarithmic spirals and envelope functions.\n\nOne thing I kept revisiting was SIFT (Scale-Invariant Feature Transform). During grad school I used image processing mostly in technical contexts, but here I became interested in whether those same ideas could help identify recurring visual structures in counterculture posters. For example, could SIFT detect repeated spiral structures, warped lettering systems, radial compositions, or shared geometric motifs across different posters? Instead of simply asking an LLM to “describe” an image, I wanted to combine classical computer vision with generative reasoning. Edge detection and contour extraction became especially important because so many psychedelic posters rely on thick/thin boundaries, flowing contours, and nested shape relationships rather than isolated objects.\n\nThe backend evolved into a sort of hybrid system. When a user uploads an image, the server first validates and compresses it, then runs a local SIFT feature-matching pass against my reference image library. If SIFT finds a strong enough match, the app can return those results directly without calling Gemini. If the match is weaker, the backend sends Gemini the uploaded poster, local SIFT results, visual references, and the code/text references from my research library so Gemini can perform a more interpretive design breakdown.\n\nI also started exploring whether the backend could compare uploaded posters not only against code references but against visual references too. Instead of only storing snippets of shaders or sketches, I added categorized reference images and began building a system that lets the model match an uploaded poster against both visual examples and code experiments simultaneously. That turned the project into less of a “poster captioning” tool and more of a design blueprint engine.\n\nThere were a lot of technical issues along the way. Gemini’s SDK ended up being surprisingly strict about image formatting. Initially I tried sending images using a generic dictionary format, but the SDK rejected it because Gemini expects its own typed image objects. I eventually had to switch to the types.Part.from_bytes() approach and explicitly pass image bytes with MIME types.\n\nThen I ran into rate limiting and token issues. Large Retina-resolution screenshots consumed massive token budgets because Gemini breaks images into tiles internally. Some uploads were simply too large and triggered quota or timeout errors. At one point I kept getting 503 UNAVAILABLE responses, which essentially meant Gemini’s servers were overloaded during traffic spikes. To handle that, I added Pillow-based compression and resizing before uploads even reached the model.\n\nWhile waiting on backend fixes, I shifted focus toward the frontend experience and leaned heavily into the “forensic blueprint” aesthetic. I added grid systems, crosshair overlays, measurement lines, sidebars, and scanning-style UI elements to make the app feel less like a chatbot and more like a design analysis instrument. I also experimented with ideas around preprocessing passes before image analysis, including masking high-frequency text regions near poster edges so OCR-heavy areas would not dominate structural analysis.\n\nAnother big area became upload safety and moderation. Since the project revolves around user-uploaded images, I started implementing the kinds of precautions you normally see in production image pipelines. I added server-side MIME allowlists, file-size restrictions, image decoding verification, rejection of animated uploads, dimension checks, and frontend upload constraints. The system now treats uploads strictly as pixel data for analysis rather than executable content.\n\nI also spent time thinking about moderation more carefully because a blanket NSFW detector felt wrong for historical poster analysis. A lot of vintage counterculture artwork contains stylized or artistic nudity, and I didn’t want the app to incorrectly reject legitimate poster art. So instead of “nudity = blocked,” I started thinking in terms of contextual moderation: allowing artistic or illustrated nudity while rejecting explicit photographic sexual content or exploitative imagery.\n\nAt this point the project feels less like a standard AI image tool and more like an experiment in combining design history, creative coding, computer vision, and generative AI into a single workflow. The broader idea is not just “what does this poster look like,” but “how was this visual language constructed, and how could those systems be translated into modern computational design tools today?”",
   },
   {
     id: "type-lab",
@@ -55,8 +57,17 @@ const PROJECTS = [
     src: "/videos/typeexperiments.mp4",
     poster: "/videos/typeexperiments-poster.jpg",
     spiralMobileTextureZoom: 1.85,
+    gallery: [
+      {
+        type: "video",
+        src: "/videos/Rip open.mp4?v=2",
+        poster: "/videos/Rip open.png",
+        alt: "Rip Open animated type experiment",
+        afterHeading: "Rip Open",
+      },
+    ],
     blurb:
-      "Lately I have been experimenting with type as something more fluid than fixed, stretching, blurring, contouring, and melting words until they start to feel almost alive. A lot of this came from building custom SVG filters and layering blur with thresholding to create those hollow, glowing contours, then pushing that into different directions. In some cases it turned into a drawing tool where shapes merge like metaballs, in others into these percentage counters where each number is constantly forming and breaking apart, and in others into words that feel like they're rising and pulling themselves out of a kind of molten base.\n\nI kept playing with timing, too, letting things pulse, stagger, or drift so nothing locks into a perfectly clean state. It was less about a final system and more about seeing how far I could push distortion, motion, and interaction while still keeping just enough of the original word there.",
+      "Type Experiments\nLately I have been experimenting with type as something more fluid than fixed, stretching, blurring, contouring, and melting words until they start to feel almost alive. A lot of this came from building custom SVG filters and layering blur with thresholding to create those hollow, glowing contours, then pushing that into different directions. In some cases it turned into a drawing tool where shapes merge like metaballs, in others into these percentage counters where each number is constantly forming and breaking apart, and in others into words that feel like they're rising and pulling themselves out of a kind of molten base.\n\nMotion and timing\nI kept playing with timing, too, letting things pulse, stagger, or drift so nothing locks into a perfectly clean state. It was less about a final system and more about seeing how far I could push distortion, motion, and interaction while still keeping just enough of the original word there.\n\nRip Open\nRip Open continues the same exploration through a more forceful, physical motion. The letterforms stretch apart and pull back together as if the type itself is being torn open, turning a short phrase into an animated material rather than a fixed piece of text.",
   },
   {
     id: "countdown",
@@ -74,6 +85,8 @@ const PROJECTS = [
     src: "/projects/3dmotionmarbling.png",
     poster: "/projects/3dmotionmarbling.png",
     href: "/3d-motion-marbling/",
+    blurb:
+      "Water marbling... but make it digital. Another project I worked on toward the end of my program at the Recurse Center was inspired by water marbling, as I wanted to recreate those patterns without the mess. I also wanted my hand to become the comb instead, to form the pattern on the canvas.\n\nThe marbling itself is drawn on an HTML canvas, and the pigment is made from layers of color, noise, and displacement, so the hand pushes and stretches the pixels instead of just drawing flat lines. That's what gives it a more liquid, marbled feel, since the colors drag into each other and leave trails based on how the hand moves.\n\nTo make that work, I started with MediaPipe for real-time hand tracking. MediaPipe gave me 21 points for the wrist, knuckles, and fingertips, but on its own it felt more like a skeleton than a hand. I wanted the interaction to have more form and volume, so I began linking those MediaPipe points to the MANO hand model.\n\nA lot of the project became about getting those two systems to line up. MediaPipe and MANO do not naturally agree on orientation, handedness, depth, or how the fingers should bend, so I had to map the tracked points onto the MANO joints and keep tuning the alignment until the thumb, fingertips, and finger curl moved with my actual hand.\n\nThen I had to address backend bugs. I built a Python/FastAPI backend for the MANO fitting, since it was too heavy to run directly in the browser. The browser handles the webcam and MediaPipe tracking, sends the landmarks over, and the backend solves the pose and sends the fitted mesh back. I deployed that backend separately on Render so the public version could use the MANO model without committing those files directly into my portfolio repo.\n\nThe final piece is a mix of creative coding, computer vision, and 3D model fitting: a browser-based marbling tool where your hand becomes the rake moving through the pigment.",
   },
   {
     id: "templates",
@@ -125,6 +138,8 @@ const PROJECTS = [
     type: "video",
     src: "/videos/ccnyc-twist.mp4",
     poster: "/videos/ccnyc-twist-poster.jpg",
+    blurb:
+      "CCNYC Twist is built around linear interpolation, using it to move each letter smoothly between positions and create the free-flowing quality I love. Rather than snapping from one state to another, the letterforms continuously ease, stretch, and twist into place, making the typography feel loose and alive.\n\nI also wanted the supporting event information to appear directly on the letters and travel with them. To keep that text readable, I deliberately separated its behavior from the deformation applied to the larger letterforms. The main type is free to stretch and distort, while the additional text moves with the letters without being pulled out of shape. That contrast lets the composition stay expressive without sacrificing the information it needs to communicate.",
   },
   {
     id: "chargepoint",
@@ -157,11 +172,28 @@ const PROJECTS = [
       "Neil, the owner and head chef of American Seasons, reached out looking for more dynamic Instagram content ahead of their seasonal opening on Nantucket.\n\nInspired by the bee in their logo, I created a custom SVG tracer animation using JavaScript to animate a curly pollen path. I pulled everything together in Canva to produce an Instagram reel that brings their logo to life.",
   },
   {
-    id: "card-layout",
-    title: "Card Layout",
+    id: "grid-layouts",
+    title: "Grid Layouts",
     type: "video",
     src: "/videos/Card Layout.mp4",
     poster: "/videos/card-layout-poster.jpg",
+    blurb:
+      "Card Layout\nAfter getting better at shuffling cards, I was inspired to turn that motion into a grid layout. I wanted the deck to reorganize itself into something structured while still feeling playful and physical.\n\nSlinky Layout\nThis layout was inspired by the slinkiness and twisting motion of a project I made recently. I wanted the grid to bend, stretch, and loop through space while keeping the cards usable.",
+    gallery: [
+      {
+        type: "video",
+        src: "/videos/slinkygrid.mp4",
+        poster: "/videos/slinkygrid-poster.jpg",
+        alt: "Slinky grid layout moving and twisting through space",
+        afterHeading: "Slinky Layout",
+      },
+    ],
+    links: [
+      {
+        label: "View GitHub",
+        href: "https://lnkd.in/ghzYWwfK",
+      },
+    ],
   },
   {
     id: "slinky-grid",
@@ -199,6 +231,25 @@ const PROJECTS = [
     type: "video",
     src: "/videos/meredith.mp4",
     poster: "/videos/meredith-poster.jpg",
+    gallery: [
+      {
+        src: "/photos/meredith-norvell/book-cover.jpg",
+        alt: "Listen for the Lie book feature created for Meredith Norvell",
+        afterHeading: "Page-turning concept",
+      },
+      {
+        src: "/photos/meredith-norvell/editorial-grid.jpg",
+        alt: "Bright Silicon Stars editorial mood board on Meredith Norvell's website",
+        afterHeading: "Editorial direction",
+      },
+      {
+        src: "/photos/meredith-norvell/page-turn.jpg",
+        alt: "Editorial content grid from the Meredith Norvell website",
+        afterHeading: "Editorial direction",
+      },
+    ],
+    blurb:
+      "Page-turning concept\nMeredithnorvell.com is a page-turner. I designed the experience around the physical language of books, using movement and layered transitions to make each feature feel like the beginning of a new chapter rather than another static content page.\n\nEditorial direction\nThe site brings Meredith’s book recommendations, cultural references, and visual mood boards into one cohesive editorial system. Large book covers create strong focal points, while image-led grids give each story its own atmosphere. The muted palette of dusty pink, olive, warm gray, and deep green keeps the experience polished while leaving room for the color and personality of every featured title.\n\nMotion and experience\nThe page-turning interaction ties the whole project together. Content bends, slides, and reveals the next view with the rhythm of turning through a book, giving visitors an intuitive way to move between recommendations and visual stories. The final site feels playful and tactile while remaining focused on Meredith’s voice and content.",
   },
   {
     id: "kelsey-malone",
@@ -206,6 +257,8 @@ const PROJECTS = [
     type: "video",
     src: "/videos/kelsey.mp4",
     poster: "/videos/kelsey-poster.jpg",
+    blurb:
+      "Up in the clouds with bustedceramics.com. This Squarespace revamp was focused on featuring Kelsey’s work, especially her latest with additive color. As the process goes, we browsed what’s out there, pulling inspiration from sites like CodePen and Pinterest. One idea really stood out at first, but we kept our options open until something clicked. With Kelsey’s recent work with clouds, this dreamy cloud animation from websonik overlaying a color-shifting background came together so well for the home page, all done with CSS/HTML. Check it out at bustedceramics.com.",
   },
   {
     id: "aj-integrated",
@@ -227,6 +280,8 @@ const PROJECTS = [
     type: "video",
     src: "/videos/ccnyc-gallery-video.mp4",
     poster: "/videos/ccnyc-gallery-poster.jpg?v=05s",
+    blurb:
+      "Concept\nEvery week, a different artist or designer creates a poster for a Creative Coding NYC meetup. As a CCNYC organizer and officer, I saw an opportunity to make these posters a more memorable part of the organization’s website while building an evolving archive of the community’s creative work.\n\nExperience\nI wanted the transition into the gallery to feel just as expressive as the posters themselves. Rather than placing the work in a static grid, I designed the posters to drift, bend, and move as if they were floating in the wind. The motion turns browsing the archive into a playful, immersive experience while still allowing each artist’s work to take center stage.\n\nBuild\nI built the Creative Coding NYC Gallery with Next.js, TypeScript, Three.js, WebGL, and custom GLSL shaders. The result is a rotating digital showcase that celebrates the visual identity of each weekly meetup and gives CCNYC a living gallery that can continue to grow alongside its community.",
   },
   {
     id: "divot-promo",
@@ -564,7 +619,12 @@ export default function Home() {
   };
 
   const handleOpenGridProject = (index) => {
-    const project = PROJECTS[index];
+    const selectedProject = PROJECTS[index];
+    const resolvedIndex =
+      selectedProject?.id === "rip-open"
+        ? PROJECTS.findIndex((project) => project.id === "type-lab")
+        : index;
+    const project = PROJECTS[resolvedIndex];
     if (!project) return;
 
     if (project.id === "templates") {
@@ -572,10 +632,10 @@ export default function Home() {
       return;
     }
 
-    setActiveIndex(index);
-    setCurrentSlide(index + 1);
+    setActiveIndex(resolvedIndex);
+    setCurrentSlide(resolvedIndex + 1);
     setProjectRevealDone(false);
-    setGridProjectIndex(index);
+    setGridProjectIndex(resolvedIndex);
   };
 
   const handleStepProject = (direction) => {
@@ -921,13 +981,27 @@ export default function Home() {
                                   key={image.src}
                                   className="mt-2 overflow-hidden rounded-2xl bg-white"
                                 >
-                                  <img
-                                    src={image.src}
-                                    alt={image.alt}
-                                    className="block h-auto w-full"
-                                    loading="lazy"
-                                    decoding="async"
-                                  />
+                                  {image.type === "video" ? (
+                                    <video
+                                      src={image.src}
+                                      poster={image.poster}
+                                      aria-label={image.alt}
+                                      autoPlay
+                                      muted
+                                      loop
+                                      playsInline
+                                      controls
+                                      className="block h-auto w-full"
+                                    />
+                                  ) : (
+                                    <img
+                                      src={image.src}
+                                      alt={image.alt}
+                                      className="block h-auto w-full"
+                                      loading="lazy"
+                                      decoding="async"
+                                    />
+                                  )}
                                 </figure>
                               ))}
                             </section>
@@ -943,6 +1017,21 @@ export default function Home() {
                       >
                         Open project
                       </button>
+                    )}
+                    {gridProject.links?.length > 0 && (
+                      <div className="mt-10 flex flex-wrap gap-3">
+                        {gridProject.links.map((link) => (
+                          <a
+                            key={link.href}
+                            href={link.href}
+                            target="_blank"
+                            rel="noreferrer"
+                            className={`rounded-full bg-black px-7 py-3.5 text-xs font-semibold text-white transition hover:bg-black/75 ${bricolage.className}`}
+                          >
+                            {link.label}
+                          </a>
+                        ))}
+                      </div>
                     )}
                   </div>
                 </div>

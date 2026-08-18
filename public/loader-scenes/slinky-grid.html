@@ -682,7 +682,7 @@
     let targetY=total/2,currentY=total/2,velocity=0,dragging=false,moved=false,lastY=0,downX=0,downY=0,hovered=null,selected=null,selection=0,closing=false,pointerMoved=false,trailHover=0,morphEnabled=true,effectStrength=1,videosPaused=false,compactFilter=false,staticFilter=false,staticScrollMax=0;
     function wrap(v,size){return((v+size/2)%size+size)%size-size/2}
     function setCardScale(card,size){card.scale.set(size,size*(card.userData.heightScale||1),1)}
-    function layout(){if(selected)return;for(const card of cards){const rowStart=card.userData.row*columns,itemsInRow=Math.min(columns,visibleCardCount-rowStart);const x=(card.userData.col-(itemsInRow-1)/2)*spacingX;const stagger=morphEnabled&&!staticFilter?card.userData.col*spacingY*.34:0;const y=compactFilter?.12:staticFilter?.42-card.userData.row*spacingY+currentY:wrap(card.userData.row*spacingY+stagger+currentY,total);card.position.set(x,y,0)}}
+    function layout(){if(selected)return;for(const card of cards){const rowStart=card.userData.row*columns,itemsInRow=Math.min(columns,visibleCardCount-rowStart),rowColumns=staticFilter?itemsInRow:columns;const x=(card.userData.col-(rowColumns-1)/2)*spacingX;const stagger=morphEnabled&&!staticFilter?card.userData.col*spacingY*.34:0;const y=compactFilter?.12:staticFilter?.42-card.userData.row*spacingY+currentY:wrap(card.userData.row*spacingY+stagger+currentY,total);card.position.set(x,y,0)}}
 
     const cursorEl=document.querySelector('.cursor'),cursorLabel=cursorEl.firstElementChild;let cursorMode='';
     function setCursor(mode){if(mode===cursorMode)return;cursorMode=mode;cursorLabel.textContent=mode==='close'?'×':'View';document.body.classList.toggle('hovering',mode==='view')}
@@ -692,7 +692,7 @@
       if(!card)return;
       parent.postMessage({type:'portfolio-loader-open-project',index:card.userData.projectIndex},location.origin);
     }
-    function pickCard(e){setPointer(e);raycaster.setFromCamera(pointer,camera);return raycaster.intersectObjects(cards.filter(card=>card!==selected))[0]?.object||null}
+    function pickCard(e){setPointer(e);raycaster.setFromCamera(pointer,camera);return raycaster.intersectObjects(cards.filter(card=>card.visible&&card.parent===group&&card!==selected))[0]?.object||null}
     function beginGridPointer(e){if(selected||!introDone)return;pickCard(e);dragging=true;moved=false;lastY=downY=e.clientY;downX=e.clientX;renderer.domElement.classList.add('dragging')}
     function moveGridPointer(e){setPointer(e);if(!dragging||selected)return;const dy=e.clientY-lastY;lastY=e.clientY;if(Math.hypot(e.clientX-downX,e.clientY-downY)>6)moved=true;targetY-=dy*.0028;velocity=-dy*.0028}
     function endGridPointer(e){if(!introDone)return;const tappedCard=pickCard(e);renderer.domElement.classList.remove('dragging');const was=dragging;dragging=false;if(!was||moved||!tappedCard)return;openCard(tappedCard)}
@@ -743,19 +743,21 @@
         return;
       }
       if(event.data?.type!=='portfolio-grid-filter')return;
-      const indices=event.data.indices?.filter(index=>Number.isInteger(index)&&index>=0&&index<textures.length);
-      if(!indices?.length)return;
+      const indices=[...new Set((event.data.indices||[]).filter(index=>Number.isInteger(index)&&index>=0&&index<textures.length))];
+      if(!indices.length)return;
       const isAllFilter=event.data.filter==='all';
       compactFilter=false;
       staticFilter=!isAllFilter;
-      visibleCardCount=staticFilter?indices.length:cardCount;
+      visibleCardCount=isAllFilter?indices.length+1:indices.length;
       columns=Math.min(innerWidth<=768?2:3,visibleCardCount);
       velocity=0;
       cards.forEach((card,i)=>{
         card.visible=i<visibleCardCount;
         card.userData.col=i%columns;
         card.userData.row=Math.floor(i/columns);
-        if(!card.visible)return;
+        if(!card.visible){card.material.uniforms.uOpacity.value=0;group.remove(card);return}
+        if(card.parent!==group)group.add(card);
+        if(introDone)card.material.uniforms.uOpacity.value=1;
         const projectIndex=indices[i%indices.length],texture=projectIndex===2&&typeExperimentVideoStarted?typeExperimentVideo.texture:textures[projectIndex],image=texture.image;
         card.userData.projectIndex=projectIndex;
         card.userData.heightScale=projectHeightScale(projectIndex);
