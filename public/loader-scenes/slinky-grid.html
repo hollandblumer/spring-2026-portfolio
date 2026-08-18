@@ -748,7 +748,7 @@
       const isAllFilter=event.data.filter==='all';
       compactFilter=false;
       staticFilter=!isAllFilter;
-      visibleCardCount=isAllFilter?indices.length+1:indices.length;
+      visibleCardCount=isAllFilter?Math.ceil(indices.length/6)*6:indices.length;
       columns=Math.min(innerWidth<=768?2:3,visibleCardCount);
       velocity=0;
       cards.forEach((card,i)=>{
@@ -758,7 +758,9 @@
         if(!card.visible){card.material.uniforms.uOpacity.value=0;group.remove(card);return}
         if(card.parent!==group)group.add(card);
         if(introDone)card.material.uniforms.uOpacity.value=1;
-        const projectIndex=indices[i%indices.length],texture=projectIndex===2&&typeExperimentVideoStarted?typeExperimentVideo.texture:textures[projectIndex],image=texture.image;
+        const fillerOffset=Math.floor(indices.length/2);
+        const sequenceIndex=i<indices.length?i:(fillerOffset+i-indices.length)%indices.length;
+        const projectIndex=indices[sequenceIndex],texture=projectIndex===2&&typeExperimentVideoStarted?typeExperimentVideo.texture:textures[projectIndex],image=texture.image;
         card.userData.projectIndex=projectIndex;
         card.userData.heightScale=projectHeightScale(projectIndex);
         setCardScale(card,cardScale);
@@ -770,7 +772,10 @@
         card.material.uniforms.uVideoColorFix.value=0;
       });
       rows=Math.max(1,Math.ceil(visibleCardCount/columns));total=Math.max(spacingY,rows*spacingY);
-      const startOffset=isAllFilter?total/2-spacingY:0;
+      const featuredCenterIndex=indices.indexOf(13);
+      const featuredCenterRow=Math.floor(featuredCenterIndex/columns);
+      const featuredCenterColumn=featuredCenterIndex%columns;
+      const startOffset=isAllFilter?-spacingY*(featuredCenterRow+featuredCenterColumn*.34):0;
       targetY=currentY=startOffset;resize();
     });
 

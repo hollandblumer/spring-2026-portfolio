@@ -20,8 +20,16 @@ const PROJECT_FILTERS = [
 
 const FILTER_PROJECT_INDICES = {
   all: [
+    2,
+    0,
+    3,
+    10,
+    13,
     ...Array.from({ length: 25 }, (_, index) => index).filter(
-      (index) => ![4, 6, 11, 14, 19, 20, 21, 23, 24].includes(index),
+      (index) =>
+        ![0, 2, 3, 4, 6, 10, 11, 13, 14, 17, 19, 20, 21, 23, 24].includes(
+          index,
+        ),
     ),
     11,
   ],
