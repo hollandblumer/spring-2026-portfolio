@@ -95,7 +95,7 @@ export default function GoalTrackerShell() {
     if (!quiet) setStatus(profileId === "me" ? "Loading cloud data…" : "Loading My progress…");
     let query = supabase
       .from("goal_tracker_data")
-      .select("tracker_state");
+      .select("profile_id, tracker_state");
     query = profileId === "me" ? query.eq("user_id", userId) : query.eq("profile_id", "me");
     const { data, error } = await query.maybeSingle();
     if (error) {
@@ -106,6 +106,7 @@ export default function GoalTrackerShell() {
       const nextState = JSON.stringify(data.tracker_state);
       const profileKey = storageKeyFor(profileId);
       if (localStorage.getItem(profileKey) === nextState) {
+        if (profileId === "me" && data.profile_id !== "me") await saveToCloud(nextState);
         if (!quiet) setStatus(profileId === "me" ? "Cloud data loaded" : "Viewing My progress — live read-only view");
         return;
       }
