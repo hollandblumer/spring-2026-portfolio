@@ -8,8 +8,8 @@ const GATE_KEY = "goal-tracker-session";
 const LEGACY_STORAGE_KEY = "work-goals-v1";
 const PROFILES = [
   { id: "me", label: "Me", title: "My goal tracker", email: "hollandblumer6@icloud.com" },
-  { id: "mom", label: "Mom", title: "Mom viewing My progress", email: "goal-tracker-mom@hollandblumer.com" },
-  { id: "dad", label: "Dad", title: "Dad viewing My progress", email: "goal-tracker-dad@hollandblumer.com" },
+  { id: "mom", label: "Mom", title: "Mom viewing Holland's progress", email: "goal-tracker-mom@hollandblumer.com" },
+  { id: "dad", label: "Dad", title: "Dad viewing Holland's progress", email: "goal-tracker-dad@hollandblumer.com" },
 ];
 const storageKeyFor = (profileId) => `work-goals-v1-${profileId}`;
 const localDate = () => {
@@ -40,6 +40,7 @@ export default function GoalTrackerShell() {
   const [noteMessage, setNoteMessage] = useState("");
   const [sendingNote, setSendingNote] = useState(false);
   const [noteComposerOpen, setNoteComposerOpen] = useState(false);
+  const [noteFeedback, setNoteFeedback] = useState("");
 
   const loadFamilySignIns = useCallback(async () => {
     if (!supabase) return;
@@ -92,7 +93,7 @@ export default function GoalTrackerShell() {
 
   const loadCloudState = useCallback(async (userId, profileId, quiet = false) => {
     if (!supabase || !userId || !profileId) return;
-    if (!quiet) setStatus(profileId === "me" ? "Loading cloud data…" : "Loading My progress…");
+    if (!quiet) setStatus(profileId === "me" ? "Loading cloud data…" : "Loading Holland's progress…");
     let query = supabase
       .from("goal_tracker_data")
       .select("profile_id, tracker_state");
@@ -107,7 +108,7 @@ export default function GoalTrackerShell() {
       const profileKey = storageKeyFor(profileId);
       if (localStorage.getItem(profileKey) === nextState) {
         if (profileId === "me" && data.profile_id !== "me") await saveToCloud(nextState);
-        if (!quiet) setStatus(profileId === "me" ? "Cloud data loaded" : "Viewing My progress — live read-only view");
+        if (!quiet) setStatus(profileId === "me" ? "Cloud data loaded" : "Viewing Holland's progress — live read-only view");
         return;
       }
       applyingCloudStateRef.current = true;
@@ -116,7 +117,7 @@ export default function GoalTrackerShell() {
       window.setTimeout(() => {
         applyingCloudStateRef.current = false;
       }, 1000);
-      setStatus(profileId === "me" ? "Cloud data loaded" : quiet ? "My progress updated just now" : "Viewing My progress — live read-only view");
+      setStatus(profileId === "me" ? "Cloud data loaded" : quiet ? "Holland's progress updated just now" : "Viewing Holland's progress — live read-only view");
       return;
     }
     if (profileId === "me") {
@@ -248,10 +249,13 @@ export default function GoalTrackerShell() {
     setSendingNote(false);
     if (error) {
       setStatus(`Could not send note: ${error.message}`);
+      setNoteFeedback(`Could not send: ${error.message}`);
       return;
     }
     setNoteMessage("");
-    setStatus("Note added");
+    const sentLabel = `${noteKind} sent to Holland`;
+    setStatus(sentLabel);
+    setNoteFeedback(sentLabel);
     await loadFamilyNotes();
   }
 
@@ -278,6 +282,7 @@ export default function GoalTrackerShell() {
     setShowSettings(false);
     setFamilyNotes([]);
     setNoteComposerOpen(false);
+    setNoteFeedback("");
     setStatus("");
   }
 
@@ -387,13 +392,16 @@ export default function GoalTrackerShell() {
               className={styles.noteComposerLauncher}
               aria-expanded={noteComposerOpen}
               aria-controls="family-note-composer"
-              onClick={() => setNoteComposerOpen(true)}
+              onClick={() => {
+                setNoteFeedback("");
+                setNoteComposerOpen(true);
+              }}
             >
               Messages for Holland
             </button>
             <form id="family-note-composer" className={styles.familyNoteComposer} onSubmit={submitFamilyNote}>
               <div className={styles.familyNotesHeading}>
-                <div><span>Message for Me</span><h2>Add a note or compliment</h2></div>
+                <div><span>Message for Holland</span><h2>Add a note or compliment</h2></div>
                 <button
                   type="button"
                   className={styles.noteComposerClose}
@@ -422,7 +430,10 @@ export default function GoalTrackerShell() {
                 Message
                 <textarea
                   value={noteMessage}
-                  onChange={(event) => setNoteMessage(event.target.value)}
+                  onChange={(event) => {
+                    setNoteMessage(event.target.value);
+                    setNoteFeedback("");
+                  }}
                   placeholder="Write something helpful or encouraging…"
                   maxLength={1000}
                   rows={3}
@@ -430,6 +441,7 @@ export default function GoalTrackerShell() {
                 />
               </label>
               <button disabled={sendingNote}>{sendingNote ? "Adding…" : "Add to daily"}</button>
+              <p className={styles.noteFeedback} role="status">{noteFeedback}</p>
               {familyNotes.length > 0 && (
                 <p className={styles.sentNoteCount}>{familyNotes.length} previously sent</p>
               )}
