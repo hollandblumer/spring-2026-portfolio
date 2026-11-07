@@ -37,6 +37,8 @@ jobs:
       - name: Build static export
         env:
           NEXT_PUBLIC_POSTER_BLUEPRINT_API_URL: https://poster-blueprint-api.onrender.com/analyze
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
         run: npm run build
 
       - name: Upload Pages artifact

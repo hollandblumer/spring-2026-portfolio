@@ -1,0 +1,137 @@
+body {
+  font-size: 16px;
+}
+
+.view-tabs button,
+.selected-day-controls,
+.column .row,
+.routine-row,
+.food-order,
+.summary-item,
+.summary-pending,
+.summary-food-row,
+.project-intro,
+.project-links,
+.task-progress-caption {
+  font-size: 15px !important;
+}
+
+.add input,
+.food-entry input,
+.food-entry label,
+.reflection textarea,
+dialog input,
+dialog select,
+dialog textarea {
+  font-size: 15px !important;
+}
+
+.radar-section {
+  max-width: 780px;
+  margin: 0 auto 40px;
+  padding: 30px 15px;
+}
+
+.radar-heading .eyebrow {
+  margin: 0 0 8px;
+  color: #57856a;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+
+.radar-heading h2 {
+  margin: 0;
+  color: #1d1d1f;
+  font-size: 36px;
+  font-weight: 500;
+  letter-spacing: -.04em;
+}
+
+.radar-heading > p:last-child {
+  margin: 8px 0 26px;
+  color: #73777d;
+  font-size: 16px;
+}
+
+.radar-add {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #d7dcdf;
+}
+
+.radar-add input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #27352d;
+  font: 16px Figtree, Arial, sans-serif;
+}
+
+.radar-add button {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  background: #327b55;
+  color: #fff;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.radar-item {
+  display: grid;
+  grid-template-columns: 30px 1fr 30px;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 0;
+  border-bottom: 1px solid #e1e5e8;
+  color: #303a34;
+  font: 17px/1.4 Figtree, Arial, sans-serif;
+}
+
+.radar-item.done span {
+  color: #78837c;
+  text-decoration: line-through;
+}
+
+.radar-check {
+  width: 26px;
+  height: 26px;
+  border: 1px solid #9fb1a5;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+}
+
+.radar-item.done .radar-check {
+  border-color: #327b55;
+  background: #327b55;
+}
+
+.radar-delete {
+  border: 0;
+  background: transparent;
+  color: #939a96;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.radar-empty {
+  color: #7b837e;
+  font-size: 16px;
+}
+
+@media (max-width: 600px) {
+  .radar-section {
+    padding: 22px 10px;
+  }
+
+  .radar-heading h2 {
+    font-size: 31px;
+  }
+}
