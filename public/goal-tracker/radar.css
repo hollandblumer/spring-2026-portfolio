@@ -135,3 +135,23 @@ dialog textarea {
     font-size: 31px;
   }
 }
+
+.family-readonly .add,
+.family-readonly #foodform,
+.family-readonly .restaurant-shortcuts,
+.family-readonly .food-buttons,
+.family-readonly #projectform,
+.family-readonly .radar-add,
+.family-readonly .backup,
+.family-readonly #editsummaryday,
+.family-readonly .del,
+.family-readonly .tiny,
+.family-readonly .radar-delete {
+  display: none !important;
+}
+
+.family-readonly .check,
+.family-readonly .radar-check,
+.family-readonly #feeling {
+  pointer-events: none;
+}

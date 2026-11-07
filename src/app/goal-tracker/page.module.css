@@ -226,6 +226,30 @@
   font: 13px/1.45 Arial, sans-serif;
 }
 
+.familyNotesComposerDock {
+  position: fixed;
+  z-index: 40;
+  right: 18px;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  width: min(620px, calc(100vw - 36px));
+  max-height: none;
+  padding: 16px;
+  border: 1px solid #cdd9d1;
+  border-radius: 20px;
+  background: rgb(248 250 248 / 96%);
+  box-shadow: 0 18px 60px rgb(29 61 41 / 22%);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.familyNotesComposerDock .familyNotesHeading {
+  margin-bottom: 10px;
+}
+
+.familyNotesComposerDock .familyNotesHeading h2 {
+  font-size: 16px;
+}
+
 .familyNotesHeading {
   display: flex;
   align-items: end;
@@ -310,6 +334,10 @@
   gap: 12px;
 }
 
+.familyNotesComposerDock .familyNoteComposer {
+  max-width: none;
+}
+
 .noteOptions {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -344,8 +372,39 @@
 }
 
 @media (max-width: 600px) {
+  .familyNotesComposerDock {
+    right: 8px;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    width: calc(100vw - 16px);
+    padding: 13px;
+    border-radius: 16px;
+  }
+
+  .familyNotesComposerDock .familyNotesHeading {
+    align-items: center;
+  }
+
+  .familyNotesComposerDock .familyNotesHeading h2 {
+    font-size: 15px;
+  }
+
   .noteOptions {
     grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .familyNoteComposer {
+    gap: 9px;
+  }
+
+  .familyNoteComposer textarea {
+    min-height: 62px;
+    max-height: 96px;
+    resize: vertical;
+  }
+
+  .familyNoteComposer > button {
+    width: 100%;
   }
 }
 

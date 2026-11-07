@@ -1,5 +1,23 @@
 state.radar = Array.isArray(state.radar) ? state.radar : [];
 
+if (readOnlyProfile) {
+  const mutationSelector = [
+    ".plus", ".check", ".del", ".tiny", "[data-action]", "[data-optional]",
+    "[data-food-edit]", "[data-food-delete]", "#foodsave", "#foodcancel",
+    "[data-restaurant]", ".radar-check", ".radar-delete",
+  ].join(",");
+  document.addEventListener("click", (event) => {
+    if (!event.target.closest(mutationSelector)) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }, true);
+  document.addEventListener("submit", (event) => {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }, true);
+  if ($("feeling")) $("feeling").readOnly = true;
+}
+
 if (profileId === "me" && !state.radarSeeded) {
   const starterItems = [
     "Get paper towels",

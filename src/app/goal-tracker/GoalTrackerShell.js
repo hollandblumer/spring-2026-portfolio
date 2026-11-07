@@ -8,8 +8,8 @@ const GATE_KEY = "goal-tracker-session";
 const LEGACY_STORAGE_KEY = "work-goals-v1";
 const PROFILES = [
   { id: "me", label: "Me", title: "My goal tracker", email: "hollandblumer6@icloud.com" },
-  { id: "mom", label: "Mom", title: "Mom's goal tracker", email: "goal-tracker-mom@hollandblumer.com" },
-  { id: "dad", label: "Dad", title: "Dad's goal tracker", email: "goal-tracker-dad@hollandblumer.com" },
+  { id: "mom", label: "Mom", title: "Mom viewing My progress", email: "goal-tracker-mom@hollandblumer.com" },
+  { id: "dad", label: "Dad", title: "Dad viewing My progress", email: "goal-tracker-dad@hollandblumer.com" },
 ];
 const storageKeyFor = (profileId) => `work-goals-v1-${profileId}`;
 const localDate = () => {
@@ -71,7 +71,7 @@ export default function GoalTrackerShell() {
   }, []);
 
   const saveToCloud = useCallback(async (rawState) => {
-    if (!supabase || !userIdRef.current || !rawState || applyingCloudStateRef.current) return;
+    if (!supabase || !userIdRef.current || profileRef.current !== "me" || !rawState || applyingCloudStateRef.current) return;
     let trackerState;
     try {
       trackerState = JSON.parse(rawState);
@@ -82,37 +82,42 @@ export default function GoalTrackerShell() {
     setStatus("Saving…");
     const { error } = await supabase.from("goal_tracker_data").upsert({
       user_id: userIdRef.current,
+      profile_id: "me",
       tracker_state: trackerState,
       updated_at: new Date().toISOString(),
     });
     setStatus(error ? `Cloud save failed: ${error.message}` : "Saved to cloud");
   }, []);
 
-  const loadCloudState = useCallback(async (userId) => {
-    if (!supabase || !userId) return;
-    setStatus("Loading cloud data…");
-    const { data, error } = await supabase
+  const loadCloudState = useCallback(async (userId, profileId) => {
+    if (!supabase || !userId || !profileId) return;
+    setStatus(profileId === "me" ? "Loading cloud data…" : "Loading My progress…");
+    let query = supabase
       .from("goal_tracker_data")
-      .select("tracker_state")
-      .eq("user_id", userId)
-      .maybeSingle();
+      .select("tracker_state");
+    query = profileId === "me" ? query.eq("user_id", userId) : query.eq("profile_id", "me");
+    const { data, error } = await query.maybeSingle();
     if (error) {
       setStatus(`Cloud load failed: ${error.message}`);
       return;
     }
     if (data?.tracker_state) {
       applyingCloudStateRef.current = true;
-      localStorage.setItem(storageKeyFor(profileRef.current), JSON.stringify(data.tracker_state));
+      localStorage.setItem(storageKeyFor(profileId), JSON.stringify(data.tracker_state));
       iframeRef.current?.contentWindow?.location.reload();
       window.setTimeout(() => {
         applyingCloudStateRef.current = false;
       }, 1000);
-      setStatus("Cloud data loaded");
+      setStatus(profileId === "me" ? "Cloud data loaded" : "Viewing My progress — read only");
       return;
     }
-    const localState = localStorage.getItem(storageKeyFor(profileRef.current));
-    if (localState) await saveToCloud(localState);
-    else setStatus("Unlocked — add a goal to start syncing");
+    if (profileId === "me") {
+      const localState = localStorage.getItem(storageKeyFor(profileId));
+      if (localState) await saveToCloud(localState);
+      else setStatus("Unlocked — add a goal to start syncing");
+    } else {
+      setStatus("No progress has been saved yet");
+    }
   }, [saveToCloud]);
 
   useEffect(() => {
@@ -141,7 +146,7 @@ export default function GoalTrackerShell() {
           if (legacyState) localStorage.setItem(profileKey, legacyState);
         }
         setAuthenticated(true);
-        loadCloudState(user.id);
+        loadCloudState(user.id, profile.id);
         if (profile.id === "me") loadFamilySignIns();
         loadFamilyNotes();
       }
@@ -153,6 +158,7 @@ export default function GoalTrackerShell() {
   useEffect(() => {
     if (!authenticated) return;
     const handleStorage = (event) => {
+      if (profileRef.current !== "me") return;
       if (event.key !== storageKeyFor(profileRef.current) || !event.newValue) return;
       window.clearTimeout(saveTimerRef.current);
       saveTimerRef.current = window.setTimeout(() => saveToCloud(event.newValue), 700);
@@ -196,7 +202,7 @@ export default function GoalTrackerShell() {
     }
     if (selectedProfile.id === "me") await loadFamilySignIns();
     await loadFamilyNotes();
-    await loadCloudState(data.user.id);
+    await loadCloudState(data.user.id, selectedProfile.id);
   }
 
   async function submitFamilyNote(event) {
@@ -323,7 +329,10 @@ export default function GoalTrackerShell() {
           </aside>
         )}
       </section>
-      <section className={styles.familyNotes} aria-label="Family notes">
+      <section
+        className={`${styles.familyNotes} ${selectedProfile?.id !== "me" ? styles.familyNotesComposerDock : ""}`}
+        aria-label="Family notes"
+      >
         {selectedProfile?.id === "me" ? (
           <>
             <div className={styles.familyNotesHeading}>
@@ -347,7 +356,7 @@ export default function GoalTrackerShell() {
         ) : (
           <form className={styles.familyNoteComposer} onSubmit={submitFamilyNote}>
             <div className={styles.familyNotesHeading}>
-              <div><span>For the Me profile</span><h2>Add a note or compliment</h2></div>
+              <div><span>Message for Me</span><h2>Add a note or compliment</h2></div>
             </div>
             <div className={styles.noteOptions}>
               <label>
