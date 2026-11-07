@@ -105,11 +105,8 @@ create policy "Family can add their own notes"
 on public.goal_tracker_family_notes for insert
 with check (
   auth.uid() = author_user_id
-  and (
-    (author_profile = 'mom' and (auth.jwt() ->> 'email') = 'goal-tracker-mom@hollandblumer.com')
-    or
-    (author_profile = 'dad' and (auth.jwt() ->> 'email') = 'goal-tracker-dad@hollandblumer.com')
-  )
+  and author_profile in ('mom', 'dad')
+  and (auth.jwt() ->> 'email') = 'hollandblumer6@icloud.com'
 );
 
 drop policy if exists "Family notes are visible to their author and Me" on public.goal_tracker_family_notes;

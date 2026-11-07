@@ -8,8 +8,8 @@ const GATE_KEY = "goal-tracker-session";
 const LEGACY_STORAGE_KEY = "work-goals-v1";
 const PROFILES = [
   { id: "me", label: "Me", title: "My goal tracker", email: "hollandblumer6@icloud.com" },
-  { id: "mom", label: "Mom", title: "Mom viewing My progress", email: "goal-tracker-mom@hollandblumer.com" },
-  { id: "dad", label: "Dad", title: "Dad viewing My progress", email: "goal-tracker-dad@hollandblumer.com" },
+  { id: "mom", label: "Mom", title: "Mom viewing My progress", email: "hollandblumer6@icloud.com" },
+  { id: "dad", label: "Dad", title: "Dad viewing My progress", email: "hollandblumer6@icloud.com" },
 ];
 const storageKeyFor = (profileId) => `work-goals-v1-${profileId}`;
 const localDate = () => {
@@ -141,7 +141,9 @@ export default function GoalTrackerShell() {
     supabase.auth.getSession().then(({ data }) => {
       if (!active) return;
       const user = data.session?.user;
-      const profile = PROFILES.find((item) => item.email === user?.email);
+      const storedProfileId = sessionStorage.getItem(GATE_KEY);
+      const profile = PROFILES.find((item) => item.id === storedProfileId && item.email === user?.email)
+        || PROFILES.find((item) => item.email === user?.email);
       if (profile) {
         userIdRef.current = user.id;
         profileRef.current = profile.id;
