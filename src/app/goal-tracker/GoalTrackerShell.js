@@ -23,6 +23,7 @@ const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabase
 export default function GoalTrackerShell() {
   const iframeRef = useRef(null);
   const saveTimerRef = useRef(null);
+  const undoTimerRef = useRef(null);
   const userIdRef = useRef(null);
   const profileRef = useRef(null);
   const applyingCloudStateRef = useRef(false);
@@ -41,6 +42,9 @@ export default function GoalTrackerShell() {
   const [sendingNote, setSendingNote] = useState(false);
   const [noteComposerOpen, setNoteComposerOpen] = useState(false);
   const [noteFeedback, setNoteFeedback] = useState("");
+  const [undoNoteId, setUndoNoteId] = useState(null);
+
+  useEffect(() => () => window.clearTimeout(undoTimerRef.current), []);
 
   const loadFamilySignIns = useCallback(async () => {
     if (!supabase) return;
@@ -238,14 +242,18 @@ export default function GoalTrackerShell() {
     const message = noteMessage.trim();
     if (!message) return;
     setSendingNote(true);
-    const { error } = await supabase.from("goal_tracker_family_notes").insert({
-      author_user_id: userIdRef.current,
-      author_profile: selectedProfile.id,
-      category: noteCategory,
-      note_kind: noteKind,
-      message,
-      note_date: localDate(),
-    });
+    const { data: sentNote, error } = await supabase
+      .from("goal_tracker_family_notes")
+      .insert({
+        author_user_id: userIdRef.current,
+        author_profile: selectedProfile.id,
+        category: noteCategory,
+        note_kind: noteKind,
+        message,
+        note_date: localDate(),
+      })
+      .select("id")
+      .single();
     setSendingNote(false);
     if (error) {
       setStatus(`Could not send note: ${error.message}`);
@@ -256,7 +264,28 @@ export default function GoalTrackerShell() {
     const sentLabel = `${noteKind} sent to Holland`;
     setStatus(sentLabel);
     setNoteFeedback(sentLabel);
+    window.clearTimeout(undoTimerRef.current);
+    setUndoNoteId(sentNote.id);
+    undoTimerRef.current = window.setTimeout(() => setUndoNoteId(null), 20000);
     await loadFamilyNotes();
+  }
+
+  async function undoFamilyNote() {
+    if (!supabase || !undoNoteId) return;
+    const noteId = undoNoteId;
+    const { error } = await supabase
+      .from("goal_tracker_family_notes")
+      .delete()
+      .eq("id", noteId);
+    if (error) {
+      setNoteFeedback(`Could not undo: ${error.message}`);
+      return;
+    }
+    window.clearTimeout(undoTimerRef.current);
+    setUndoNoteId(null);
+    setFamilyNotes((notes) => notes.filter((note) => note.id !== noteId));
+    setStatus("Message undone");
+    setNoteFeedback("Message undone");
   }
 
   async function deleteFamilyNote(noteId) {
@@ -283,6 +312,8 @@ export default function GoalTrackerShell() {
     setFamilyNotes([]);
     setNoteComposerOpen(false);
     setNoteFeedback("");
+    window.clearTimeout(undoTimerRef.current);
+    setUndoNoteId(null);
     setStatus("");
   }
 
@@ -440,8 +471,11 @@ export default function GoalTrackerShell() {
                   required
                 />
               </label>
-              <button disabled={sendingNote}>{sendingNote ? "Adding…" : "Add to daily"}</button>
-              <p className={styles.noteFeedback} role="status">{noteFeedback}</p>
+              <button disabled={sendingNote}>{sendingNote ? "Sending…" : "Send"}</button>
+              <div className={styles.noteFeedbackRow}>
+                <p className={styles.noteFeedback} role="status">{noteFeedback}</p>
+                {undoNoteId && <button type="button" onClick={undoFamilyNote}>Undo</button>}
+              </div>
               {familyNotes.length > 0 && (
                 <p className={styles.sentNoteCount}>{familyNotes.length} previously sent</p>
               )}

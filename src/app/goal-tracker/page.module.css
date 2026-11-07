@@ -334,6 +334,23 @@
   font-weight: 700;
 }
 
+.noteFeedbackRow {
+  display: flex;
+  min-height: 28px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.noteFeedbackRow button {
+  padding: 5px 9px;
+  border: 1px solid #9bb2a2;
+  background: transparent;
+  color: #315f43;
+  font: 700 12px Arial, sans-serif;
+  cursor: pointer;
+}
+
 .familyNoteComposer {
   display: grid;
   max-width: 760px;
