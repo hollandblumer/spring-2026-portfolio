@@ -166,6 +166,40 @@ dialog textarea {
   text-transform: uppercase;
 }
 
+.expense-type-field {
+  display: grid;
+  gap: 5px;
+  margin: 0 0 12px;
+}
+
+.expense-type-field select {
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid #d4dbde;
+  background: #eaedef;
+  color: #353a40;
+  font: 12px Figtree, Arial, sans-serif;
+}
+
+.expense-group {
+  margin: 0 0 20px;
+}
+
+.expense-group h4 {
+  margin: 0;
+  padding: 10px 0;
+  border-bottom: 1px solid #e1e5e8;
+  color: #4f6658;
+  font: 600 12px/1.4 Figtree, Arial, sans-serif;
+}
+
+.expense-empty {
+  margin: 0;
+  padding: 12px 0;
+  color: #92979e;
+  font-size: 11px;
+}
+
 .expense-subheading {
   margin-top: -8px;
   letter-spacing: 0;
@@ -189,6 +223,7 @@ dialog textarea {
 
 .family-readonly .add,
 .family-readonly #foodform,
+.family-readonly .expense-type-field,
 .family-readonly .restaurant-shortcuts,
 .family-readonly .food-buttons,
 .family-readonly #projectform,
