@@ -157,6 +157,21 @@ dialog textarea {
   font: 600 12px/1.4 Figtree, Arial, sans-serif;
 }
 
+.food-entry > .expense-heading,
+.expense-subheading {
+  margin: 0 0 7px;
+  color: #73777d;
+  font: 600 11px/1.4 Figtree, Arial, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.expense-subheading {
+  margin-top: -8px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
 @media (max-width: 600px) {
   .radar-section {
     padding: 22px 10px;
