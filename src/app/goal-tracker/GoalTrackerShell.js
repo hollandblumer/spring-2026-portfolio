@@ -389,7 +389,7 @@ export default function GoalTrackerShell() {
               aria-controls="family-note-composer"
               onClick={() => setNoteComposerOpen(true)}
             >
-              Add a note / compliment
+              Messages for Holland
             </button>
             <form id="family-note-composer" className={styles.familyNoteComposer} onSubmit={submitFamilyNote}>
               <div className={styles.familyNotesHeading}>
