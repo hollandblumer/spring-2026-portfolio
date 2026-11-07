@@ -39,6 +39,7 @@ export default function GoalTrackerShell() {
   const [noteKind, setNoteKind] = useState("Note");
   const [noteMessage, setNoteMessage] = useState("");
   const [sendingNote, setSendingNote] = useState(false);
+  const [noteComposerOpen, setNoteComposerOpen] = useState(false);
 
   const loadFamilySignIns = useCallback(async () => {
     if (!supabase) return;
@@ -251,6 +252,7 @@ export default function GoalTrackerShell() {
     setSelectedProfile(null);
     setShowSettings(false);
     setFamilyNotes([]);
+    setNoteComposerOpen(false);
     setStatus("");
   }
 
@@ -330,7 +332,7 @@ export default function GoalTrackerShell() {
         )}
       </section>
       <section
-        className={`${styles.familyNotes} ${selectedProfile?.id !== "me" ? styles.familyNotesComposerDock : ""}`}
+        className={`${styles.familyNotes} ${selectedProfile?.id !== "me" ? styles.familyNotesComposerDock : ""} ${noteComposerOpen ? styles.familyNotesComposerOpen : ""}`}
         aria-label="Family notes"
       >
         {selectedProfile?.id === "me" ? (
@@ -354,43 +356,60 @@ export default function GoalTrackerShell() {
             </div>
           </>
         ) : (
-          <form className={styles.familyNoteComposer} onSubmit={submitFamilyNote}>
-            <div className={styles.familyNotesHeading}>
-              <div><span>Message for Me</span><h2>Add a note or compliment</h2></div>
-            </div>
-            <div className={styles.noteOptions}>
+          <>
+            <button
+              type="button"
+              className={styles.noteComposerLauncher}
+              aria-expanded={noteComposerOpen}
+              aria-controls="family-note-composer"
+              onClick={() => setNoteComposerOpen(true)}
+            >
+              Add a note / compliment
+            </button>
+            <form id="family-note-composer" className={styles.familyNoteComposer} onSubmit={submitFamilyNote}>
+              <div className={styles.familyNotesHeading}>
+                <div><span>Message for Me</span><h2>Add a note or compliment</h2></div>
+                <button
+                  type="button"
+                  className={styles.noteComposerClose}
+                  aria-label="Close note composer"
+                  onClick={() => setNoteComposerOpen(false)}
+                >×</button>
+              </div>
+              <div className={styles.noteOptions}>
+                <label>
+                  Category
+                  <select value={noteCategory} onChange={(event) => setNoteCategory(event.target.value)}>
+                    <option>Career</option>
+                    <option>Health</option>
+                    <option>Household chores</option>
+                  </select>
+                </label>
+                <label>
+                  Type
+                  <select value={noteKind} onChange={(event) => setNoteKind(event.target.value)}>
+                    <option>Note</option>
+                    <option>Compliment</option>
+                  </select>
+                </label>
+              </div>
               <label>
-                Category
-                <select value={noteCategory} onChange={(event) => setNoteCategory(event.target.value)}>
-                  <option>Career</option>
-                  <option>Health</option>
-                  <option>Household chores</option>
-                </select>
+                Message
+                <textarea
+                  value={noteMessage}
+                  onChange={(event) => setNoteMessage(event.target.value)}
+                  placeholder="Write something helpful or encouraging…"
+                  maxLength={1000}
+                  rows={3}
+                  required
+                />
               </label>
-              <label>
-                Type
-                <select value={noteKind} onChange={(event) => setNoteKind(event.target.value)}>
-                  <option>Note</option>
-                  <option>Compliment</option>
-                </select>
-              </label>
-            </div>
-            <label>
-              Message
-              <textarea
-                value={noteMessage}
-                onChange={(event) => setNoteMessage(event.target.value)}
-                placeholder="Write something helpful or encouraging…"
-                maxLength={1000}
-                rows={3}
-                required
-              />
-            </label>
-            <button disabled={sendingNote}>{sendingNote ? "Adding…" : "Add to daily"}</button>
-            {familyNotes.length > 0 && (
-              <p className={styles.sentNoteCount}>{familyNotes.length} previously sent</p>
-            )}
-          </form>
+              <button disabled={sendingNote}>{sendingNote ? "Adding…" : "Add to daily"}</button>
+              {familyNotes.length > 0 && (
+                <p className={styles.sentNoteCount}>{familyNotes.length} previously sent</p>
+              )}
+            </form>
+          </>
         )}
       </section>
       <iframe
