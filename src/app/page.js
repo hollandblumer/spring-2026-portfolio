@@ -21,6 +21,9 @@ const PROJECT_FILTERS = [
 const FILTER_PROJECT_INDICES = {
   all: [
     2,
+    26,
+    25,
+    27,
     0,
     3,
     10,
@@ -33,7 +36,7 @@ const FILTER_PROJECT_INDICES = {
     ),
     11,
   ],
-  "creative-coding": [0, 2, 13, 10, 3, 6, 15, 7, 9, 5],
+  "creative-coding": [0, 2, 26, 27, 25, 13, 10, 3, 6, 15, 7, 9, 5],
   "fullstack-projects": [1, 4, 11, 22, 23],
   "cms-websites": [8, 18, 12, 17, 19, 20, 24, 21],
 };
@@ -314,6 +317,31 @@ const PROJECTS = [
     type: "video",
     src: "/videos/floating-books-optimized.mp4",
     poster: "/videos/floating-books-poster.jpg",
+  },
+  {
+    id: "ribbon-fold",
+    title: "Ribbon Fold",
+    type: "video",
+    src: "/videos/Ribbon Fold.mp4",
+    poster: "/videos/ribbon-fold-poster.jpg",
+  },
+  {
+    id: "ccnyc-satellite-art-show",
+    title: "CCNYC Satellite Art Show",
+    type: "video",
+    src: "/videos/ccnyc-showcase-4x5.mp4",
+    poster: "/videos/ccnyc-showcase-4x5-poster.jpg",
+    blurb:
+      "A 4:5 animated poster for Creative Coding NYC's Satellite Art Show during Common Art Week NYC. The composition brings the event typography into motion while preserving the compressed, high-energy structure of the printed poster.",
+  },
+  {
+    id: "smear-transition",
+    title: "Smear Transition",
+    type: "video",
+    src: "/videos/smear-transition.mp4",
+    poster: "/videos/smear-transition-poster.jpg",
+    blurb:
+      "A motion study built around a soft, layered smear transition. Architectural imagery stretches, repeats, and dissolves across the frame until the scene feels suspended between a photograph and an abstract texture.",
   },
 ];
 

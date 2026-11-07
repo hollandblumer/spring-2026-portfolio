@@ -312,7 +312,7 @@ export default function GoalTrackerShell() {
             Settings
           </button>
         )}
-        <button type="button" onClick={lock}>Lock</button>
+        <button type="button" onClick={lock}>Log out</button>
         {selectedProfile?.id === "me" && showSettings && (
           <aside id="goal-tracker-settings" className={styles.settingsPanel}>
             <h2>Settings</h2>
