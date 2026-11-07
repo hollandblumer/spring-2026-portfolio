@@ -90,9 +90,9 @@ export default function GoalTrackerShell() {
     setStatus(error ? `Cloud save failed: ${error.message}` : "Saved to cloud");
   }, []);
 
-  const loadCloudState = useCallback(async (userId, profileId) => {
+  const loadCloudState = useCallback(async (userId, profileId, quiet = false) => {
     if (!supabase || !userId || !profileId) return;
-    setStatus(profileId === "me" ? "Loading cloud data…" : "Loading My progress…");
+    if (!quiet) setStatus(profileId === "me" ? "Loading cloud data…" : "Loading My progress…");
     let query = supabase
       .from("goal_tracker_data")
       .select("tracker_state");
@@ -103,13 +103,19 @@ export default function GoalTrackerShell() {
       return;
     }
     if (data?.tracker_state) {
+      const nextState = JSON.stringify(data.tracker_state);
+      const profileKey = storageKeyFor(profileId);
+      if (localStorage.getItem(profileKey) === nextState) {
+        if (!quiet) setStatus(profileId === "me" ? "Cloud data loaded" : "Viewing My progress — live read-only view");
+        return;
+      }
       applyingCloudStateRef.current = true;
-      localStorage.setItem(storageKeyFor(profileId), JSON.stringify(data.tracker_state));
+      localStorage.setItem(profileKey, nextState);
       iframeRef.current?.contentWindow?.location.reload();
       window.setTimeout(() => {
         applyingCloudStateRef.current = false;
       }, 1000);
-      setStatus(profileId === "me" ? "Cloud data loaded" : "Viewing My progress — read only");
+      setStatus(profileId === "me" ? "Cloud data loaded" : quiet ? "My progress updated just now" : "Viewing My progress — live read-only view");
       return;
     }
     if (profileId === "me") {
@@ -170,6 +176,22 @@ export default function GoalTrackerShell() {
       window.clearTimeout(saveTimerRef.current);
     };
   }, [authenticated, saveToCloud]);
+
+  useEffect(() => {
+    if (!authenticated || !["mom", "dad"].includes(selectedProfile?.id) || !userIdRef.current) return;
+    const refreshProgress = () => loadCloudState(userIdRef.current, selectedProfile.id, true);
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") refreshProgress();
+    };
+    const intervalId = window.setInterval(refreshProgress, 5000);
+    window.addEventListener("focus", refreshProgress);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", refreshProgress);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
+  }, [authenticated, loadCloudState, selectedProfile]);
 
   async function unlock(event) {
     event.preventDefault();
