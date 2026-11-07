@@ -261,7 +261,7 @@ export default function GoalTrackerShell() {
       return;
     }
     setNoteMessage("");
-    const sentLabel = `${noteKind} sent to Holland`;
+    const sentLabel = `${noteKind === "Note" ? "Task" : noteKind} sent to Holland`;
     setStatus(sentLabel);
     setNoteFeedback(sentLabel);
     window.clearTimeout(undoTimerRef.current);
@@ -428,11 +428,11 @@ export default function GoalTrackerShell() {
                 setNoteComposerOpen(true);
               }}
             >
-              Messages for Holland
+              Add a task/compliment for Holland
             </button>
             <form id="family-note-composer" className={styles.familyNoteComposer} onSubmit={submitFamilyNote}>
               <div className={styles.familyNotesHeading}>
-                <div><span>Message for Holland</span><h2>Add a note or compliment</h2></div>
+                <div><span>For Holland</span><h2>Add a task or compliment</h2></div>
                 <button
                   type="button"
                   className={styles.noteComposerClose}
@@ -452,7 +452,7 @@ export default function GoalTrackerShell() {
                 <label>
                   Type
                   <select value={noteKind} onChange={(event) => setNoteKind(event.target.value)}>
-                    <option>Note</option>
+                    <option value="Note">Task</option>
                     <option>Compliment</option>
                   </select>
                 </label>

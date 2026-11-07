@@ -147,6 +147,16 @@ dialog textarea {
   font-weight: 600;
 }
 
+.checklist-category {
+  margin: 0 0 24px;
+}
+
+.checklist-category > h3 {
+  margin: 0 0 8px;
+  color: #4f6658;
+  font: 600 12px/1.4 Figtree, Arial, sans-serif;
+}
+
 @media (max-width: 600px) {
   .radar-section {
     padding: 22px 10px;
