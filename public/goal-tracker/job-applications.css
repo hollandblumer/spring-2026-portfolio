@@ -44,6 +44,7 @@
 .daily-job-boxes section > div { max-height: 105px; overflow: auto; padding: 9px; background: #f2f5f3; color: #59645e; white-space: pre-wrap; font-size: 10px; line-height: 1.5; }
 .daily-job-boxes section + section > div { background: #edf4ef; border-left: 2px solid #6b9e7b; }
 .daily-job-edit { margin-top: 9px; padding: 0; border: 0; background: transparent; color: #4e6d5a; font-size: 9px; text-decoration: underline; cursor: pointer; }
+.daily-resume-link { display: inline-block; margin: 9px 12px 0 0; color: #4e6d5a; font-size: 9px; text-decoration: underline; }
 .job-dialog { width: min(680px, calc(100vw - 24px)); max-height: 92dvh; padding: 0; border: 0; }
 .job-dialog::backdrop { background: #17231dcc; backdrop-filter: blur(5px); }
 .job-dialog form { padding: 24px; }

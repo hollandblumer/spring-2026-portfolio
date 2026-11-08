@@ -1,4 +1,4 @@
-const JOB_STATUSES = ["Wishlist", "Application submitted", "Interviewing", "Offer", "Rejected", "Withdrawn"];
+const JOB_STATUSES = ["Wishlist", "Applied", "Application submitted", "Interviewing", "Offer", "Rejected", "Withdrawn"];
 const MADI_POSTING_ID = "madi-creative-technologist-2026";
 const HIGHTOUCH_POSTING_ID = "hightouch-ai-creative-solutions-designer";
 const MADI_DESCRIPTION = `About the job
@@ -90,6 +90,7 @@ jobDialog.innerHTML = `<form method="dialog" id="jobapplicationform"><h2 id="job
   <label>STATUS<select id="jobappstatus">${JOB_STATUSES.map((status) => `<option>${status}</option>`).join("")}</select></label>
   <label>DATE<input id="jobappdate" type="date" required></label>
   <label class="job-wide">JOB LINK<input id="jobappurl" type="url" placeholder="https://…"></label>
+  <label class="job-wide">RESUME USED<select id="jobappresume"><option value="">No resume attached</option><option value="/documents/holland-blumer-resume.pdf">Holland Blumer Resume</option></select></label>
   <label class="job-wide">JOB DESCRIPTION<textarea id="jobappdescription" placeholder="Paste the original job description and requirements…"></textarea></label>
   <label class="job-wide">APPLICATION QUESTION RESPONSES<textarea id="jobappresponses" placeholder="Paste the questions and the responses you submitted…"></textarea></label>
   </div><div class="job-form-actions"><button type="submit">Save application</button><button type="button" class="job-cancel" id="jobappcancel">Cancel</button></div></form>`;
@@ -103,7 +104,7 @@ function renderJobApplications() {
   const cardMarkup = (job) => {
     const status = job.applicationStatus || (job.done ? "Application submitted" : "Wishlist");
     const link = safeLink(job.url);
-    return `<article class="job-card"><div class="job-card-top"><div><h3>${esc(job.jobTitle || job.text || "Untitled role")}</h3><p class="job-company">${esc(job.contact || "Company not added")}</p></div><span class="job-status">${esc(status)}</span></div><div class="job-meta"><span>${esc(job.date || "No date")}</span></div><div class="job-content-grid"><section><h4>Job description</h4><div class="job-description">${job.jobDescription ? esc(job.jobDescription) : '<span class="job-box-empty">No job description added yet.</span>'}</div></section><section><h4>My application responses</h4><div class="job-description job-responses">${job.applicationResponses ? esc(job.applicationResponses) : '<span class="job-box-empty">No responses added yet. Select Edit to add them.</span>'}</div></section></div><div class="job-card-actions">${link ? `<a href="${esc(link)}" target="_blank" rel="noopener noreferrer">Open job</a>` : ""}<button type="button" data-job-edit="${esc(job.id)}">Edit</button><button type="button" data-job-delete="${esc(job.id)}">Delete</button></div></article>`;
+    return `<article class="job-card"><div class="job-card-top"><div><h3>${esc(job.jobTitle || job.text || "Untitled role")}</h3><p class="job-company">${esc(job.contact || "Company not added")}</p></div><span class="job-status">${esc(status)}</span></div><div class="job-meta"><span>${esc(job.date || "No date")}</span>${job.resumeUrl ? '<span>Resume attached</span>' : ""}</div><div class="job-content-grid"><section><h4>Job description</h4><div class="job-description">${job.jobDescription ? esc(job.jobDescription) : '<span class="job-box-empty">No job description added yet.</span>'}</div></section><section><h4>My application responses</h4><div class="job-description job-responses">${job.applicationResponses ? esc(job.applicationResponses) : '<span class="job-box-empty">No responses added yet. Select Edit to add them.</span>'}</div></section></div><div class="job-card-actions">${link ? `<a href="${esc(link)}" target="_blank" rel="noopener noreferrer">Open job</a>` : ""}${job.resumeUrl ? `<a href="${esc(job.resumeUrl)}" target="_blank" rel="noopener noreferrer">View resume used</a>` : ""}<button type="button" data-job-edit="${esc(job.id)}">Edit</button><button type="button" data-job-delete="${esc(job.id)}">Delete</button></div></article>`;
   };
   const radarJobs = applications.filter((job) => (job.applicationStatus || "Wishlist") === "Wishlist");
   const submittedJobs = applications.filter((job) => (job.applicationStatus || (job.done ? "Application submitted" : "Wishlist")) !== "Wishlist");
@@ -119,6 +120,7 @@ function openJobApplicationForm(job = null, defaultStatus = "Application submitt
   $("jobappstatus").value = job?.applicationStatus || defaultStatus;
   $("jobappdate").value = job?.date || $("day").value || localDay();
   $("jobappurl").value = safeLink(job?.url) || "";
+  $("jobappresume").value = job?.resumeUrl || "";
   $("jobappdescription").value = job?.jobDescription || "";
   $("jobappresponses").value = job?.applicationResponses || job?.notes || "";
   jobDialog.showModal();
@@ -143,6 +145,7 @@ $("jobapplicationform").onsubmit = (event) => {
     applicationStatus: status,
     date: $("jobappdate").value,
     url: $("jobappurl").value.trim(),
+    resumeUrl: $("jobappresume").value,
     jobDescription: $("jobappdescription").value.trim(),
     applicationResponses: $("jobappresponses").value.trim(),
     done: status !== "Wishlist",
@@ -201,7 +204,7 @@ renderRoutines = function renderRoutinesWithJobAdd() {
   if (!applicationsForDay.length) return;
   const dailyList = document.createElement("div");
   dailyList.className = "daily-job-applications";
-  dailyList.innerHTML = applicationsForDay.map((job) => `<article class="daily-job-card"><div class="daily-job-top"><div><strong>${esc(job.jobTitle || "Untitled role")}</strong><span>${esc(job.contact || "Company not added")}</span></div><b>${esc(job.applicationStatus || "Application submitted")}</b></div><div class="daily-job-boxes"><section><h4>Job description</h4><div>${job.jobDescription ? esc(job.jobDescription) : '<span class="job-box-empty">No description added.</span>'}</div></section><section><h4>My application responses</h4><div>${job.applicationResponses ? esc(job.applicationResponses) : '<span class="job-box-empty">No responses added yet.</span>'}</div></section></div><button type="button" class="daily-job-edit" data-daily-job-edit="${esc(job.id)}">Edit application</button></article>`).join("");
+  dailyList.innerHTML = applicationsForDay.map((job) => `<article class="daily-job-card"><div class="daily-job-top"><div><strong>${esc(job.jobTitle || "Untitled role")}</strong><span>${esc(job.contact || "Company not added")}</span></div><b>${esc(job.applicationStatus || "Application submitted")}</b></div><div class="daily-job-boxes"><section><h4>Job description</h4><div>${job.jobDescription ? esc(job.jobDescription) : '<span class="job-box-empty">No description added.</span>'}</div></section><section><h4>My application responses</h4><div>${job.applicationResponses ? esc(job.applicationResponses) : '<span class="job-box-empty">No responses added yet.</span>'}</div></section></div>${job.resumeUrl ? `<a class="daily-resume-link" href="${esc(job.resumeUrl)}" target="_blank" rel="noopener noreferrer">View resume used</a>` : ""}<button type="button" class="daily-job-edit" data-daily-job-edit="${esc(job.id)}">Edit application</button></article>`).join("");
   dailyList.onclick = (event) => {
     const edit = event.target.closest("[data-daily-job-edit]");
     if (edit) openJobApplicationForm(state.daily.find((entry) => entry.id === edit.dataset.dailyJobEdit));
@@ -248,6 +251,13 @@ if (!state.jobApplicationImports.includes(HIGHTOUCH_POSTING_ID)) {
     category: "Career",
   });
   state.jobApplicationImports.push(HIGHTOUCH_POSTING_ID);
+  save();
+}
+
+if (!state.jobApplicationImports.includes("madi-resume-v1")) {
+  const madiApplication = state.daily.find((entry) => entry.jobPostingId === MADI_POSTING_ID);
+  if (madiApplication) madiApplication.resumeUrl = "/documents/holland-blumer-resume.pdf";
+  state.jobApplicationImports.push("madi-resume-v1");
   save();
 }
 
