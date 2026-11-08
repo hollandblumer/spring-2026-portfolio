@@ -184,6 +184,17 @@ renderRoutines = function renderRoutinesWithJobAdd() {
   button.setAttribute("aria-label", "Add an individual job application");
   button.onclick = () => openJobApplicationForm();
   row.append(button);
+
+  const applicationsForDay = jobApplications().filter((job) => job.date === $("day").value);
+  if (!applicationsForDay.length) return;
+  const dailyList = document.createElement("div");
+  dailyList.className = "daily-job-applications";
+  dailyList.innerHTML = applicationsForDay.map((job) => `<article class="daily-job-card"><div class="daily-job-top"><div><strong>${esc(job.jobTitle || "Untitled role")}</strong><span>${esc(job.contact || "Company not added")}</span></div><b>${esc(job.applicationStatus || "Application submitted")}</b></div><div class="daily-job-boxes"><section><h4>Job description</h4><div>${job.jobDescription ? esc(job.jobDescription) : '<span class="job-box-empty">No description added.</span>'}</div></section><section><h4>My application responses</h4><div>${job.applicationResponses ? esc(job.applicationResponses) : '<span class="job-box-empty">No responses added yet.</span>'}</div></section></div><button type="button" class="daily-job-edit" data-daily-job-edit="${esc(job.id)}">Edit application</button></article>`).join("");
+  dailyList.onclick = (event) => {
+    const edit = event.target.closest("[data-daily-job-edit]");
+    if (edit) openJobApplicationForm(state.daily.find((entry) => entry.id === edit.dataset.dailyJobEdit));
+  };
+  row.append(dailyList);
 };
 
 if (!Array.isArray(state.jobApplicationImports)) state.jobApplicationImports = [];

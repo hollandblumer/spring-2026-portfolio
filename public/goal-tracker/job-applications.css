@@ -26,6 +26,18 @@
 .job-card-actions { display: flex; gap: 14px; margin-top: 16px; }
 .job-card-actions button, .job-card-actions a { border: 0; background: transparent; padding: 0; color: #4e6d5a; font-size: 11px; text-decoration: underline; cursor: pointer; }
 .job-add-button { margin-left: auto; border: 1px solid #b9c8bf; background: #e7eeea; color: #327b55; width: 27px; height: 27px; padding: 0; font-size: 18px; cursor: pointer; }
+.daily-job-applications { flex: 1 0 100%; display: grid; gap: 10px; margin: 10px 0 4px 31px; }
+.daily-job-card { border: 1px solid #dfe4e1; background: #ffffff70; padding: 12px; }
+.daily-job-top { display: flex; justify-content: space-between; gap: 12px; }
+.daily-job-top strong, .daily-job-top span { display: block; }
+.daily-job-top strong { color: #354c3e; font-size: 12px; }
+.daily-job-top span { margin-top: 3px; color: #7c8580; font-size: 10px; }
+.daily-job-top b { height: fit-content; color: #327b55; font-size: 9px; text-transform: uppercase; letter-spacing: .04em; }
+.daily-job-boxes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.daily-job-boxes h4 { margin: 0 0 5px; color: #7c8580; font-size: 8px; text-transform: uppercase; letter-spacing: .05em; }
+.daily-job-boxes section > div { max-height: 105px; overflow: auto; padding: 9px; background: #f2f5f3; color: #59645e; white-space: pre-wrap; font-size: 10px; line-height: 1.5; }
+.daily-job-boxes section + section > div { background: #edf4ef; border-left: 2px solid #6b9e7b; }
+.daily-job-edit { margin-top: 9px; padding: 0; border: 0; background: transparent; color: #4e6d5a; font-size: 9px; text-decoration: underline; cursor: pointer; }
 .job-dialog { width: min(680px, calc(100vw - 24px)); max-height: 92dvh; padding: 0; border: 0; }
 .job-dialog::backdrop { background: #17231dcc; backdrop-filter: blur(5px); }
 .job-dialog form { padding: 24px; }
@@ -37,7 +49,7 @@
 .job-dialog textarea { min-height: 240px; resize: vertical; }
 .job-form-actions { display: flex; gap: 10px; margin-top: 18px; }
 .job-form-actions .job-cancel { background: transparent; color: #73777d; }
-.family-readonly .jobs-add, .family-readonly .job-add-button, .family-readonly .job-card-actions { display: none !important; }
+.family-readonly .jobs-add, .family-readonly .job-add-button, .family-readonly .job-card-actions, .family-readonly .daily-job-edit { display: none !important; }
 
 @media (max-width: 650px) {
   .jobs-section { padding: 6px 10px 35px; }
@@ -47,4 +59,6 @@
   .job-card-top { display: grid; }
   .job-status { width: fit-content; }
   .job-content-grid { grid-template-columns: 1fr; }
+  .daily-job-applications { margin-left: 0; }
+  .daily-job-boxes { grid-template-columns: 1fr; }
 }
