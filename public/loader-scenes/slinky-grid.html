@@ -623,7 +623,13 @@
     const flat=(r,g,b)=>{const t=new THREE.DataTexture(new Uint8Array([r,g,b,255]),1,1);t.needsUpdate=true;return t};
     const fallbackCard=flat(22,22,22),fallbackDisp=flat(128,128,128);
     /* a failed texture resolves to a flat fallback so the counter can never stall */
-    const loadTexture=(url,fallback)=>new Promise(resolve=>loader.load(url,t=>{t.minFilter=THREE.LinearMipmapLinearFilter;t.magFilter=THREE.LinearFilter;t.generateMipmaps=true;t.anisotropy=renderer.capabilities.getMaxAnisotropy();t.needsUpdate=true;assetsDone++;resolve(t)},undefined,()=>{assetsDone++;resolve(fallback)}));
+    const ASSET_TIMEOUT_MS=4500;
+    const loadTexture=(url,fallback)=>new Promise(resolve=>{
+      let settled=false;
+      const finish=texture=>{if(settled)return;settled=true;clearTimeout(timeout);assetsDone++;resolve(texture)};
+      const timeout=setTimeout(()=>finish(fallback),ASSET_TIMEOUT_MS);
+      loader.load(url,t=>{t.minFilter=THREE.LinearMipmapLinearFilter;t.magFilter=THREE.LinearFilter;t.generateMipmaps=true;t.anisotropy=renderer.capabilities.getMaxAnisotropy();t.needsUpdate=true;finish(t)},undefined,()=>finish(fallback));
+    });
     const liveVideoSurfaces=[];
     const loadVideoTexture=(url,posterUrl,projectIndex,fallback)=>new Promise(resolve=>{
       const video=document.createElement('video'),canvas=document.createElement('canvas'),poster=new Image();canvas.width=2;canvas.height=2;
@@ -631,7 +637,9 @@
       const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.minFilter=THREE.LinearFilter;texture.magFilter=THREE.LinearFilter;texture.generateMipmaps=false;
       const surface={url,projectIndex,video,canvas,context,texture,loading:false,ready:false,wanted:false};
       video.muted=true;video.loop=true;video.playsInline=true;video.preload='none';video.crossOrigin='anonymous';
-      const finish=()=>{liveVideoSurfaces.push(surface);assetsDone++;resolve(texture)};
+      let settled=false;
+      const finish=()=>{if(settled)return;settled=true;clearTimeout(timeout);liveVideoSurfaces.push(surface);assetsDone++;resolve(texture)};
+      const timeout=setTimeout(()=>{context.fillStyle='#161616';context.fillRect(0,0,2,2);texture.needsUpdate=true;finish()},ASSET_TIMEOUT_MS);
       poster.onload=()=>{const scale=Math.min(1,1600/Math.max(poster.naturalWidth,poster.naturalHeight));canvas.width=Math.max(1,Math.round(poster.naturalWidth*scale));canvas.height=Math.max(1,Math.round(poster.naturalHeight*scale));context.drawImage(poster,0,0,canvas.width,canvas.height);texture.needsUpdate=true;finish()};
       poster.onerror=()=>{context.fillStyle='#161616';context.fillRect(0,0,2,2);texture.needsUpdate=true;finish()};
       poster.src=posterUrl;
