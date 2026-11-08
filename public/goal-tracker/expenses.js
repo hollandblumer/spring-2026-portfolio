@@ -72,9 +72,16 @@ renderFood = function renderExpenses() {
     .join("");
   $("foodorders").innerHTML = expenseRows(expenses, selected);
 
-  const missing = expenses.filter((expense) => expense.price === null).length;
-  const total = expenses.reduce((sum, expense) => sum + (expense.price ?? 0), 0);
-  $("foodtotal").innerHTML = `<div><span>${expenses.length} ${expenses.length === 1 ? "expense" : "expenses"} this week</span><strong>${money(total)}</strong></div>${missing ? `<small>${missing} ${missing === 1 ? "entry is" : "entries are"} missing a price.</small>` : ""}`;
+  const dailyExpenses = expenses.filter((expense) => expense.date === selected);
+  const dailyMissing = dailyExpenses.filter((expense) => expense.price === null).length;
+  const weeklyMissing = expenses.filter((expense) => expense.price === null).length;
+  const dailyTotal = dailyExpenses.reduce((sum, expense) => sum + (expense.price ?? 0), 0);
+  const weeklyTotal = expenses.reduce((sum, expense) => sum + (expense.price ?? 0), 0);
+  $("foodtotal").innerHTML = `
+    <div><span>Daily total</span><strong>${money(dailyTotal)}</strong></div>
+    <small>${dailyExpenses.length} ${dailyExpenses.length === 1 ? "expense" : "expenses"}${dailyMissing ? ` · ${dailyMissing} missing ${dailyMissing === 1 ? "price" : "prices"}` : ""}</small>
+    <div class="weekly-expense-total"><span>Weekly total</span><strong>${money(weeklyTotal)}</strong></div>
+    <small>${expenses.length} ${expenses.length === 1 ? "expense" : "expenses"}${weeklyMissing ? ` · ${weeklyMissing} missing ${weeklyMissing === 1 ? "price" : "prices"}` : ""}</small>`;
   syncExpenseFormCategory();
 };
 

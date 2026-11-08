@@ -232,6 +232,12 @@ dialog textarea {
   text-transform: none;
 }
 
+#foodtotal .weekly-expense-total {
+  margin-top: 13px;
+  padding-top: 13px;
+  border-top: 1px solid #e1e5e8;
+}
+
 @media (max-width: 600px) {
   .radar-section {
     padding: 22px 10px;
