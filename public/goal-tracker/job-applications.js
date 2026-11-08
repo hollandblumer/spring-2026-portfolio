@@ -186,6 +186,10 @@ renderRoutines = function renderRoutinesWithJobAdd() {
   row.append(button);
 
   const applicationsForDay = jobApplications().filter((job) => job.date === $("day").value);
+  const detailsButton = $("jobdetails");
+  if (detailsButton) {
+    detailsButton.onclick = () => openJobApplicationForm(applicationsForDay.at(-1) || null);
+  }
   if (!applicationsForDay.length) return;
   const dailyList = document.createElement("div");
   dailyList.className = "daily-job-applications";
