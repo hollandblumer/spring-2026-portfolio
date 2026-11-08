@@ -356,7 +356,7 @@ const PROJECTS = [
     src: "/optimized-posters/uv-sense.webp",
     poster: "/optimized-posters/uv-sense.webp",
     href: "/documents/uv-sense.pdf",
-    openDirectly: true,
+    popupPdf: true,
     blurb:
       "An optimized NFC antenna design for a L'Oreal-sponsored wearable UV sensor later commercialized as My Skin Track UV. The antenna connectivity was tested and validated through PCB prototypes assembled using electroplating, laser cutting, and soldering.",
   },
@@ -528,6 +528,16 @@ export default function Home() {
   const effectDemoRanRef = useRef(false);
   const filterRef = useRef(null);
   const [projectRevealDone, setProjectRevealDone] = useState(false);
+  const [uvSenseOpen, setUvSenseOpen] = useState(false);
+
+  useEffect(() => {
+    if (!uvSenseOpen) return undefined;
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setUvSenseOpen(false);
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [uvSenseOpen]);
 
   useEffect(() => {
     const closeFilter = (event) => {
@@ -632,6 +642,10 @@ export default function Home() {
 
   const handleOpenProject = () => {
     if (!activeProject) return;
+    if (activeProject.popupPdf) {
+      setUvSenseOpen(true);
+      return;
+    }
     if (activeProject.href) {
       if (activeProject.openDirectly) {
         window.location.assign(activeProject.href);
@@ -660,6 +674,11 @@ export default function Home() {
         : index;
     const project = PROJECTS[resolvedIndex];
     if (!project) return;
+
+    if (project.popupPdf) {
+      setUvSenseOpen(true);
+      return;
+    }
 
     if (project.id === "templates" || project.openDirectly) {
       if (project.openDirectly) window.location.assign(project.href);
@@ -1064,6 +1083,44 @@ export default function Home() {
             </article>
           )}
 
+          {uvSenseOpen && (
+            <div
+              className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/65 p-3 backdrop-blur-md sm:p-6"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="uv-sense-title"
+              onMouseDown={(event) => {
+                if (event.target === event.currentTarget) setUvSenseOpen(false);
+              }}
+            >
+              <div className="flex h-[92dvh] w-full max-w-[1100px] flex-col overflow-hidden rounded-[1.4rem] bg-[#faf9f6] text-[#191919] shadow-2xl sm:h-[88dvh] sm:rounded-[1.8rem]">
+                <header className="flex shrink-0 items-start justify-between gap-5 border-b border-black/10 px-5 py-4 sm:px-7 sm:py-5">
+                  <div>
+                    <h2 id="uv-sense-title" className={`text-2xl font-semibold tracking-[-0.04em] sm:text-3xl ${bricolage.className}`}>
+                      UV Sense
+                    </h2>
+                    <p className="mt-1 max-w-2xl text-sm leading-5 text-black/55">
+                      An optimized NFC antenna design for a L&apos;Oreal-sponsored wearable UV sensor later commercialized as My Skin Track UV.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setUvSenseOpen(false)}
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-black text-xl leading-none text-white transition hover:bg-black/70"
+                    aria-label="Close UV Sense"
+                  >
+                    ×
+                  </button>
+                </header>
+                <iframe
+                  src="/documents/uv-sense.pdf"
+                  title="UV Sense project document"
+                  className="min-h-0 w-full flex-1 border-0 bg-white"
+                />
+              </div>
+            </div>
+          )}
+
           {isSpiralMode && !showAboutCard && !showProjectPicker && (
             <div className="pointer-events-none absolute inset-y-0 left-0 right-0 z-[18] flex items-center justify-between px-4 sm:px-6">
               <button
@@ -1330,7 +1387,7 @@ export default function Home() {
           morphEnabled={gridMorphEnabled}
           effectStrength={gridEffectStrength}
           glassRects={glassButtonRects}
-          projectOpen={Boolean(gridProject)}
+          projectOpen={Boolean(gridProject || uvSenseOpen)}
           videosPaused={gridVideosPaused}
         />
       </div>
