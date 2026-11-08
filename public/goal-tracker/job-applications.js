@@ -1,5 +1,6 @@
 const JOB_STATUSES = ["Wishlist", "Application submitted", "Interviewing", "Offer", "Rejected", "Withdrawn"];
 const MADI_POSTING_ID = "madi-creative-technologist-2026";
+const HIGHTOUCH_POSTING_ID = "hightouch-ai-creative-solutions-designer";
 const MADI_DESCRIPTION = `About the job
 
 Our client, a Fortune 100 company and the largest mutual life insurer in the U.S., is hiring a Creative Technologist for its Madi Design System team. In this role, you’ll work directly with product and design teams to build interactive prototypes and practical AI-assisted workflows, keep work aligned to Madi standards, and bring real-world insights back to help the system evolve. You’ll need to hit the ground running with hands-on experience using AI in real design and product environments, and you’ll help shape how teams choose tools and use AI responsibly.
@@ -78,7 +79,7 @@ const jobsSection = document.createElement("section");
 jobsSection.id = "jobssection";
 jobsSection.className = "jobs-section";
 jobsSection.hidden = true;
-jobsSection.innerHTML = `<div class="jobs-heading"><div><h2>Job applications</h2><p>Keep each application, posting, and status in one place.</p></div><button type="button" class="jobs-add" id="jobsadd">+ Add job</button></div><div class="jobs-list" id="jobslist"></div>`;
+jobsSection.innerHTML = `<div class="jobs-heading"><div><h2>Jobs</h2><p>Save roles to your radar, then track every application and response.</p></div><div class="jobs-heading-actions"><button type="button" class="jobs-add jobs-add-radar" id="jobsaddradar">+ Add radar job</button><button type="button" class="jobs-add" id="jobsadd">+ Add application</button></div></div><section class="job-radar-section"><div class="jobs-subheading"><h3>Job radar</h3><p>Roles you want to apply to</p></div><div class="jobs-list" id="jobradarlist"></div></section><section class="job-history-section"><div class="jobs-subheading"><h3>Applications</h3><p>Submitted and active application records</p></div><div class="jobs-list" id="jobslist"></div></section>`;
 document.querySelector("main").append(jobsSection);
 
 const jobDialog = document.createElement("dialog");
@@ -99,19 +100,23 @@ const jobApplications = () => state.daily.filter((entry) => entry.routine === "j
 
 function renderJobApplications() {
   const applications = jobApplications().sort((a, b) => (b.date || "").localeCompare(a.date || ""));
-  $("jobslist").innerHTML = applications.length ? applications.map((job) => {
+  const cardMarkup = (job) => {
     const status = job.applicationStatus || (job.done ? "Application submitted" : "Wishlist");
     const link = safeLink(job.url);
     return `<article class="job-card"><div class="job-card-top"><div><h3>${esc(job.jobTitle || job.text || "Untitled role")}</h3><p class="job-company">${esc(job.contact || "Company not added")}</p></div><span class="job-status">${esc(status)}</span></div><div class="job-meta"><span>${esc(job.date || "No date")}</span></div><div class="job-content-grid"><section><h4>Job description</h4><div class="job-description">${job.jobDescription ? esc(job.jobDescription) : '<span class="job-box-empty">No job description added yet.</span>'}</div></section><section><h4>My application responses</h4><div class="job-description job-responses">${job.applicationResponses ? esc(job.applicationResponses) : '<span class="job-box-empty">No responses added yet. Select Edit to add them.</span>'}</div></section></div><div class="job-card-actions">${link ? `<a href="${esc(link)}" target="_blank" rel="noopener noreferrer">Open job</a>` : ""}<button type="button" data-job-edit="${esc(job.id)}">Edit</button><button type="button" data-job-delete="${esc(job.id)}">Delete</button></div></article>`;
-  }).join("") : '<p class="summary-empty">No job applications yet. Use + Add job to create one.</p>';
+  };
+  const radarJobs = applications.filter((job) => (job.applicationStatus || "Wishlist") === "Wishlist");
+  const submittedJobs = applications.filter((job) => (job.applicationStatus || (job.done ? "Application submitted" : "Wishlist")) !== "Wishlist");
+  $("jobradarlist").innerHTML = radarJobs.length ? radarJobs.map(cardMarkup).join("") : '<p class="summary-empty">No radar jobs yet. Save a role you want to apply to.</p>';
+  $("jobslist").innerHTML = submittedJobs.length ? submittedJobs.map(cardMarkup).join("") : '<p class="summary-empty">No submitted applications yet.</p>';
 }
 
-function openJobApplicationForm(job = null) {
+function openJobApplicationForm(job = null, defaultStatus = "Application submitted") {
   editingJobApplicationId = job?.id || null;
   $("jobformtitle").textContent = job ? "Edit job application" : "Add job application";
   $("jobapptitle").value = job?.jobTitle || "";
   $("jobappcompany").value = job?.contact || "";
-  $("jobappstatus").value = job?.applicationStatus || "Application submitted";
+  $("jobappstatus").value = job?.applicationStatus || defaultStatus;
   $("jobappdate").value = job?.date || $("day").value || localDay();
   $("jobappurl").value = safeLink(job?.url) || "";
   $("jobappdescription").value = job?.jobDescription || "";
@@ -149,7 +154,8 @@ $("jobapplicationform").onsubmit = (event) => {
 
 $("jobappcancel").onclick = () => jobDialog.close();
 $("jobsadd").onclick = () => openJobApplicationForm();
-$("jobslist").onclick = (event) => {
+$("jobsaddradar").onclick = () => openJobApplicationForm(null, "Wishlist");
+const handleJobListClick = (event) => {
   const edit = event.target.closest("[data-job-edit]");
   const remove = event.target.closest("[data-job-delete]");
   if (edit) openJobApplicationForm(state.daily.find((entry) => entry.id === edit.dataset.jobEdit));
@@ -158,6 +164,8 @@ $("jobslist").onclick = (event) => {
     save();
   }
 };
+$("jobslist").onclick = handleJobListClick;
+$("jobradarlist").onclick = handleJobListClick;
 
 const baseApplyViewForJobs = applyView;
 applyView = function applyViewWithJobs() {
@@ -185,7 +193,7 @@ renderRoutines = function renderRoutinesWithJobAdd() {
   button.onclick = () => openJobApplicationForm();
   row.append(button);
 
-  const applicationsForDay = jobApplications().filter((job) => job.date === $("day").value);
+  const applicationsForDay = jobApplications().filter((job) => job.date === $("day").value && job.applicationStatus !== "Wishlist");
   const detailsButton = $("jobdetails");
   if (detailsButton) {
     detailsButton.onclick = () => openJobApplicationForm(applicationsForDay.at(-1) || null);
@@ -219,6 +227,27 @@ if (!state.jobApplicationImports.includes(MADI_POSTING_ID)) {
     category: "Career",
   });
   state.jobApplicationImports.push(MADI_POSTING_ID);
+  save();
+}
+
+if (!state.jobApplicationImports.includes(HIGHTOUCH_POSTING_ID)) {
+  state.daily.push({
+    id: globalThis.crypto?.randomUUID?.() || `job-${Date.now()}`,
+    routine: "job-application",
+    jobApplication: true,
+    jobPostingId: HIGHTOUCH_POSTING_ID,
+    text: "AI Creative Solutions Designer at Hightouch",
+    jobTitle: "AI Creative Solutions Designer",
+    contact: "Hightouch",
+    applicationStatus: "Wishlist",
+    date: localDay(),
+    url: "https://jobs.ashbyhq.com/hightouch-inc/8c602235-af22-41bb-b5af-31cc97151b0f/application?utm_source=aV6xRPjM6r",
+    jobDescription: "",
+    applicationResponses: "",
+    done: false,
+    category: "Career",
+  });
+  state.jobApplicationImports.push(HIGHTOUCH_POSTING_ID);
   save();
 }
 
