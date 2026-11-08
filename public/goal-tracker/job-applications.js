@@ -89,7 +89,8 @@ jobDialog.innerHTML = `<form method="dialog" id="jobapplicationform"><h2 id="job
   <label>STATUS<select id="jobappstatus">${JOB_STATUSES.map((status) => `<option>${status}</option>`).join("")}</select></label>
   <label>DATE<input id="jobappdate" type="date" required></label>
   <label class="job-wide">JOB LINK<input id="jobappurl" type="url" placeholder="https://…"></label>
-  <label class="job-wide">JOB POSTING / NOTES<textarea id="jobappdescription" placeholder="Paste the job description, requirements, application notes, or cover letter…"></textarea></label>
+  <label class="job-wide">JOB DESCRIPTION<textarea id="jobappdescription" placeholder="Paste the original job description and requirements…"></textarea></label>
+  <label class="job-wide">APPLICATION QUESTION RESPONSES<textarea id="jobappresponses" placeholder="Paste the questions and the responses you submitted…"></textarea></label>
   </div><div class="job-form-actions"><button type="submit">Save application</button><button type="button" class="job-cancel" id="jobappcancel">Cancel</button></div></form>`;
 document.body.append(jobDialog);
 
@@ -101,7 +102,7 @@ function renderJobApplications() {
   $("jobslist").innerHTML = applications.length ? applications.map((job) => {
     const status = job.applicationStatus || (job.done ? "Application submitted" : "Wishlist");
     const link = safeLink(job.url);
-    return `<article class="job-card"><div class="job-card-top"><div><h3>${esc(job.jobTitle || job.text || "Untitled role")}</h3><p class="job-company">${esc(job.contact || "Company not added")}</p></div><span class="job-status">${esc(status)}</span></div><div class="job-meta"><span>${esc(job.date || "No date")}</span></div>${job.jobDescription ? `<details><summary>View job posting and notes</summary><div class="job-description">${esc(job.jobDescription)}</div></details>` : ""}<div class="job-card-actions">${link ? `<a href="${esc(link)}" target="_blank" rel="noopener noreferrer">Open job</a>` : ""}<button type="button" data-job-edit="${esc(job.id)}">Edit</button><button type="button" data-job-delete="${esc(job.id)}">Delete</button></div></article>`;
+    return `<article class="job-card"><div class="job-card-top"><div><h3>${esc(job.jobTitle || job.text || "Untitled role")}</h3><p class="job-company">${esc(job.contact || "Company not added")}</p></div><span class="job-status">${esc(status)}</span></div><div class="job-meta"><span>${esc(job.date || "No date")}</span></div>${job.jobDescription ? `<details><summary>View job description</summary><div class="job-description">${esc(job.jobDescription)}</div></details>` : ""}${job.applicationResponses ? `<details><summary>View my application responses</summary><div class="job-description job-responses">${esc(job.applicationResponses)}</div></details>` : ""}<div class="job-card-actions">${link ? `<a href="${esc(link)}" target="_blank" rel="noopener noreferrer">Open job</a>` : ""}<button type="button" data-job-edit="${esc(job.id)}">Edit</button><button type="button" data-job-delete="${esc(job.id)}">Delete</button></div></article>`;
   }).join("") : '<p class="summary-empty">No job applications yet. Use + Add job to create one.</p>';
 }
 
@@ -113,7 +114,8 @@ function openJobApplicationForm(job = null) {
   $("jobappstatus").value = job?.applicationStatus || "Application submitted";
   $("jobappdate").value = job?.date || $("day").value || localDay();
   $("jobappurl").value = safeLink(job?.url) || "";
-  $("jobappdescription").value = job?.jobDescription || job?.notes || "";
+  $("jobappdescription").value = job?.jobDescription || "";
+  $("jobappresponses").value = job?.applicationResponses || job?.notes || "";
   jobDialog.showModal();
   $("jobapptitle").focus();
 }
@@ -137,6 +139,7 @@ $("jobapplicationform").onsubmit = (event) => {
     date: $("jobappdate").value,
     url: $("jobappurl").value.trim(),
     jobDescription: $("jobappdescription").value.trim(),
+    applicationResponses: $("jobappresponses").value.trim(),
     done: status !== "Wishlist",
     category: "Career",
   });
