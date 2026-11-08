@@ -35,6 +35,7 @@ const FILTER_PROJECT_INDICES = {
         ),
     ),
     11,
+    28,
   ],
   "creative-coding": [0, 2, 26, 27, 25, 13, 10, 3, 6, 15, 7, 9, 5],
   "fullstack-projects": [1, 4, 11, 22, 23],
@@ -343,6 +344,17 @@ const PROJECTS = [
     blurb:
       "A motion study built around a soft, layered smear transition. Architectural imagery stretches, repeats, and dissolves across the frame until the scene feels suspended between a photograph and an abstract texture.",
   },
+  {
+    id: "uv-sense",
+    title: "UV Sense",
+    type: "image",
+    src: "/projects/uv-sense-vertical.png",
+    poster: "/projects/uv-sense-vertical.png",
+    href: "/documents/uv-sense.pdf",
+    openDirectly: true,
+    blurb:
+      "An optimized NFC antenna design for a L'Oreal-sponsored wearable UV sensor later commercialized as My Skin Track UV. The antenna connectivity was tested and validated through PCB prototypes assembled using electroplating, laser cutting, and soldering.",
+  },
 ];
 
 function InstagramIcon(props) {
@@ -649,6 +661,10 @@ export default function Home() {
   const handleOpenProject = () => {
     if (!activeProject) return;
     if (activeProject.href) {
+      if (activeProject.openDirectly) {
+        window.location.assign(activeProject.href);
+        return;
+      }
       router.push(activeProject.href);
       return;
     }
@@ -673,8 +689,9 @@ export default function Home() {
     const project = PROJECTS[resolvedIndex];
     if (!project) return;
 
-    if (project.id === "templates") {
-      router.push(project.href);
+    if (project.id === "templates" || project.openDirectly) {
+      if (project.openDirectly) window.location.assign(project.href);
+      else router.push(project.href);
       return;
     }
 
