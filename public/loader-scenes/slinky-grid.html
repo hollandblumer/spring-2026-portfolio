@@ -4,13 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>WebGL Column Gallery</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
     :root{--ease:cubic-bezier(.19,1,.22,1)}
     *{box-sizing:border-box;margin:0;padding:0;user-select:none}
-    html,body{width:100%;height:100%;overflow:hidden;background:transparent;color:#fff;font-family:"Instrument Serif",serif;overscroll-behavior:none}
+    html,body{width:100%;height:100%;overflow:hidden;background:transparent;color:#fff;font-family:Georgia,serif;overscroll-behavior:none}
     body>canvas{position:fixed;inset:0;width:100%;height:100%;cursor:grab}
     body>canvas.dragging{cursor:grabbing}
     body.open>canvas{cursor:pointer}
@@ -31,7 +28,7 @@
     .cursor{position:fixed;z-index:4;width:56px;height:56px;border:1px solid #ffffff2e;border-radius:50%;background:#ffffff0a;backdrop-filter:blur(10px);display:none;place-items:center;pointer-events:none;transform:translate(-50%,-50%) scale(.7);opacity:0;transition:opacity .25s,transform .5s var(--ease)}
     body.hovering .cursor,body.open .cursor{display:none;opacity:0}
     .cursor span{font-family:Inter,Arial,sans-serif;font-size:12px;letter-spacing:.02em}
-    body.open .cursor span{font-family:"Instrument Serif",serif;font-size:22px;line-height:1}
+    body.open .cursor span{font-family:Georgia,serif;font-size:22px;line-height:1}
 
     /* page chrome holds back until the reveal lands */
     header,.badge,.index,.fade{opacity:0;transition:opacity .9s ease}
@@ -559,15 +556,15 @@
     addEventListener('message',event=>{if(event.source===parent&&event.data==='portfolio-loader-ready')parentReady=true});
 
     /* ---------- gallery ---------- */
-    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+    import * as THREE from '/vendor/three.module.min.js';
 
-    const textureUrls=['/videos/springcompilation.mp4','/poster-blueprint/snapshot.png','/videos/typeexperiments-poster.jpg','/videos/count.mp4','/projects/3dmotionmarbling.png?v=orange-hand','/videos/templates-optimized.mp4','/videos/noony-optimized.mp4','https://assets.codepen.io/9259849/5cc44ca4-52f5-4d90-98a1-0d993bc4b837.mp4','/videos/katiegrover.mp4','/projects/design-splash.jpeg','/videos/ccnyc-twist.mp4','/projects/chargepoint.png','/videos/seasons.mp4','/videos/Card Layout.mp4','/videos/slinkygrid.mp4','/videos/Rip open.mp4?v=2','/videos/Sign warp.mp4','/videos/cherylfudge.mp4','/videos/meredith.mp4','/videos/kelsey.mp4','/videos/aj-integrated.mp4','/videos/collwick rotation.mp4','/videos/ccnyc-gallery-video.mp4','/videos/divot-logo.jpeg','/videos/floating-books-optimized.mp4','/videos/Ribbon Fold.mp4','/videos/ccnyc-showcase-4x5.mp4','/videos/smear-transition.mp4'];
-    const videoPosterUrls=['/videos/spring-poster.jpg',null,null,'/videos/count-poster.jpg',null,'/videos/templates-poster.jpg','/videos/noony-poster.jpg','/projects/checkerboard3d.jpeg','/projects/canvas-particles.jpeg',null,'/videos/ccnyc-twist-poster.jpg',null,'/projects/american-seasons.png','/videos/card-layout-poster.jpg','/videos/slinkygrid-poster.jpg','/videos/Rip open.png','/videos/sign-warp-poster.jpg','/projects/cherylfudge.png','/videos/meredith-poster.jpg','/videos/kelsey-poster.jpg','/videos/aj-integrated-poster.jpg','/videos/collwick-rotation-poster.jpg','/videos/ccnyc-gallery-poster.jpg?v=05s',null,'/videos/floating-books-poster.jpg','/videos/ribbon-fold-poster.jpg','/videos/ccnyc-showcase-4x5-poster.jpg','/videos/smear-transition-poster.jpg'];
+    const textureUrls=['/videos/springcompilation.mp4','/optimized-posters/poster-blueprint.webp','/optimized-posters/type-experiments.webp','/videos/count.mp4','/optimized-posters/3d-motion-marbling.webp','/videos/templates-optimized.mp4','/videos/noony-optimized.mp4','https://assets.codepen.io/9259849/5cc44ca4-52f5-4d90-98a1-0d993bc4b837.mp4','/videos/katiegrover.mp4','/optimized-posters/design-splash.webp','/videos/ccnyc-twist.mp4','/projects/chargepoint.png','/videos/seasons.mp4','/videos/Card Layout.mp4','/videos/slinkygrid.mp4','/videos/Rip open.mp4?v=2','/videos/Sign warp.mp4','/videos/cherylfudge.mp4','/videos/meredith.mp4','/videos/kelsey.mp4','/videos/aj-integrated.mp4','/videos/collwick rotation.mp4','/videos/ccnyc-gallery-video.mp4','/videos/divot-logo.jpeg','/videos/floating-books-optimized.mp4','/videos/Ribbon Fold.mp4','/videos/ccnyc-showcase-4x5.mp4','/videos/smear-transition.mp4','/optimized-posters/uv-sense.webp'];
+    const videoPosterUrls=['/optimized-posters/spring.webp',null,null,'/optimized-posters/count.webp',null,'/videos/templates-poster.jpg','/optimized-posters/noony.webp','/optimized-posters/checkerboard.webp','/optimized-posters/canvas-particles.webp',null,'/videos/ccnyc-twist-poster.jpg',null,'/optimized-posters/american-seasons.webp','/videos/card-layout-poster.jpg','/videos/slinkygrid-poster.jpg','/videos/Rip open.png','/optimized-posters/sign-warp.webp','/projects/cherylfudge.png','/optimized-posters/meredith.webp','/videos/kelsey-poster.jpg','/videos/aj-integrated-poster.jpg','/videos/collwick-rotation-poster.jpg','/optimized-posters/ccnyc-gallery.webp',null,'/videos/floating-books-poster.jpg','/optimized-posters/ribbon-fold.webp','/optimized-posters/ccnyc-showcase.webp','/videos/smear-transition-poster.jpg',null];
     assetsTotal=textureUrls.length+1;
-    const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'high-performance'});
+    const renderer=new THREE.WebGLRenderer({antialias:false,alpha:true,powerPreference:'high-performance'});
     renderer.outputColorSpace=THREE.SRGBColorSpace;
     renderer.toneMapping=THREE.NoToneMapping;
-    renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.setClearColor(0xffffff,1);document.body.prepend(renderer.domElement);
+    renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(innerWidth,innerHeight);renderer.setClearColor(0xffffff,1);document.body.prepend(renderer.domElement);
     const camera=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,.1,100);camera.position.z=1.5;
     const scene=new THREE.Scene(),group=new THREE.Group();scene.add(group);
     const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2(-2,-2),clock=new THREE.Clock();
@@ -633,7 +630,7 @@
       const context=canvas.getContext('2d',{alpha:false,colorSpace:'srgb'});
       const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.minFilter=THREE.LinearFilter;texture.magFilter=THREE.LinearFilter;texture.generateMipmaps=false;
       const surface={url,projectIndex,video,canvas,context,texture,loading:false,ready:false,wanted:false};
-      video.muted=true;video.loop=true;video.playsInline=true;video.preload='metadata';video.crossOrigin='anonymous';
+      video.muted=true;video.loop=true;video.playsInline=true;video.preload='none';video.crossOrigin='anonymous';
       const finish=()=>{liveVideoSurfaces.push(surface);assetsDone++;resolve(texture)};
       poster.onload=()=>{const scale=Math.min(1,1600/Math.max(poster.naturalWidth,poster.naturalHeight));canvas.width=Math.max(1,Math.round(poster.naturalWidth*scale));canvas.height=Math.max(1,Math.round(poster.naturalHeight*scale));context.drawImage(poster,0,0,canvas.width,canvas.height);texture.needsUpdate=true;finish()};
       poster.onerror=()=>{context.fillStyle='#161616';context.fillRect(0,0,2,2);texture.needsUpdate=true;finish()};
@@ -641,19 +638,12 @@
     });
     const drawCenteredVideo=surface=>{const {video,canvas,context}=surface;if(!canvas.width||!canvas.height||!video.videoWidth||!video.videoHeight)return;const scale=Math.max(canvas.width/video.videoWidth,canvas.height/video.videoHeight),width=video.videoWidth*scale,height=video.videoHeight*scale;context.drawImage(video,(canvas.width-width)/2,(canvas.height-height)/2,width,height)};
     const ensureVideoSurface=surface=>{if(surface.loading)return;surface.loading=true;const {video,texture}=surface;video.addEventListener('loadeddata',()=>{drawCenteredVideo(surface);texture.needsUpdate=true;surface.ready=true;for(const card of cards)if(card.userData.projectIndex===surface.projectIndex){card.material.uniforms.uTexture.value=texture;card.material.uniforms.uVideoColorFix.value=0}if(surface.wanted)video.play().catch(()=>{})},{once:true});video.src=surface.url;video.load()};
-    const prepareDelayedVideo=url=>new Promise(resolve=>{
-      const video=document.createElement('video');video.muted=true;video.loop=true;video.playsInline=true;video.preload='auto';video.crossOrigin='anonymous';
-      video.addEventListener('loadeddata',()=>{const scale=Math.min(1,1600/Math.max(video.videoWidth,video.videoHeight));const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(video.videoWidth*scale));canvas.height=Math.max(1,Math.round(video.videoHeight*scale));const context=canvas.getContext('2d',{alpha:false,colorSpace:'srgb'});context.drawImage(video,0,0,canvas.width,canvas.height);const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.minFilter=THREE.LinearFilter;texture.magFilter=THREE.LinearFilter;texture.generateMipmaps=false;texture.anisotropy=renderer.capabilities.getMaxAnisotropy();resolve({texture,video,canvas,context})},{once:true});
-      video.addEventListener('error',()=>resolve(null),{once:true});video.src=url;video.load();
-    });
     const [textures,displacement]=await Promise.all([
       Promise.all(textureUrls.map(async (url,index)=>{const t=/\.(mp4|webm)(?:[?#]|$)/i.test(url)?await loadVideoTexture(url,videoPosterUrls[index],index,fallbackCard):await loadTexture(url,fallbackCard);t.colorSpace=THREE.SRGBColorSpace;return t})),
       loadTexture('https://experiments.ricardochance.com/displacement.png',fallbackDisp)
     ]);
     displacement.colorSpace=THREE.NoColorSpace;displacement.wrapS=displacement.wrapT=THREE.RepeatWrapping;
     assetsLoaded=true;
-    let typeExperimentVideo=null,typeExperimentVideoStarted=false;
-    prepareDelayedVideo('/videos/typeexperiments.mp4').then(result=>{typeExperimentVideo=result});
 
     const texParallax=new THREE.Vector2(),parallaxTarget=new THREE.Vector2();
     const centeredTextureOffset=new THREE.Vector2();
@@ -738,8 +728,6 @@
       if(event.data?.type==='portfolio-grid-video-playback'){
         videosPaused=event.data.paused===true;
         if(videosPaused)for(const surface of liveVideoSurfaces)surface.video.pause();
-        if(videosPaused)typeExperimentVideo?.video.pause();
-        else if(typeExperimentVideoStarted)typeExperimentVideo?.video.play().catch(()=>{});
         return;
       }
       if(event.data?.type!=='portfolio-grid-filter')return;
@@ -779,11 +767,12 @@
       targetY=currentY=startOffset;resize();
     });
 
-    function resize(){renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();postMat.uniforms.uAspect.value.set(camera.aspect,1);const nextColumns=Math.min(innerWidth<=768?2:3,visibleCardCount);if(nextColumns!==columns){columns=nextColumns;rows=Math.max(1,Math.ceil(visibleCardCount/columns));for(let i=0;i<cards.length;i++){cards[i].userData.col=i%columns;cards[i].userData.row=Math.floor(i/columns)}}const visibleH=2*Math.tan(75*Math.PI/360)*camera.position.z,visibleW=visibleH*camera.aspect,widthScale=visibleW/(columns===2?2.25:3.35);cardScale=Math.min(.92,widthScale);spacingX=cardScale*1.04;spacingY=cardScale*CARD_HEIGHT+cardScale*.05;total=Math.max(spacingY,rows*spacingY);staticScrollMax=staticFilter?Math.max(0,(rows-1)*spacingY-.28):0;if(staticFilter){targetY=THREE.MathUtils.clamp(targetY,0,staticScrollMax);currentY=THREE.MathUtils.clamp(currentY,0,staticScrollMax)}for(const card of cards)if(card!==selected&&introDone)setCardScale(card,cardScale);const p=Math.min(devicePixelRatio,2);sceneTarget.setSize(Math.max(1,innerWidth*p),Math.max(1,innerHeight*p));layout()}
+    function resize(){renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();postMat.uniforms.uAspect.value.set(camera.aspect,1);const nextColumns=Math.min(innerWidth<=768?2:3,visibleCardCount);if(nextColumns!==columns){columns=nextColumns;rows=Math.max(1,Math.ceil(visibleCardCount/columns));for(let i=0;i<cards.length;i++){cards[i].userData.col=i%columns;cards[i].userData.row=Math.floor(i/columns)}}const visibleH=2*Math.tan(75*Math.PI/360)*camera.position.z,visibleW=visibleH*camera.aspect,widthScale=visibleW/(columns===2?2.25:3.35);cardScale=Math.min(.92,widthScale);spacingX=cardScale*1.04;spacingY=cardScale*CARD_HEIGHT+cardScale*.05;total=Math.max(spacingY,rows*spacingY);staticScrollMax=staticFilter?Math.max(0,(rows-1)*spacingY-.28):0;if(staticFilter){targetY=THREE.MathUtils.clamp(targetY,0,staticScrollMax);currentY=THREE.MathUtils.clamp(currentY,0,staticScrollMax)}for(const card of cards)if(card!==selected&&introDone)setCardScale(card,cardScale);const p=Math.min(devicePixelRatio,1.5)*.85;sceneTarget.setSize(Math.max(1,innerWidth*p),Math.max(1,innerHeight*p));layout()}
     addEventListener('resize',resize);resize();
 
     function animate(){
       requestAnimationFrame(animate);
+      if(document.hidden)return;
       const now=performance.now(),dt=Math.min(clock.getDelta(),.05);
       if(!dragging&&!selected){if(staticFilter){targetY=THREE.MathUtils.clamp(targetY+velocity,0,staticScrollMax);velocity*=.88}else{targetY+=velocity;velocity*=.92;targetY+=.025*dt}}
       currentY+=(targetY-currentY)*.08;layout();
@@ -802,13 +791,15 @@
           if(reveal>=1){introDone=true;reveal=1;document.body.classList.add('done');for(const card of cards){card.material.uniforms.uOpacity.value=1;setCardScale(card,cardScale)}setTimeout(()=>parent.postMessage('portfolio-loader-complete',location.origin),450)}
         }
       }
-      if(introDone&&!videosPaused&&!typeExperimentVideoStarted&&typeExperimentVideo&&now-revealAt>revealMs+900){
-        typeExperimentVideoStarted=true;typeExperimentVideo.video.play().catch(()=>{});
-        for(const card of cards)if(card.userData.projectIndex===2){card.material.uniforms.uTexture.value=typeExperimentVideo.texture;card.material.uniforms.uImageAspect.value=typeExperimentVideo.video.videoWidth/typeExperimentVideo.video.videoHeight;card.material.uniforms.uVideoColorFix.value=0}
-      }
-      if(!videosPaused&&typeExperimentVideoStarted&&typeExperimentVideo.video.readyState>=2){typeExperimentVideo.context.drawImage(typeExperimentVideo.video,0,0,typeExperimentVideo.canvas.width,typeExperimentVideo.canvas.height);typeExperimentVideo.texture.needsUpdate=true}
       const visibleVideoProjects=new Set();
-      for(const card of cards)if(card.visible&&Math.abs(card.position.y)<2.2&&card.material.uniforms.uOpacity.value>.01)visibleVideoProjects.add(card.userData.projectIndex);
+      let nearestVideoProject=null,nearestVideoDistance=Infinity;
+      if(now-revealAt>revealMs+1800){
+        for(const card of cards){
+          const distance=Math.abs(card.position.y);
+          if(card.visible&&distance<2.2&&card.material.uniforms.uOpacity.value>.01&&isVideoProject(card.userData.projectIndex)&&distance<nearestVideoDistance){nearestVideoProject=card.userData.projectIndex;nearestVideoDistance=distance}
+        }
+      }
+      if(nearestVideoProject!==null)visibleVideoProjects.add(nearestVideoProject);
       for(const surface of liveVideoSurfaces){const wanted=!videosPaused&&visibleVideoProjects.has(surface.projectIndex);surface.wanted=wanted;if(wanted){ensureVideoSurface(surface);if(surface.ready&&surface.video.paused)surface.video.play().catch(()=>{});if(surface.ready&&surface.video.readyState>=2){drawCenteredVideo(surface);surface.texture.needsUpdate=true}}else if(!surface.video.paused)surface.video.pause()}
       postMat.uniforms.uProjectMode.value=0;
       postMat.uniforms.uReveal.value=introDone?1:reveal;

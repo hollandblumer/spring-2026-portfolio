@@ -1,13 +1,18 @@
 "use client";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { Bricolage_Grotesque } from "next/font/google";
 import { Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
 import Preloader from "../components/Preloader";
-import Carousel from "../components/Carousel";
-import ImageSpiralCarousel from "../components/ImageSpiralCarousel";
 import ElasticMenu from "../components/ElasticMenu";
-import ProjectPageTransition from "../components/ProjectPageTransition";
+
+const ImageSpiralCarousel = dynamic(() => import("../components/ImageSpiralCarousel"), {
+  ssr: false,
+});
+const ProjectPageTransition = dynamic(() => import("../components/ProjectPageTransition"), {
+  ssr: false,
+});
 
 const INSTAGRAM_URL = "https://instagram.com/hollandblumer";
 const LINKEDIN_URL = "https://linkedin.com/in/hollandblumer";
@@ -47,7 +52,7 @@ const PROJECTS = [
     title: "Spiral Experiment",
     type: "video",
     src: "/videos/springcompilation.mp4",
-    poster: "/videos/spring-poster.jpg",
+    poster: "/optimized-posters/spring.webp",
     blurb:
       "Inspired by the way lemon peels curl into loose spirals, I started experimenting with forms that twist, overlap, and unfold through space. I wanted the movement to feel organic rather than mechanically perfect, as if each ribbon had been cut from the surface of a fruit and was slowly finding its own shape.\n\nThe piece became an exploration of repetition, depth, and rhythm. Each spiral bends and passes through the composition at a slightly different pace, creating moments where the forms gather into something dense before opening back up again. The bright color and continuous motion keep it playful, while the changing perspective turns a familiar everyday shape into something more abstract.",
   },
@@ -55,8 +60,8 @@ const PROJECTS = [
     id: "poster-blueprint",
     title: "Poster Blueprint",
     type: "image",
-    src: "/poster-blueprint/snapshot.png",
-    poster: "/poster-blueprint/snapshot.png",
+    src: "/optimized-posters/poster-blueprint.webp",
+    poster: "/optimized-posters/poster-blueprint.webp",
     href: "/poster-blueprint/",
     displayWidthMultiplier: 2.15,
     blurb:
@@ -67,7 +72,7 @@ const PROJECTS = [
     title: "Type Experiments",
     type: "video",
     src: "/videos/typeexperiments.mp4",
-    poster: "/videos/typeexperiments-poster.jpg",
+    poster: "/optimized-posters/type-experiments.webp",
     spiralMobileTextureZoom: 1.85,
     gallery: [
       {
@@ -86,7 +91,7 @@ const PROJECTS = [
     title: "Countdown",
     type: "video",
     src: "/videos/count.mp4",
-    poster: "/videos/count-poster.jpg",
+    poster: "/optimized-posters/count.webp",
     blurb:
       "Inspired by that New Year's Eve countdown feeling where everything tightens right before midnight. I used Three.js to take 3, 2, 1 and let them build instead of just appear. The numbers kind of form out of these vertical ribbons that stretch, snap, and settle, almost like they're being pulled into place.\n\nIt's less about clearly reading the digits and more about that moment of anticipation. Each transition has a bit of randomness to it, so it never feels perfectly clean, more like that chaotic energy right before the drop. The forms push forward, collapse back, and then lock in just long enough before shifting again.",
   },
@@ -94,8 +99,8 @@ const PROJECTS = [
     id: "3d-motion-marbling",
     title: "3D Motion Marbling",
     type: "image",
-    src: "/projects/3dmotionmarbling.png",
-    poster: "/projects/3dmotionmarbling.png",
+    src: "/optimized-posters/3d-motion-marbling.webp",
+    poster: "/optimized-posters/3d-motion-marbling.webp",
     href: "/3d-motion-marbling/",
     blurb:
       "Water marbling... but make it digital. Another project I worked on toward the end of my program at the Recurse Center was inspired by water marbling, as I wanted to recreate those patterns without the mess. I also wanted my hand to become the comb instead, to form the pattern on the canvas.\n\nThe marbling itself is drawn on an HTML canvas, and the pigment is made from layers of color, noise, and displacement, so the hand pushes and stretches the pixels instead of just drawing flat lines. That's what gives it a more liquid, marbled feel, since the colors drag into each other and leave trails based on how the hand moves.\n\nTo make that work, I started with MediaPipe for real-time hand tracking. MediaPipe gave me 21 points for the wrist, knuckles, and fingertips, but on its own it felt more like a skeleton than a hand. I wanted the interaction to have more form and volume, so I began linking those MediaPipe points to the MANO hand model.\n\nA lot of the project became about getting those two systems to line up. MediaPipe and MANO do not naturally agree on orientation, handedness, depth, or how the fingers should bend, so I had to map the tracked points onto the MANO joints and keep tuning the alignment until the thumb, fingertips, and finger curl moved with my actual hand.\n\nThen I had to address backend bugs. I built a Python/FastAPI backend for the MANO fitting, since it was too heavy to run directly in the browser. The browser handles the webcam and MediaPipe tracking, sends the landmarks over, and the backend solves the pose and sends the fitted mesh back. I deployed that backend separately on Render so the public version could use the MANO model without committing those files directly into my portfolio repo.\n\nThe final piece is a mix of creative coding, computer vision, and 3D model fitting: a browser-based marbling tool where your hand becomes the rake moving through the pigment.",
@@ -113,7 +118,7 @@ const PROJECTS = [
     title: "Noony",
     type: "video",
     src: "/videos/noony-optimized.mp4",
-    poster: "/videos/noony-poster.jpg",
+    poster: "/optimized-posters/noony.webp",
     blurb:
       "This animation was made for a friend's DJ set and built around the feeling of pressure building inside a poster. The stacked NOONY text pulls itself into place, then gets caught in a pulsing vortex that twists and distorts the center without ever fully breaking the composition apart.\n\nWhat I like about it is the tension between legibility and motion. The type stretches, settles, and then starts oscillating again, so it feels less like a static flyer and more like the set is already in motion before the music even starts. The grain, deep reds, and spiral distortion push it into something a little delirious, which felt right for the energy of the night.",
   },
@@ -122,7 +127,7 @@ const PROJECTS = [
     title: "Checkerboard in Motion",
     type: "video",
     src: "https://assets.codepen.io/9259849/5cc44ca4-52f5-4d90-98a1-0d993bc4b837.mp4",
-    poster: "/projects/checkerboard3d.jpeg",
+    poster: "/optimized-posters/checkerboard.webp",
     blurb:
       "Concept\nThis began as a quick hero experiment for a private equity client with a square logo. I wanted to explore something in 3D and tested a range of square-based motions as potential directions.\n\nExploration\nI originally planned to color each block individually, and even explored variations inspired by the logo itself. But the default checkered texture that came with Three.js held the composition together better than anything I designed on top of it, so I kept it.\n\nRefinement\nFrom there, I adjusted timing, speed, depth, and lighting so the motion felt slower and more intentional. I chose a warm, fall-inspired palette for my personal version and paired it with a St. Germain track so the grid felt like it moved with the music.",
   },
@@ -131,7 +136,7 @@ const PROJECTS = [
     title: "Canvas Particles",
     type: "video",
     src: "/videos/katiegrover.mp4",
-    poster: "/projects/canvas-particles.jpeg",
+    poster: "/optimized-posters/canvas-particles.webp",
     blurb:
       "Concept\nFor Katie, founder of Katherine Grover Fine Jewelry, I created a custom canvas particle animation using her own jewelry designs as the particles. She wanted an animation she could use across email marketing and Instagram ads that maintained a clean, elevated feel while introducing movement.\n\nApproach\nI designed the system so the particles form around the shape of Nantucket Island rather than filling it in. Katie's logo sits in the negative space at the center, giving the composition a clear focal point while keeping the overall layout minimal.\n\nImplementation\nThe animation is built with a custom canvas particle system adapted from an interactive logo tutorial. I reversed the particle coverage logic, used a base64 island image as a reference mask, and mapped high-resolution jewelry images across the canvas using getImageData(). The motion responds to mouse and touch, runs on GSAP's ticker for smooth performance, and stays sharp on retina displays.\n\nOutcome\nThe final animation gave Katie a flexible, high-impact visual she could use across marketing channels. She was thrilled with the result.",
   },
@@ -139,8 +144,8 @@ const PROJECTS = [
     id: "design-with-a-splash-of-code",
     title: "Design with a Splash of Code",
     type: "image",
-    src: "/projects/design-splash.jpeg",
-    poster: "/projects/design-splash.jpeg",
+    src: "/optimized-posters/design-splash.webp",
+    poster: "/optimized-posters/design-splash.webp",
     blurb:
       "Concept\nThis generative art project began as an exploration of circles within circles. While playing with the forms, I landed on a color palette that felt reminiscent of olives, which became the visual anchor for the piece. From there, the idea shifted toward creating a calm, design-led composition. I was inspired by Okazz and Andor Saga on OpenProcessing, especially their use of centrally clustered forms.\n\nExecution\nI introduced subtle motion using p5.js to bring variation and life into the composition, keeping the movement slow and controlled so the shapes and color relationships stayed front and center.\n\nOutcome\nThe project was featured on the official p5.js Instagram account through their Instagram stories and was later selected by CodePen and shared in a LinkedIn article reflecting on the intersection of visual design and creative coding.",
   },
@@ -179,7 +184,7 @@ const PROJECTS = [
     title: "American Seasons",
     type: "video",
     src: "/videos/seasons.mp4",
-    poster: "/projects/american-seasons.png",
+    poster: "/optimized-posters/american-seasons.webp",
     blurb:
       "Neil, the owner and head chef of American Seasons, reached out looking for more dynamic Instagram content ahead of their seasonal opening on Nantucket.\n\nInspired by the bee in their logo, I created a custom SVG tracer animation using JavaScript to animate a curly pollen path. I pulled everything together in Canva to produce an Instagram reel that brings their logo to life.",
   },
@@ -226,7 +231,7 @@ const PROJECTS = [
     title: "Warping Stuff",
     type: "video",
     src: "/videos/Sign warp.mp4",
-    poster: "/videos/sign-warp-poster.jpg",
+    poster: "/optimized-posters/sign-warp.webp",
   },
   {
     id: "cheryl-fudge",
@@ -242,7 +247,7 @@ const PROJECTS = [
     title: "Meredith Norvell",
     type: "video",
     src: "/videos/meredith.mp4",
-    poster: "/videos/meredith-poster.jpg",
+    poster: "/optimized-posters/meredith.webp",
     gallery: [
       {
         src: "/photos/meredith-norvell/book-cover.jpg",
@@ -293,7 +298,7 @@ const PROJECTS = [
     title: "CCNYC Gallery",
     type: "video",
     src: "/videos/ccnyc-gallery-video.mp4",
-    poster: "/videos/ccnyc-gallery-poster.jpg?v=05s",
+    poster: "/optimized-posters/ccnyc-gallery.webp",
     blurb:
       "Concept\nEvery week, a different artist or designer creates a poster for a Creative Coding NYC meetup. As a CCNYC organizer and officer, I saw an opportunity to make these posters a more memorable part of the organization’s website while building an evolving archive of the community’s creative work.\n\nExperience\nI wanted the transition into the gallery to feel just as expressive as the posters themselves. Rather than placing the work in a static grid, I designed the posters to drift, bend, and move as if they were floating in the wind. The motion turns browsing the archive into a playful, immersive experience while still allowing each artist’s work to take center stage.\n\nBuild\nI built the Creative Coding NYC Gallery with Next.js, TypeScript, Three.js, WebGL, and custom GLSL shaders. The result is a rotating digital showcase that celebrates the visual identity of each weekly meetup and gives CCNYC a living gallery that can continue to grow alongside its community.",
   },
@@ -324,14 +329,14 @@ const PROJECTS = [
     title: "Ribbon Fold",
     type: "video",
     src: "/videos/Ribbon Fold.mp4",
-    poster: "/videos/ribbon-fold-poster.jpg",
+    poster: "/optimized-posters/ribbon-fold.webp",
   },
   {
     id: "ccnyc-satellite-art-show",
     title: "CCNYC Satellite Art Show",
     type: "video",
     src: "/videos/ccnyc-showcase-4x5.mp4",
-    poster: "/videos/ccnyc-showcase-4x5-poster.jpg",
+    poster: "/optimized-posters/ccnyc-showcase.webp",
     blurb:
       "A 4:5 animated poster for Creative Coding NYC's Satellite Art Show during Common Art Week NYC. The composition brings the event typography into motion while preserving the compressed, high-energy structure of the printed poster.",
   },
@@ -348,8 +353,8 @@ const PROJECTS = [
     id: "uv-sense",
     title: "UV Sense",
     type: "image",
-    src: "/projects/uv-sense-vertical.png",
-    poster: "/projects/uv-sense-vertical.png",
+    src: "/optimized-posters/uv-sense.webp",
+    poster: "/optimized-posters/uv-sense.webp",
     href: "/documents/uv-sense.pdf",
     openDirectly: true,
     blurb:
@@ -433,11 +438,6 @@ function HelixIcon(props) {
 
 const OLIVE_CURSOR =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Ccircle cx='14' cy='14' r='5' fill='%23705208' fill-opacity='0.95'/%3E%3Ccircle cx='14' cy='14' r='10' fill='none' stroke='%23705208' stroke-opacity='0.45' stroke-width='2'/%3E%3C/svg%3E\") 14 14, auto";
-const SHOW_WORK_CAROUSEL = false;
-const PROJECT_POSTER_URLS = Array.from(
-  new Set(PROJECTS.map((item) => item.poster || item.src).filter(Boolean)),
-);
-
 const bricolage = Bricolage_Grotesque({
   subsets: ["latin"],
   weight: ["400", "600", "800"],
@@ -507,7 +507,6 @@ function AboutOverlay({ onClose }) {
 export default function Home() {
   const router = useRouter();
   const [preloaderAnimationDone, setPreloaderAnimationDone] = useState(false);
-  const [images, setImages] = useState([]);
   const [mounted, setMounted] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -542,20 +541,6 @@ export default function Home() {
     let isMounted = true;
     const mountFrame = window.requestAnimationFrame(() => {
       if (isMounted) setMounted(true);
-    });
-    Promise.allSettled(
-      PROJECT_POSTER_URLS.map((src) => {
-        return new Promise((resolve, reject) => {
-          const img = new Image();
-          img.src = src;
-          img.onload = () => resolve(src);
-          img.onerror = reject;
-        });
-      }),
-    ).then(() => {
-      if (isMounted) {
-        setImages(PROJECT_POSTER_URLS);
-      }
     });
 
     return () => {
@@ -611,19 +596,8 @@ export default function Home() {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(updateGlassRects);
     };
-    const resizeObserver = typeof ResizeObserver === "function"
-      ? new ResizeObserver(scheduleGlassUpdate)
-      : null;
-    const observeGlassControls = () => {
-      document.querySelectorAll("[data-grid-glass]").forEach((element) => {
-        resizeObserver?.observe(element);
-      });
-      scheduleGlassUpdate();
-    };
-    const mutationObserver = new MutationObserver(observeGlassControls);
-    mutationObserver.observe(document.body, { childList: true, subtree: true });
-    observeGlassControls();
-    [120, 500, 1200].forEach((delay) => {
+    scheduleGlassUpdate();
+    [120, 500].forEach((delay) => {
       followupTimers.push(window.setTimeout(scheduleGlassUpdate, delay));
     });
     addEventListener("resize", scheduleGlassUpdate);
@@ -631,12 +605,10 @@ export default function Home() {
     return () => {
       cancelAnimationFrame(frame);
       followupTimers.forEach((timer) => window.clearTimeout(timer));
-      resizeObserver?.disconnect();
-      mutationObserver.disconnect();
       removeEventListener("resize", scheduleGlassUpdate);
       removeEventListener("orientationchange", scheduleGlassUpdate);
     };
-  }, [gridProjectIndex, menuOpen, preloaderAnimationDone, images.length]);
+  }, [gridProjectIndex, menuOpen, preloaderAnimationDone, filterOpen]);
 
   const handleIndexChange = useCallback((slideNumber) => {
     setCurrentSlide(slideNumber);
@@ -646,7 +618,7 @@ export default function Home() {
 
   if (!mounted) return null;
 
-  const assetsReady = images.length === PROJECT_POSTER_URLS.length;
+  const assetsReady = mounted;
   const showPreloader = !preloaderAnimationDone || !assetsReady;
   const activeProject = PROJECTS[activeIndex];
   const gridProject =
@@ -719,17 +691,6 @@ export default function Home() {
         cursor: !showPreloader ? OLIVE_CURSOR : "auto",
       }}
     >
-      {SHOW_WORK_CAROUSEL && assetsReady && displayMode === "work" && (
-        <div className="hidden">
-          <Carousel
-            mediaItems={PROJECTS}
-            onIndexChange={handleIndexChange}
-            canPlayActiveMedia={!showPreloader}
-            currentIndex={activeIndex}
-          />
-        </div>
-      )}
-
       {assetsReady &&
         isSpiralMode &&
         (!showPreloader || showSpiralDuringPreloader) && (
@@ -1298,6 +1259,8 @@ export default function Home() {
                             <img
                               src={project.poster}
                               alt={project.title}
+                              loading="lazy"
+                              decoding="async"
                               className="h-full w-full object-cover"
                             />
                           </div>
