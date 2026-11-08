@@ -43,6 +43,55 @@
   pointer-events: none;
 }
 
+.routine-video-link {
+  flex: 1 0 100%;
+  margin: 3px 0 2px 31px;
+  color: #65756b;
+  font-size: 9px;
+}
+
+.routine-video-link summary {
+  width: fit-content;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.routine-video-form {
+  display: flex;
+  gap: 7px;
+  margin-top: 8px;
+}
+
+.routine-video-form input {
+  min-width: 0;
+  flex: 1;
+  border: 1px solid #d5dfd9;
+  background: #fff;
+  padding: 7px 8px;
+  color: #414a44;
+  font-size: 10px;
+}
+
+.routine-video-form button {
+  border: 0;
+  background: #327b55;
+  color: #fff;
+  padding: 7px 10px;
+  font-size: 9px;
+}
+
+.routine-video-link > a {
+  display: inline-block;
+  margin-top: 7px;
+  color: #386047;
+  text-decoration: underline;
+}
+
+.family-readonly .routine-video-form {
+  display: none;
+}
+
 @media (max-width: 600px) {
   .duolingo-languages { margin-left: 0; }
+  .routine-video-link { margin-left: 0; }
 }
