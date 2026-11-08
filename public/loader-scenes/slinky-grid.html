@@ -533,13 +533,13 @@
     const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
     const revealMs=reduceMotion?400:1500,introSec=reduceMotion?.25:.9;
     const startTime=performance.now();
-    let assetsDone=0,assetsTotal=13,assetsLoaded=false,sceneReady=false,parentReady=window.parent===window;
+    let assetsDone=0,assetsTotal=13,assetsLoaded=false,sceneReady=false;
     let revealAt=0,reveal=0,introDone=false;
     const easeInOut=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
 
     function loaderTick(now){
       const elapsed=now-startTime;
-      if(assetsLoaded&&sceneReady&&parentReady&&elapsed>700){Loader.complete();return}
+      if((assetsLoaded&&sceneReady&&elapsed>700)||elapsed>6500){Loader.complete();return}
       const byAssets=assetsDone/assetsTotal*94,byTime=Math.min(88,elapsed/38);
       Loader.set(Math.min(94,Math.max(byAssets,byTime))/100);
       requestAnimationFrame(loaderTick);
@@ -552,8 +552,6 @@
     /* fire on exit-START so the fbm lens opens underneath the dissolving counter */
     if(Loader.exiting||Loader.finished)startReveal();
     else{addEventListener('loader:exit',startReveal,{once:true});addEventListener('loader:complete',startReveal,{once:true})}
-
-    addEventListener('message',event=>{if(event.source===parent&&event.data==='portfolio-loader-ready')parentReady=true});
 
     /* ---------- gallery ---------- */
     import * as THREE from '/vendor/three.module.min.js';
