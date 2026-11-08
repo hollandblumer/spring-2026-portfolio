@@ -748,7 +748,7 @@
         if(introDone)card.material.uniforms.uOpacity.value=1;
         const fillerOffset=Math.floor(indices.length/2);
         const sequenceIndex=i<indices.length?i:(fillerOffset+i-indices.length)%indices.length;
-        const projectIndex=indices[sequenceIndex],texture=projectIndex===2&&typeExperimentVideoStarted?typeExperimentVideo.texture:textures[projectIndex],image=texture.image;
+        const projectIndex=indices[sequenceIndex],texture=textures[projectIndex],image=texture.image;
         card.userData.projectIndex=projectIndex;
         card.userData.heightScale=projectHeightScale(projectIndex);
         setCardScale(card,cardScale);

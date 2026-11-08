@@ -208,7 +208,7 @@ export default function Preloader({
     >
       <iframe
         ref={frameRef}
-        src="/loader-scenes/slinky-grid.html?v=featured-card-centered-44"
+        src="/loader-scenes/slinky-grid.html?v=performance-fix-45"
         title="Loading portfolio"
         className="portfolio-grid-frame absolute inset-0 h-full w-full border-0"
         onLoad={handleLoad}
