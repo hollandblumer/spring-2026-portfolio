@@ -18,16 +18,26 @@ $("restaurant").placeholder = "Restaurant, product, store, subway…";
 const expenseCategory = $("expensecategory");
 const restaurantShortcuts = document.querySelector(".restaurant-shortcuts");
 const categoryFor = (expense) => expenseCategories.includes(expense.category) ? expense.category : "Food";
+const expensePlaceholders = {
+  Food: "Restaurant or food item…",
+  "Household products": "Paper towels, detergent…",
+  Clothing: "Top, sweater, shoes…",
+  Transportation: "Subway, taxi, train…",
+};
 
 function syncExpenseFormCategory() {
   restaurantShortcuts.hidden = expenseCategory.value !== "Food";
+  $("restaurant").placeholder = expensePlaceholders[expenseCategory.value] || "Item or place…";
 }
 
 function expenseRows(expenses, selectedDate, interactive = true) {
   return expenseCategories.map((category) => {
     const categoryExpenses = expenses.filter((expense) => categoryFor(expense) === category);
     return `<section class="expense-group">
-      <h4>${esc(category)}</h4>
+      <div class="expense-group-heading">
+        <h4>${esc(category)}</h4>
+        ${interactive ? `<button type="button" class="expense-add-category" data-expense-add="${esc(category)}" aria-label="Add an expense to ${esc(category)}">+</button>` : ""}
+      </div>
       ${categoryExpenses.length ? categoryExpenses.map((expense) => `
         <div class="food-order ${expense.date === selectedDate ? "chosen-day" : ""}">
           <div>
@@ -106,8 +116,16 @@ resetFoodForm = function resetExpenseForm() {
 
 $("foodcancel").onclick = resetFoodForm;
 $("foodorders").onclick = (event) => {
+  const add = event.target.closest("[data-expense-add]");
   const edit = event.target.closest("[data-food-edit]");
   const remove = event.target.closest("[data-food-delete]");
+  if (add) {
+    resetFoodForm();
+    expenseCategory.value = add.dataset.expenseAdd;
+    syncExpenseFormCategory();
+    $("restaurant").focus();
+    return;
+  }
   if (edit) {
     const expense = state.orders.find((entry) => entry.id === edit.dataset.foodEdit);
     if (!expense) return;

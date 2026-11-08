@@ -185,12 +185,38 @@ dialog textarea {
   margin: 0 0 20px;
 }
 
+.expense-group-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #e1e5e8;
+}
+
 .expense-group h4 {
   margin: 0;
   padding: 10px 0;
-  border-bottom: 1px solid #e1e5e8;
   color: #4f6658;
   font: 600 12px/1.4 Figtree, Arial, sans-serif;
+}
+
+.expense-add-category {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid #cbd5cf;
+  border-radius: 50%;
+  background: transparent;
+  color: #386047;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.expense-add-category:hover,
+.expense-add-category:focus-visible {
+  background: #e7eeea;
 }
 
 .expense-empty {
@@ -224,6 +250,7 @@ dialog textarea {
 .family-readonly .add,
 .family-readonly #foodform,
 .family-readonly .expense-type-field,
+.family-readonly .expense-add-category,
 .family-readonly .restaurant-shortcuts,
 .family-readonly .food-buttons,
 .family-readonly #projectform,
