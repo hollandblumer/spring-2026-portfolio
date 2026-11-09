@@ -1,0 +1,131 @@
+Creative Technologist Lead
+
+Dallas, TX · Reposted 1 week ago · 20 people clicked apply
+
+Promoted by hirer · Responses managed off LinkedIn
+
+Hybrid
+Full-time
+Apply
+
+Save
+Your profile was shared with the job poster. Undo
+
+Did you finish applying?
+
+You'll find this job under In progress in your job tracker until you confirm.
+
+Yes
+
+No
+Your profile and resume match some required qualifications
+
+
+
+Show match details
+
+BETA • Is this information helpful?
+
+
+Get personalized tips to stand out to hirers
+
+Find jobs where you’re a top applicant and tailor your resume with the help of AI.
+
+Reactivate Premium
+
+About the job
+We are PMG
+
+PMG, a global independent platform company engineered for impact, integrates business strategy, media, creative, and data within a single operating model powered by our proprietary operating system, Alli. With more than 1,000 employees, PMG partners with brands including Apple, Nike, Dropbox, Experian, Sephora, and Whole Foods. Our work has earned top industry honors, including Cannes Lions and Adweek’s Media Plan of the Year, and PMG has won 40+ workplace culture awards, including being the only company to rank among Ad Age’s Best Places to Work for 11 consecutive years.
+
+Our Creative team is looking for a Creative Technologist Lead to join a multidisciplinary team building best-in-class, omnichannel creative experiences using industry-leading advertising technologies, ad servers, and dynamic creative optimization (DCO) platforms.
+
+As a Creative Technologist Lead, you’ll play a key role in designing and delivering sophisticated dynamic creative, asset automation, and technology-enabled campaign solutions for some of the world’s leading brands. You’ll partner closely with Creative, Media, Strategy, Product, Analytics, and Engineering teams to translate creative and business objectives into scalable technical solutions.
+
+You’ll serve as a technical lead across complex campaign implementations, helping establish development standards, solve technical challenges, evaluate emerging technologies, and guide other Creative Technologists. You’ll also work directly with our technology partners to advance PMG’s creative technology capabilities and identify new ways to improve how we build, automate, personalize, and deliver creative at scale.
+
+What You'll Be Doing
+
+Lead the technical development and implementation of dynamic creative (DCO), asset automation, and omnichannel campaign solutions across multiple brands, markets, and media channels. 
+Architect and build scalable creative solutions using HTML, JavaScript, CSS, APIs, data feeds, and industry-leading advertising technologies. 
+Serve as a technical lead on large-scale programmatic, social, display, video, and other digitally enabled creative campaigns, balancing campaign objectives, technical complexity, scalability, and time-to-market. 
+Translate creative, media, and business requirements into technical specifications, development approaches, and implementation plans. 
+Lead technical discovery and feasibility assessments for complex creative technology initiatives, identifying dependencies, risks, platform limitations, and recommended solutions. 
+Define and audit functional and non-functional requirements across dynamic ad serving, data workflows, API and product-feed integrations, asset tracking and tagging, creative authoring tools, measurement, scalability, and quality assurance. 
+Partner with Creative, Media, Strategy, Analytics, Product, and Engineering teams to ensure creative technology solutions are integrated effectively across the broader campaign ecosystem. 
+Establish development best practices, reusable frameworks, QA standards, documentation, and processes that improve the quality and efficiency of Creative Technology delivery. 
+Troubleshoot complex campaign and platform issues, identifying root causes and coordinating solutions across internal teams and external technology partners. 
+Build and maintain strong relationships with preferred platform and technology partners, helping PMG stay ahead of new product capabilities, integrations, and industry developments. 
+Evaluate emerging advertising and creative technologies and provide recommendations on when PMG should build, buy, or borrow capabilities. 
+Contribute to strategic roadmaps for creative technology, campaign automation, QA automation, and product development across PMG's global teams. 
+Mentor and provide technical guidance to Creative Technologists and other team members, helping raise technical capabilities and development standards across the team. 
+Become a subject matter expert and super-user of tools developed by PMG Product and Engineering teams. 
+Champion experimentation, innovation, collaboration, and responsible adoption of emerging technologies, including AI-enabled creative and automation capabilities. 
+
+What You'll Bring
+
+4+ years of experience in creative technology, front-end development, advertising technology, digital production, or a related discipline, preferably including experience within a creative, media, AdTech, or digital agency environment. 
+Strong understanding of digital creative development, dynamic creative optimization, creative automation, and digital advertising production. 
+Advanced working knowledge of HTML, JavaScript, and CSS, with the ability to develop scalable, modular solutions supporting dynamic creative and multi-variant testing. 
+Hands-on experience with DCO, ad-serving, or creative automation platforms such as Google Marketing Platform/Campaign Manager 360, Google Web Designer, Celtra, Smartly, Clinch, Innovid, Jivox, or Bannerflow. 
+Strong understanding of IAB standards, digital advertising formats, specifications, and creative QA requirements across display, video, social, and programmatic environments. 
+Experience integrating structured data, APIs, product feeds, or other external data sources into dynamic creative experiences. 
+Demonstrated ability to translate business and creative objectives into scalable technical solutions. 
+Experience leading technically complex campaign implementations involving multiple internal teams, platforms, data sources, and external partners. 
+Ability to balance technical quality, scalability, campaign objectives, and time-to-market requirements. 
+Strong troubleshooting and quality assurance skills with the ability to diagnose technical issues across creative, data, platform, and ad-serving environments. 
+Experience developing technical documentation, implementation requirements, best practices, and repeatable development processes. 
+Working knowledge of project management and development tools such as Airtable, Jira, Smartsheet, Asana, and GitHub. 
+Strong written and verbal communication skills, including the ability to explain complex technical concepts to both technical and non-technical stakeholders. 
+Demonstrated ability to mentor or provide technical guidance to other developers or Creative Technologists. 
+Self-starter with a high degree of initiative who is comfortable building new processes and navigating complex, multi-stakeholder environments. 
+Strong attention to detail and a commitment to delivering high-quality creative technology solutions. 
+Familiarity with creative and design applications such as Adobe Creative Suite, including Photoshop, Illustrator, and After Effects. 
+
+Preferred Skills
+
+Experience working with internal and third-party REST APIs, JSON, web services, product feeds, CRM data, or other structured data sources. 
+Experience with Python or another programming language beyond JavaScript. 
+Experience designing reusable frameworks, libraries, templates, or automation solutions that improve development efficiency at scale. 
+Understanding of audience and identity capabilities, including measurement, matching, onboarding, targeting workflows, limitations, and workarounds. 
+Familiarity with privacy considerations and data concepts relevant to personalized advertising, including PII, anonymized data, cookies, identity frameworks, and first-party data. 
+Experience working with database systems, content management systems, data queries, and data normalization. 
+Advanced Excel or spreadsheet experience, including formulas, data matching, aggregation, and validation. 
+Experience with automated QA, testing frameworks, or DevOps processes. 
+Familiarity with AI-enabled development, creative automation, or generative technologies and their application within advertising workflows. 
+Working knowledge of After Effects and motion-based digital creative production. 
+Experience evaluating new technologies, conducting proofs of concept, and making recommendations on platform or technology adoption. 
+
+What We Offer
+
+Performance-Based Rewards: Your impact should be part of your reward. This role is eligible for PMG’s annual bonus program—a standout part of our total compensation offering and an opportunity to share in our success. Bonus awards are informed by individual impact and performance, as well as team and company results, and are subject to applicable program terms.
+
+Professional Development: Keep growing through learning and development programs, mentorship opportunities, and support for career advancement.
+
+Generous Time Off: Take the time you need to recharge, connect with loved ones, and enjoy life outside work.
+
+Parental Leave: Receive paid parental leave during life’s important family moments.
+
+Retirement Benefits: Build for your future with competitive retirement benefits, including employer contributions or matching where applicable.
+
+Fertility and Family Support: Access fertility and family-building benefits for eligible employees and their spouses or partners.
+
+Healthcare: Choose from medical, dental, and vision coverage designed to support you and your family.
+
+Pet Insurance: Access optional coverage for the four-legged members of your family.
+
+Lifestyle Spending Account: Receive company-funded support for eligible health and well-being expenses.
+
+Commuter Benefits: Access support for your commute where available.
+
+Volunteering Opportunities: Receive eight paid hours each year to give back to your community.
+
+AI Tools and Training: Access enterprise AI tools and ongoing training that helps PMGers use AI effectively, creatively, and responsibly.
+
+Our benefits and compensation programs may vary by location and eligibility and are subject to applicable plan terms. We’ll share full details during the hiring process.
+
+What Sets Us Apart
+
+Being part of PMG means joining a company culture that’s unmatched in digital. We're dedicated to working hard to serve our employees and clients, delivering value, results, and innovation—which often requires true grit and agility. We believe in taking care of ourselves and each other to continuously improve in every way.
+
+In alignment with our core values to be inclusive and always change for the better, PMG is committed to creating a more diverse and inclusive culture, and we are proud to be an equal opportunity employer. We believe that we only change for the better by bringing diverse perspectives to our company. PMG recruits, employs, trains, compensates, and promotes regardless of race, color, religion, gender, gender identity or expression, sexual orientation, national origin, genetics, disability, age, or veteran status.
