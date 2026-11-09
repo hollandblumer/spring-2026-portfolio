@@ -1,4 +1,4 @@
-const expenseCategories = ["Food", "Household products", "Clothing", "Transportation"];
+const expenseCategories = ["Food", "Household products", "Clothing", "Transportation", "Miscellaneous"];
 
 for (const expense of state.orders) {
   if (!expenseCategories.includes(expense.category)) expense.category = "Food";
@@ -23,6 +23,7 @@ const expensePlaceholders = {
   "Household products": "Paper towels, detergent…",
   Clothing: "Top, sweater, shoes…",
   Transportation: "Subway, taxi, train…",
+  Miscellaneous: "Anything else…",
 };
 
 function syncExpenseFormCategory() {
