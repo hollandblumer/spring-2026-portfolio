@@ -798,14 +798,12 @@
         }
       }
       const visibleVideoProjects=new Set();
-      let nearestVideoProject=null,nearestVideoDistance=Infinity;
       if(now-revealAt>revealMs+1800){
         for(const card of cards){
           const distance=Math.abs(card.position.y);
-          if(card.visible&&distance<2.2&&card.material.uniforms.uOpacity.value>.01&&isVideoProject(card.userData.projectIndex)&&distance<nearestVideoDistance){nearestVideoProject=card.userData.projectIndex;nearestVideoDistance=distance}
+          if(card.visible&&distance<2.2&&card.material.uniforms.uOpacity.value>.01&&isVideoProject(card.userData.projectIndex))visibleVideoProjects.add(card.userData.projectIndex)
         }
       }
-      if(nearestVideoProject!==null)visibleVideoProjects.add(nearestVideoProject);
       for(const surface of liveVideoSurfaces){const wanted=!videosPaused&&visibleVideoProjects.has(surface.projectIndex);surface.wanted=wanted;if(wanted){ensureVideoSurface(surface);if(surface.ready&&surface.video.paused)surface.video.play().catch(()=>{});if(surface.ready&&surface.video.readyState>=2){drawCenteredVideo(surface);surface.texture.needsUpdate=true}}else if(!surface.video.paused)surface.video.pause()}
       postMat.uniforms.uProjectMode.value=0;
       postMat.uniforms.uReveal.value=introDone?1:reveal;
